@@ -253,7 +253,7 @@ EOF
 - **优先级**：P1　**状态**：**已完成**（2026-11-01，`7ca81f8`）
 - **实现**：新增 `.github/workflows/ci.yml`：
   - `analyze`：Flutter 3.47.7 + `flutter pub get` + `dart analyze --fatal-infos`；
-  - `test`：4 分片跑完整 `flutter test`，安装 `fonts-noto-cjk` 并设置 `DSH_TEST_FONT_DIR`；
+  - `test`：4 分片跑完整 `flutter test`，安装 `fonts-noto-cjk` + `fonts-noto-cjk-extra`（测试需要 Light 字重）并设置 `DSH_TEST_FONT_DIR`；
   - `build`：仅在 main 或手动触发，缓存 `runtime/out`，构建 **arm64-offline** 并上传 APK（普通包依赖已发布 runtime URL，CI 没有），避免 PR 被 158 MB 运行时和 Android SDK/NDK 拖慢。
 - **验收**：PR 上 analyze / test 必过；build 在 main / workflow_dispatch 产出 artifact。`market/.github/workflows/` 保持独立。
 ---
@@ -468,3 +468,5 @@ EOF
 | 2026-11-02 | 上游重写历史后重新同步：以 `e685259` 为基线新建 `resync/e685259`，重放 `1207c11..main` 的净改动（排除 golden PNG），194 → 4 个手工冲突；提交 `3276e9a`。基线、OPT-14 与运行时版本（`…-8502f4e42f76`）同步更新 |
 | 2026-11-02 | 重放后 golden 回到上游版本：995 张 / 307 MB（OPT-06 的压缩需在新基线上重跑 `tooling/optimize-goldens.sh`）；已推送 `main`（`9e894ad`） |
 | 2026-11-02 | OPT-06 在新基线上重做：20 张差异图重新生成（share 二维码/插件文案），其余 `oxipng -o4 --strip safe` 无损重压，995 张 310 → 167 MB（`72d34e0`）。Linux（WSL）全量测试 8829 通过 / 287 跳过 / 5 失败：drawer 2 张与 remote_bootstrap 2 个在干净上游同样失败，share_entries 1 个是并行负载下的 `pumpAndSettle` 超时（单独跑通过） |
+| 2026-11-02 | CI 修复：`fonts-noto-cjk` 只带 Regular/Bold，测试需要 Light（`NotoSansCJK-Light.ttc`）→ test 任务改安装 `fonts-noto-cjk` + `fonts-noto-cjk-extra`；此前 test 分片在所有提交上都因缺字体直接失败 |
+| 2026-11-02 | 运行时 `…-8502f4e42f76` 已发布（arm64，116.5 MiB，HTTP 200），`rootfsUrl` 回填；普通包 `versionCode=11021704` 32.8 MB 重打（包内无 rootfs） |
