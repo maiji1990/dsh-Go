@@ -17,7 +17,7 @@ class _Recorder {
 void main() {
   late FakeAlertSource source;
   late _Recorder out;
-  late HostAlertTracker tracker;
+  HostAlertTracker? tracker;
 
   HostAlertTracker start({
     Duration announce = Duration.zero,
@@ -34,7 +34,7 @@ void main() {
       announceDelay: announce,
       reconcileDelay: reconcile,
     )..start();
-    return tracker;
+    return tracker!;
   }
 
   setUp(() {
@@ -47,7 +47,9 @@ void main() {
     out = _Recorder();
   });
 
-  tearDown(() => tracker.dispose());
+  // Not every case starts one; a case that only checks copy text must not
+  // tear down a tracker a previous case left behind or never created.
+  tearDown(() => tracker?.dispose());
 
   group('requests', () {
     test('an approval alerts once, with the card verb and reason', () async {
