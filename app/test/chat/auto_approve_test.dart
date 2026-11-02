@@ -30,6 +30,15 @@ ApprovalRequest request(String id) =>
 /// Lets the stream deliver and the 32 ms publish timer fire.
 Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 60));
 
+/// Waits for [done] instead of a fixed delay: a loaded runner can take longer
+/// than 60 ms to deliver the auto-answer failure.
+Future<void> settleUntil(bool Function() done) async {
+  final end = DateTime.now().add(const Duration(seconds: 5));
+  while (!done() && DateTime.now().isBefore(end)) {
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  }
+}
+
 void main() {
   late ScriptedClient client;
   late ProviderContainer container;
@@ -109,7 +118,7 @@ void main() {
     client.failing.add('e');
     chat.setAutoApprove(true);
     client.events.add(ApprovalRequestedEvent(request('e')));
-    await settle();
+    await settleUntil(() => state().error != null && state().approvals.isNotEmpty);
     expect(client.answered, isEmpty);
     expect(state().autoAnswered, isEmpty);
     expect(state().approvals.single.eventId, 'e');

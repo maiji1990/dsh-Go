@@ -1,3 +1,7 @@
+// Real sockets and a real mux: a loaded runner can take longer than the 30 s default.
+@Timeout(Duration(seconds: 90))
+library;
+
 import 'dart:async';
 import 'dart:io';
 
