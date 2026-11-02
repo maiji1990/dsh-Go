@@ -1,10 +1,10 @@
 # dsh-Go 优化清单
 
 > 审查对象：`maiji1990/dsh-Go`（`ccch1mneyyy/dsh-Go` 的 fork）
-> 基线 commit：`20bdbc8`（2026-11-02，「ci: 构建任务产出离线包」）
-> 上游对照：`1207c11`（2026-11-01，「Merge pull request #268 from ccch1mneyyy/fix/publish-account-id」）；fork = 上游 + 20 个本地提交，**未落后**（`git rev-list --left-right --count HEAD...upstream/main` = `20 0`）
-> 实测 APK：2026-11-02 构建的 1.0.8 arm64 普通包 `versionCode=11020700`，34,062,810 B，APK 内无 rootfs，`native-code` 只剩 `arm64-v8a`；离线包 `versionCode=11020700`，192,319,042 B，内置 rootfs。x64 普通包保留 35.4 MB 的旧构建数据。手机上已安装的 1.0.4（`versionCode=10310405`）作结构对照；两者都是 `compileSdk=36`、`targetSdk=28`
-> 运行时版本：`r14-dsh0.2.1-rc.4-node24.22.1-ubuntu24.04.5-e87300046a9f`（当前 `runtime/out`；本次改了构建脚本，下次重建会生成新的 runtimeVersion）
+> 基线 commit：`3276e9a`（2026-11-02，「merge: 重放本地改动到上游 e685259」）
+> 上游对照：`e685259`（2026-11-02，「Merge pull request #319 from ccch1mneyyy/feat/attachment-streaming-upload」）；上游曾重写历史（旧的 `1207c11` 不在其祖先链里），本地以 e685259 为基线重放，`git rev-list --left-right --count origin/main...HEAD` = `1 0`（只多本次重放提交），**未落后**
+> 实测 APK：2026-11-02 构建的 1.0.8 arm64 普通包 `versionCode=11021341`，32.5 MB，APK 内无 rootfs，`native-code` 只剩 `arm64-v8a`；离线包 `versionCode=11021351`，148.9 MB，内置 rootfs。两者都是 `compileSdk=36`、`targetSdk=28`
+> 运行时版本：`r14-dsh0.2.1-rc.4-node24.22.1-ubuntu24.04.5-8502f4e42f76`（重放上游补丁后的 arm64 构建；已发布的 `…-53b4fe78516f` 对应重放前的版本，重建后需重新上传）
 > 审查日期：2026-10-31（初版）、2026-11-01（基线刷新：1.0.4 → 1.0.8）、2026-11-02（OPT-02 首启下载）
 > 状态：**进行中**（OPT-01/03/05/06/07/09 已完成，OPT-02 已发布待真机验证，OPT-04 决定保留）
 > 当前进度：第 1 批（OPT-01/09）、第 2 批（OPT-05/06/07）、第 3 批（OPT-02 发布、OPT-03）已完成，OPT-04 决定保留；OPT-02 只剩真机验收；剩余第 4 批。
@@ -31,7 +31,7 @@
 | OPT-11 | 本机引擎走 `127.0.0.1` 的 loopback TCP（3080 起） | P1（安全） | 消除跨 App 可达面 | 2–3 天 |
 | OPT-12 | 插件构建脚本的审批粒度与审计 | P2（安全加固） | 降低供应链残余风险 | 1–2 天 |
 | OPT-13 | AGPL-3.0 §13 缺少网络服务的源码入口 | P2（合规） | 合规 | 0.5 天 |
-| OPT-14 | fork 领先上游 20 个提交（只本地维护，不回上游） | P2 | 控制合并成本 | 0.5 天 |
+| OPT-14 | fork 与上游的关系（改为重放式同步） | P2 ✅ | 合并成本可控 | 已完成 |
 | OPT-15 | `targetSdk=28` 的长期风险 | 监控 | — | — |
 
 ---
@@ -389,15 +389,19 @@ EOF
 
 ### OPT-14 fork 与上游的关系
 
-- **优先级**：P2　**状态**：待处理
-- **现状**：fork 的 `main` 已同步上游 `1207c11`（2026-11-01，覆盖 1.0.5–1.0.8；自 `08d76f5` 起共 81 个上游提交），并领先 **20 个提交**：4 个插件适配提交（`793759b`、`9d07dd9`、`eafc24a`、`c624964`）+ 两次同步 merge（`19be70f`、`e5b17a8`）+ l10n 重新生成（`0d470ec`）+ proot 版本修复（`39dd598`）+ golden 基准图（`0c145ac`）+ golden 维护文档（`50d4319`）+ CI（`7ca81f8`）+ analyzer 严格项（`25cacf6`）+ golden 无损压缩（`0a02d5d`）+ runtime 首启下载（`ee5c070`）+ runtime 上传脚本（`794f4b9`）+ 运行时说明（`07ce9b8`）+ 下载重试空间修正（`c5af5ae`）+ 发布体积说明（`d65f3cc`）+ CI 离线 artifact（`20bdbc8`）。`git rev-list --left-right --count HEAD...upstream/main` = `20 0`，**没有落后上游**，不需要 rebase。
-- **风险**：本地功能提交（`793759b`…`c624964`）和两次同步 merge 涉及 `app/lib/ui/plugins/config/**`、`app/lib/ui/plugins/islands/**`、`app/lib/ui/engine_settings/**`、`app/lib/ui/plugins/plugin_detail_sheet.dart`、`plugin_inventory_page.dart`、`app/test/plugin_config/**`、`app/test/engine_settings/**`、`app/assets/islands/**` 和 l10n 生成文件；1.0.8 同步时实际冲突 3 个文件：`schema_fields.dart`、`schema_form.dart`、`plugin_config_page.dart`。另外本地特性让 6 张 golden 与上游不同，后续同步会产生 PNG 二进制冲突；本批又改了 Android runtime 构建与 flavor，上游若动 `runtime/` 或 `build.gradle.kts` 会冲突。
+- **优先级**：P2　**状态**：**已完成（改为重放式同步）**（2026-11-02，`3276e9a`）
+- **现状**：GitHub 上的 `main` 曾被同步成上游，本地历史与上游在 `08d76f5` 之后分叉（上游重写过历史，旧的 `1207c11` 不在其祖先链里）。直接 merge 预演有 **194 个冲突文件**（139 个 `app/test`，其中约 120 张 golden）。实际做法：以 `e685259` 为基线新建 `resync/e685259`，用 `git diff 1207c11 main`（排除 golden PNG）重放本地净改动，**只有 4 个文件需要手工解冲突**（`RuntimeInstaller.kt`、两个 update 测试、`docs/release.md`），其余 clean。
+- **风险/注意**：
+  1. 上游会持续重写或 squash 历史；每次同步前先 `git fetch` 比对 `merge-base`，如果又分叉就继续用「重放净改动」而不是直接 merge；
+  2. 重放会丢原始的 20 个提交粒度（本次压成一个 `merge:` 提交），提交信息里保留了改动清单；
+  3. golden 仍不在补丁里：本次沿用上游的 PNG，`tooling/optimize-goldens.sh` 需要时可再跑；
+  4. 上游新增了 `runtime/patches/zzzzzzz-input-recovery.diff` 并改了 `zzzzzz-session-deletion.diff`、`zzz-title-cache-refresh.diff`、`pins.json`；重放后 runtimeVersion 变为 `…-8502f4e42f76`，已发布的 `…-53b4fe78516f` 需要重新上传。
 - **建议**：
-  1. 每次上游发版后 `git fetch upstream && git merge upstream/main`（沿用现有的 merge 习惯，不 rebase 已发布的合并历史）；
-  2. **不向上游提交**：本地功能提交（`793759b`…`c624964`）与两次同步 merge 只保留在 `maiji1990/dsh-Go`，整理成 PR 回上游的做法已放弃（2026-11-02 确认），上游仅作只读同步来源；相应地，长期要自己维护 `app/lib/ui/plugins/config/**`、`app/assets/islands/**` 与 6 张 golden 的差异；
-  3. 注意 `app/lib/l10n/gen/*` 是生成文件，冲突时用 `tool/l10n_merge.py` 重新生成，不要手改；
-  4. golden 的 PNG 冲突不要手工合并，按 `docs/testing/goldens.md` 用 `--update-goldens` 重新生成并验证。
-- **验收**：`git log --oneline upstream/main..HEAD` 只有本地提交；`flutter test` 全绿（包括 golden）；仓库无冲突标记。
+  1. 同步流程：`git fetch origin` → 确认 `origin/main` 是否包含本地基点 → 分叉则新建 `resync/<sha>` 重放 `git diff <上次同步点> main`（排除 golden）→ 解冲突 → 生成物重跑（l10n / guide / replay_viewer）→ analyze + 测试 → 普通 push（新分支以 origin/main 为祖先，无需 force）；
+  2. **不向上游提交**：上游仅作只读同步来源（2026-11-02 确认）；
+  3. 生成文件（`app/lib/l10n/gen/*`、`app/lib/share_code/replay_viewer.g.dart`）冲突时用对应生成器重跑，不要手改；
+  4. golden 冲突按 `docs/testing/goldens.md` 用 `--update-goldens` 重新生成并验证。
+- **验收**：`git log --oneline origin/main..HEAD` 只有本地提交；`flutter analyze --fatal-infos` 通过；`runtime/test-host.sh` 通过；仓库无冲突标记。
 ---
 
 ### OPT-15 `targetSdk=28` 的长期风险（监控项）
@@ -459,3 +463,4 @@ EOF
 | 2026-11-02 | OPT-03 完成：按产品决定移除 Office 转换链（`dsh-office-to-pdf` / `libreoffice-kit` / `libreoffice-kit-wasm` / `dsh-skill-office`，146 MB），新增 `zzzzzzzz-office-removal.diff` 去掉 `dsh-web-app` 的插件条目；rootfs 727.1 → 580.8 MiB，归档 147.4 → 116.5 MiB，`test-host.sh` 89/167/29 全绿 |
 | 2026-11-02 | OPT-02 发布：`rootfs-arm64-v8a.tar.xz`（116.5 MiB）上传到 `maiji1990/dsh-Go` 的 Release `runtime-r14-…-53b4fe78516f`（`--latest=false`，HTTP 200 / 122,149,248 B），`rootfsUrl` 已回填；普通 arm64 包 32.5 MB（`11021341`，包内无 rootfs）；x86_64 未发布，其 `rootfsUrl` 置空 |
 | 2026-11-02 | OPT-04 决定保留：`flutter_webrtc` 是编译期插件，裁剪等于砍掉 P2P 直连；本项不再推进 |
+| 2026-11-02 | 上游重写历史后重新同步：以 `e685259` 为基线新建 `resync/e685259`，重放 `1207c11..main` 的净改动（排除 golden PNG），194 → 4 个手工冲突；提交 `3276e9a`。基线、OPT-14 与运行时版本（`…-8502f4e42f76`）同步更新 |
