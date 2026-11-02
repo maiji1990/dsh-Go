@@ -262,7 +262,7 @@ EOF
   3. 新增 `.github/workflows/goldens.yml`（手动触发）：在 CI 环境里 `--update-goldens` 并上传 PNG，用于只有 runner 上才出现的像素差；
   4. `share/share_card_golden_test.dart` 容忍 0.15% 像素差：内联数学「Δt < 0.3」是合成斜体，跨 CPU 的抗锯齿差 ~0.09%，换环境重生成基准图并不能稳定复现；
   5. 修两个隐藏的测试问题：`notify/chat_alerts_test.dart` 的 `tearDown` 解引用未初始化的 `late tracker`（分片后 copy-* 用例先跑就崩）；`remote/remote_bootstrap_test.dart` 用改名 symlink 启动 `sleep`，而新版 coreutils（uutils）拒绝在别的 argv[0] 下运行，改成 `#!/bin/sh` 脚本。
-- **已知 flaky（与改动无关）**：`chat/auto_approve_test.dart`、`remote/local_http_startup_test.dart`（30 s 超时）在负载高时会偶发失败，重跑即过；如反复出现再单独加 timeout 或修断言。
+- **已知 flaky（已修，`0049bc2`）**：`chat/auto_approve_test.dart` 的失败回填是异步的，60 ms 固定等待在负载高时不够 → 改为轮询到 `error` 与 `approvals` 都就绪；`remote/local_http_startup_test.dart` 用真实 socket + mux，30 s 默认超时不够 → 文件级 `@Timeout(90 s)`。修完后 run `41470272463` 无 rerun 全绿。
 ---
 
 ### OPT-06 985 张 golden 占 304 MB
