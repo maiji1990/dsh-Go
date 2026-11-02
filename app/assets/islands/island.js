@@ -689,6 +689,85 @@
     s.textContent = css;
   }
 
+  // A plugin page may ship a desktop viewport or none at all. The island is
+  // always the phone's width, so the document has to say so before the page
+  // lays out; otherwise fixed-width React layouts render wider than the frame.
+  function installViewport() {
+    if (!document.head) return;
+    var m = document.querySelector('meta[name="viewport"]');
+    if (!m) {
+      m = document.createElement('meta');
+      m.setAttribute('name', 'viewport');
+      document.head.appendChild(m);
+    }
+    m.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover');
+  }
+
+  // Mark subtrees wider than the frame: island_mobile.css gives each one its
+  // own horizontal scroller, so desktop tables/rows stay reachable instead of
+  // being clipped by the frame. Bounded so a huge plugin page cannot stall.
+  function fitToWidth() {
+    var frame = st.frame;
+    if (!frame || st.phase !== 'ready') return;
+    var width = frame.clientWidth;
+    if (width <= 0) return;
+    var nodes = frame.querySelectorAll('*');
+    var limit = Math.min(nodes.length, 1200);
+    for (var i = 0; i < limit; i++) {
+      var el = nodes[i];
+      var tag = el.tagName;
+      if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'LINK') continue;
+      var cs = getComputedStyle(el);
+      // A desktop row of controls: let it wrap instead of squeezing its first
+      // cell into one character per line. flex-wrap only wraps when needed.
+      if (cs.display === 'flex' && cs.flexDirection.indexOf('row') === 0) {
+        el.style.flexWrap = 'wrap';
+      } else if (cs.display === 'grid' && el.scrollWidth > width + 4) {
+        // A fixed multi-column grid (a desktop account row, a 3-up card grid)
+        // stacks on a phone rather than scrolling sideways.
+        var tracks = cs.gridTemplateColumns ? cs.gridTemplateColumns.trim().split(/\s+/) : [];
+        if (tracks.length >= 3) el.style.gridTemplateColumns = 'minmax(0, 1fr)';
+      }
+      // App-style cards: the App draws its own cards at 14px. A plugin card is
+      // a large translucent box with an 8-18px radius; bring it to the same
+      // corner without touching pills (99px) or small chips.
+      if (!el.hasAttribute('data-dsh-go-card')) {
+        var radius = parseFloat(cs.borderTopLeftRadius) || 0;
+        var bg = cs.backgroundColor || '';
+        var filled = bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)';
+        if (filled && radius >= 8 && radius < 18 && el.clientWidth >= width * 0.55 && el.clientHeight >= 48) {
+          el.style.backgroundColor = 'var(--dsw-alias-settings-card-fill)';
+          el.style.borderColor = 'var(--dsw-alias-settings-card-stroke)';
+          el.style.borderRadius = '14px';
+          el.setAttribute('data-dsh-go-card', '');
+        }
+      }
+      // App type scale: the App's body text is 14-16px; a settings plugin often
+      // ships 11-13px labels. Raise only elements that carry their own text,
+      // once, and leave code, icons and pills alone.
+      if (!el.hasAttribute('data-dsh-go-type')) {
+        var direct = false;
+        for (var n = el.firstChild; n; n = n.nextSibling) {
+          if (n.nodeType === 3 && n.nodeValue && n.nodeValue.trim()) { direct = true; break; }
+        }
+        var tagName = el.tagName;
+        var family = cs.fontFamily || '';
+        if (direct && tagName !== 'CODE' && tagName !== 'PRE' && tagName !== 'SCRIPT' && tagName !== 'STYLE' &&
+            !/icon|awesome|phosphor|material/i.test(family)) {
+          var size = parseFloat(cs.fontSize) || 0;
+          if (size >= 9 && size < 14) {
+            el.style.fontSize = Math.min(15, Math.max(12, size * 1.1)).toFixed(1) + 'px';
+            el.setAttribute('data-dsh-go-type', '');
+          }
+        }
+      }
+      if (el.hasAttribute('data-dsh-go-mobile-wide')) continue;
+      if (el.scrollWidth > width + 4 && el.clientWidth >= width - 8) {
+        el.setAttribute('data-dsh-go-mobile-wide', '');
+      }
+    }
+  }
+
   // ---- navigation -------------------------------------------------------------
 
   var labels = {};
@@ -1136,7 +1215,7 @@
       ro.observe(document.documentElement);
       st.resizeObserver = ro;
     }
-    window.addEventListener('resize', function () { measure(); reportHits(); });
+    window.addEventListener('resize', function () { measure(); reportHits(); fitToWidth(); });
     document.addEventListener('scroll', function () { reportHits(); }, true);
     setInterval(function () { if (st.cfg && st.cfg.mode === 'overlay') reportHits(); }, 250);
     // A plugin that selects another conversation (the official sessions
@@ -1207,6 +1286,7 @@
     var html = document.documentElement;
     html.setAttribute(MARK, '');
     html.setAttribute(FORM, cfg.mode || 'page');
+    installViewport();
     installCss(cfg.css);
     applyTheme(cfg.theme);
     applyInsets(cfg.insets);
@@ -1277,6 +1357,9 @@
     apply();
     st.phase = 'ready';
     observe();
+    fitToWidth();
+    setTimeout(fitToWidth, 500);
+    setTimeout(fitToWidth, 1600);
     watchContent();
     var found = 0;
     for (var f = 0; f < (st.slotEls || [outlet]).length; f++) found += entries((st.slotEls || [outlet])[f]);

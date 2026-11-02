@@ -237,6 +237,22 @@
           "after": "253e1339e3f7172aa6f272c5209f45cc69519a2509e9684242ee004c22a50f88"
         }
       }
+    },
+    "zzzzzzz-optional-bundles.diff": {
+      "0.2.1-rc.4": {
+        "node_modules/@deepseek-ai/dsh-app-boot/lib/index.js": {
+          "before": "2b7cc756a42b21c7204288b9f10b3f81d43bd9bec599a85072ac3753d292357e",
+          "after": "4aa0e1f30ac75ea9158dd598e2b19b3b718ea2ae5e538d422f1b3fc79d234865"
+        }
+      }
+    },
+    "zzzzzzzz-office-removal.diff": {
+      "0.2.1-rc.4": {
+        "node_modules/@deepseek-ai/dsh-web-app/cordis.patch.yml": {
+          "before": "cdceb423fc34c31ceb9c47ef2117a88eeda6fd9cc21f94d58cfd21e7c3e035de",
+          "after": "7100a44a4b3a035f32fcbafdd05f5ac17547612905b574163ab9646b4a1821af"
+        }
+      }
     }
   },
   "schema": 1

@@ -83,7 +83,7 @@ void main() {
       await settlePhone(tester);
       expect(find.text('30%'), findsOneWidget);
       expect(h.native!.overlay['idleOpacity'], 0.3);
-      final sent = [
+      final sent = <double>[
         for (final c in h.native!.callsOf('setOverlayPrefs')) (c.arguments as Map)['idleOpacity'] as double,
       ];
       // Every value a step: whole multiples of 5 %, falling.
@@ -91,7 +91,7 @@ void main() {
       for (final v in sent) {
         expect(((v * 100).round() % 5), 0, reason: '$v');
       }
-      expect(sent, orderedEquals([...sent]..sort((a, b) => b.compareTo(a))));
+      expect(sent, orderedEquals((<double>[...sent])..sort((a, b) => b.compareTo(a))));
 
       await tester.drag(slider, const Offset(900, 0));
       await settlePhone(tester);

@@ -42,7 +42,7 @@ void main() {
       t.widgetList<MarkdownBody>(find.byType(MarkdownBody)).any((w) => w.text == full['text']);
   FakeDsBotTransport fake() => FakeDsBotTransport(team: sampleTeam(working: false))
     ..helloOnFeed = false
-    ..roomItems = List<Object?>.from(fixture['projected']);
+    ..roomItems = List<Object?>.from(fixture['projected'] as List<Object?>);
   Future<ProviderContainer> open(
     WidgetTester t,
     FakeDsBotTransport old,

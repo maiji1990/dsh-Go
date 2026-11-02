@@ -8630,6 +8630,12 @@ abstract class L10n {
   /// **'填写名称'**
   String get engineFieldEnterName;
 
+  /// No description provided for @engineFieldNameExists.
+  ///
+  /// In zh, this message translates to:
+  /// **'已有同名项'**
+  String get engineFieldNameExists;
+
   /// No description provided for @engineFieldEnterNumber.
   ///
   /// In zh, this message translates to:
@@ -10243,6 +10249,18 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'在网页版编辑此项'**
   String get engineFieldEditOnWeb;
+
+  /// No description provided for @engineFieldRawJson.
+  ///
+  /// In zh, this message translates to:
+  /// **'原始 JSON'**
+  String get engineFieldRawJson;
+
+  /// No description provided for @engineFieldRawJsonHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'高级：直接编辑这一项的 JSON'**
+  String get engineFieldRawJsonHint;
 
   /// No description provided for @engineSettingsHostChanged.
   ///
@@ -18871,6 +18889,48 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'Ralph 工具'**
   String get pluginConfigNameRalphTools;
+
+  /// No description provided for @pluginConfigModeNative.
+  ///
+  /// In zh, this message translates to:
+  /// **'原生'**
+  String get pluginConfigModeNative;
+
+  /// No description provided for @pluginConfigModeWeb.
+  ///
+  /// In zh, this message translates to:
+  /// **'网页'**
+  String get pluginConfigModeWeb;
+
+  /// No description provided for @pluginConfigModeReadOnly.
+  ///
+  /// In zh, this message translates to:
+  /// **'只读'**
+  String get pluginConfigModeReadOnly;
+
+  /// No description provided for @pluginConfigAdapterTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'适配情况'**
+  String get pluginConfigAdapterTitle;
+
+  /// No description provided for @pluginConfigAdapterNativeHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'原生表单，可直接在 App 里编辑'**
+  String get pluginConfigAdapterNativeHint;
+
+  /// No description provided for @pluginConfigAdapterWebHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'插件自带网页界面，在 App 内嵌打开'**
+  String get pluginConfigAdapterWebHint;
+
+  /// No description provided for @pluginConfigAdapterReadOnlyHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'这台主机只允许查看'**
+  String get pluginConfigAdapterReadOnlyHint;
 
   /// No description provided for @plugInputRequired.
   ///

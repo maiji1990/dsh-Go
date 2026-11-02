@@ -161,7 +161,7 @@ class _ShareImagePageState extends ConsumerState<ShareImagePage> {
       _saved = busy == _Busy.saving && error == null;
     });
     if (_saved) {
-      HapticFeedback.lightImpact();
+      unawaited(HapticFeedback.lightImpact());
       _savedReset?.cancel();
       _savedReset = Timer(const Duration(milliseconds: 2400), () {
         if (mounted) setState(() => _saved = false);
@@ -211,12 +211,7 @@ class _ShareImagePageState extends ConsumerState<ShareImagePage> {
         onShare: () => _run(_Busy.sharing),
       ),
     );
-    return SharePageLayout(
-      title: l10n.viewShareAsImage,
-      top: choices,
-      preview: preview,
-      bottom: actions,
-    );
+    return SharePageLayout(title: l10n.viewShareAsImage, top: choices, preview: preview, bottom: actions);
   }
 }
 

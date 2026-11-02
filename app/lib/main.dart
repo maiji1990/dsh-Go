@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -26,7 +27,7 @@ Future<void> _startApp() async {
   registerFontLicenses();
   // Edge-to-edge with transparent system bars; pages refine the icon brightness
   // through AnnotatedRegion(dshSystemOverlay(...)).
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
   SystemChrome.setSystemUIOverlayStyle(dshSystemOverlay(PlatformDispatcher.instance.platformBrightness));
   runApp(const ProviderScope(child: DshApp()));
 }

@@ -50,7 +50,7 @@ void main() {
 
         FakeDsBotTransport transport() {
           final fake = FakeDsBotTransport(team: team())..helloOnFeed = false;
-          fake.roomItems = List<Object?>.from(longPost['projected']);
+          fake.roomItems = List<Object?>.from(longPost['projected'] as List<Object?>);
           fake.handlers['state'] = (_) => team();
           fake.handlers['folders'] = (_) => {
             'team': '/team',

@@ -148,11 +148,11 @@ IslandMessage? parseIslandMessage(String raw) {
       return IslandSize(h.toDouble().clamp(0, IslandMessageLimits.maxExtent));
     case 'hit':
       final rects = json['rects'];
-      if (rects is! List || rects.length > IslandMessageLimits.maxRects) return null;
+      if (rects is! List<Object?> || rects.length > IslandMessageLimits.maxRects) return null;
       final out = <Rect>[];
       for (final r in rects) {
-        if (r is! List || r.length != 4 || r.any((v) => v is! num || !v.isFinite)) return null;
-        double c(Object v) =>
+        if (r is! List<Object?> || r.length != 4 || r.any((v) => v is! num || !v.isFinite)) return null;
+        double c(Object? v) =>
             (v as num).toDouble().clamp(-IslandMessageLimits.maxExtent, IslandMessageLimits.maxExtent);
         final w = c(r[2]);
         final h = c(r[3]);

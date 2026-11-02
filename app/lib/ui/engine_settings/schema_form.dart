@@ -216,6 +216,7 @@ class SchemaFieldView extends ConsumerWidget {
     final field = spec.ref;
     final copy = spec.copy;
     final kind = spec.fallbackNode != null ? FieldKind.readOnly : kindOf(node);
+    final core = structuralNode(node);
     final layer = settings.layerOf(field);
     final error = settings.errorOf(field);
     final enabled =
@@ -244,8 +245,41 @@ class SchemaFieldView extends ConsumerWidget {
       await controller.set(field, next, fallback: copy.fallback);
     }
 
-    if (spec.fallbackNode != null || kind == FieldKind.readOnly) {
+    if (spec.fallbackNode != null) {
       return SchemaUnsupportedField(title: title, ns: spec.ns);
+    }
+    if (kind == FieldKind.readOnly) {
+      // A shape the form has no control for is still JSON: let the person
+      // edit it directly rather than leaving the whole plugin to the web.
+      // Values holding a write-only secret never come here.
+      if (!enabled || containsSecret(node) || !rawJsonEditable(node)) {
+        return SchemaUnsupportedField(title: title, ns: spec.ns);
+      }
+      final shown = value ?? inherited;
+      return EngineFieldRow(
+        icon: spec.icon,
+        title: title,
+        subtitle: error ?? (layer == FieldLayer.locked ? lockedHint : l10n.engineFieldRawJsonHint),
+        subtitleColor: subtitleColor,
+        badge: badge,
+        value: compactJson(shown),
+        enabled: enabled,
+        onTap: () => unawaited(
+          showSequenceFieldSheet(
+            context,
+            title: title,
+            node: SchemaNode.fromJson(const {'type': 'any'}),
+            current: shown,
+            modified: modified,
+            onSubmit: (next) async {
+              if (jsonEquals(next, shown)) return true;
+              return controller.set(field, next, fallback: copy.fallback);
+            },
+            onReset: () => controller.reset(field),
+            namespace: spec.ns,
+          ),
+        ),
+      );
     }
 
     switch (kind) {
@@ -419,7 +453,7 @@ class SchemaFieldView extends ConsumerWidget {
 
       case FieldKind.list:
         final items = value is List ? value : const [];
-        final item = edited.inner!;
+        final item = core.inner!;
         return EngineFieldRow(
           icon: spec.icon,
           title: title,
@@ -460,7 +494,7 @@ class SchemaFieldView extends ConsumerWidget {
             showObjectListSheet(
               context,
               title: title,
-              item: edited.inner!,
+              item: structuralNode(core.inner!),
               read: (ref) => switch (source.watch(ref)?.valueOf(field)) {
                 final List<Object?> list => list,
                 _ => const [],
@@ -484,7 +518,28 @@ class SchemaFieldView extends ConsumerWidget {
             showDictSheet(
               context,
               title: title,
-              value: edited.inner!,
+              value: core.inner!,
+              read: (ref) => asJsonMap(source.watch(ref)?.valueOf(field)),
+              onChange: (next) => controller.set(field, next, fallback: copy.fallback),
+            ),
+          ),
+        );
+
+      case FieldKind.objectDict:
+        final entries = value is Map ? value : const {};
+        return EngineFieldRow(
+          icon: spec.icon,
+          title: title,
+          subtitle: subtitle,
+          subtitleColor: subtitleColor,
+          badge: badge,
+          value: entries.isEmpty ? l10n.engineFieldNone : l10n.commonItemCount(entries.length),
+          enabled: enabled,
+          onTap: () => unawaited(
+            showObjectDictSheet(
+              context,
+              title: title,
+              item: structuralNode(core.inner!),
               read: (ref) => asJsonMap(source.watch(ref)?.valueOf(field)),
               onChange: (next) => controller.set(field, next, fallback: copy.fallback),
             ),
@@ -644,7 +699,9 @@ List<SchemaFormSection> schemaSections(
     if (field.fallbackNode != null) return false;
     final node = schemaAt(view.schema, field.path);
     if (node == null) return false;
-    return !{FieldKind.hidden, FieldKind.group, FieldKind.readOnly}.contains(kindOf(node));
+    final kind = kindOf(node);
+    if (kind == FieldKind.hidden || kind == FieldKind.group) return false;
+    return kind != FieldKind.readOnly || rawJsonEditable(node);
   }
 
   void collapseUnsupported(int start, SchemaNode source, List<String> path, String? heading) {
@@ -723,8 +780,18 @@ class SchemaUnsupportedField extends ConsumerWidget {
 /// Whether a namespace has anything a form would show. A web fallback row
 /// alone is not a native form: such a namespace stays with the plugin's
 /// island or web page (#44), and fallback rows only fill gaps beside fields.
-bool hasFormFields(SettingsNamespaceView view) =>
-    schemaSections(view).any((s) => s.fields.any((f) => f.fallbackNode == null));
+bool hasFormFields(SettingsNamespaceView view) {
+  bool drawable(SchemaFieldSpec f) {
+    if (f.fallbackNode != null) return false;
+    final node = schemaAt(view.schema, f.path);
+    if (node == null) return false;
+    final kind = kindOf(node);
+    if (kind == FieldKind.hidden || kind == FieldKind.group) return false;
+    return kind != FieldKind.readOnly || rawJsonEditable(node);
+  }
+
+  return schemaSections(view).any((s) => s.fields.any(drawable));
+}
 
 /// [sections] as settings groups. With [settings], fields the engine does not
 /// serve (or would not show) are left out, and so are groups left empty.

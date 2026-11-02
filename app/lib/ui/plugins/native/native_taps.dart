@@ -195,7 +195,7 @@ Future<void> runNativeAction(
   final owner = targetComposer?.draftOwner;
   bool current() => ref.context.mounted && (targetComposer == null || identical(targetComposer.draftOwner, owner));
   if (action.effects.isNotEmpty) {
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     final plugin = ref.read(nativeContributionsProvider).plugin(action.package);
     if (plugin == null) return;
     final issues = <NativeIssue>[];
@@ -257,7 +257,7 @@ Future<bool> runNativeTap(
   if (!context.mounted || !ref.context.mounted) return false;
   final clock = ref.read(nativeClockProvider);
   final tappedAt = gestureAt ?? clock();
-  if (userGesture && nativeTapIsFresh(tappedAt, clock())) HapticFeedback.selectionClick();
+  if (userGesture && nativeTapIsFresh(tappedAt, clock())) unawaited(HapticFeedback.selectionClick());
   final l10n = context.l10n;
   final plugin = ref.read(nativeContributionsProvider).plugin(package);
   final client = ref.read(nativeBridgeProvider);
@@ -707,7 +707,7 @@ Future<void> _runEffect(
 
 /// Runs a ui.json control's [action] (`send`, `open`, `command`, `link`).
 Future<void> runUiAction(BuildContext context, WidgetRef ref, UiAction action) async {
-  HapticFeedback.selectionClick();
+  unawaited(HapticFeedback.selectionClick());
   final composer = NativeComposerScope.maybeOf(context);
   final sessionId = composer?.sessionId ?? ref.read(currentSessionProvider);
   switch (action) {

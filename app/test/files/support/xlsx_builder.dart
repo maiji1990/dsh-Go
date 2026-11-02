@@ -68,22 +68,22 @@ Uint8List buildXlsx(List<TestSheet> sheets, {bool date1904 = false, bool stored 
     switch (value) {
       case null:
         return '';
-      case String s:
+      case final String s:
         return '<c r="$ref" t="s"><v>${sharedIndex(s)}</v></c>';
-      case bool b:
+      case final bool b:
         return '<c r="$ref" t="b"><v>${b ? 1 : 0}</v></c>';
-      case DateTime d:
+      case final DateTime d:
         final epoch = date1904 ? DateTime.utc(1904) : DateTime.utc(1899, 12, 30);
         final serial = DateTime.utc(d.year, d.month, d.day, d.hour, d.minute).difference(epoch).inMinutes / 1440;
         final style = d.hour == 0 && d.minute == 0 ? 1 : 3;
         return '<c r="$ref" s="$style"><v>$serial</v></c>';
-      case Pct p:
+      case final Pct p:
         return '<c r="$ref" s="2"><v>${p.value}</v></c>';
-      case Inline i:
+      case final Inline i:
         return '<c r="$ref" t="inlineStr"><is><t>${_esc(i.text)}</t></is></c>';
-      case Formula f:
+      case final Formula f:
         return '<c r="$ref" t="str"><f>${_esc(f.formula)}</f><v>${_esc(f.result)}</v></c>';
-      case num n:
+      case final num n:
         return '<c r="$ref"><v>$n</v></c>';
     }
     return '';

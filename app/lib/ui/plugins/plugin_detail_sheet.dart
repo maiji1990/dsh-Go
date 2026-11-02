@@ -402,8 +402,7 @@ class BundleSheet extends ConsumerWidget {
     final market = shareable ? ref.watch(marketCatalogProvider.select((c) => c.value?.byName[bundle.name])) : null;
     // The official market's entry: a newer pinned version, or this one withdrawn.
     final listed = gone ? null : ref.watch(officialMarketProvider.select((c) => c.value?.byName[bundle.name]));
-    final update =
-        listed != null && marketInstallStatus(listed.plugin, [bundle]) == MarketInstallStatus.updateAvailable
+    final update = listed != null && marketInstallStatus(listed.plugin, [bundle]) == MarketInstallStatus.updateAvailable
         ? listed
         : null;
     final blocked = listed != null && marketBlockedInstall(listed, bundle);
@@ -416,8 +415,7 @@ class BundleSheet extends ConsumerWidget {
         SheetHeader(
           title ?? l10n.hubPluginDetails,
           actions: [
-            if (shareable)
-              _ShareKey(onPressed: () => unawaited(shareInstalledPlugin(context, bundle, card: market))),
+            if (shareable) _ShareKey(onPressed: () => unawaited(shareInstalledPlugin(context, bundle, card: market))),
           ],
         ),
         Expanded(
@@ -524,7 +522,9 @@ class BundleSheet extends ConsumerWidget {
                           title: configurable.length == 1
                               ? l10n.commonSettings
                               : pluginConfigEntryName(row.rowId, bundles, state: config, l10n: l10n),
-                          subtitle: pluginConfigReadOnlyNote(config, row.rowId, l10n: l10n),
+                          subtitle:
+                              pluginConfigReadOnlyNote(config, row.rowId, l10n: l10n) ??
+                              pluginConfigModeNote(config, row.rowId, l10n: l10n),
                           chevron: true,
                           onTap: () => unawaited(
                             openSettingsPage(
@@ -540,6 +540,7 @@ class BundleSheet extends ConsumerWidget {
                           title: configurable.length == 1
                               ? l10n.commonSettings
                               : row.meta?.title?.resolve() ?? row.rowId,
+                          subtitle: pluginConfigModeNote(config, row.rowId, l10n: l10n),
                           chevron: true,
                           onTap: () => unawaited(
                             openSettingsPage(
@@ -552,6 +553,26 @@ class BundleSheet extends ConsumerWidget {
                   ],
                 ),
               ],
+              // How each settings surface is shown: native form, the plugin's
+              // own web page, or read-only on this host. Useful when a plugin
+              // ships custom UI that the app has no adapter for.
+              if (!gone && configurable.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: ListPageCard(
+                    key: const ValueKey('plugin-adapter-modes'),
+                    title: l10n.pluginConfigAdapterTitle,
+                    margin: EdgeInsets.zero,
+                    children: [
+                      for (final row in configurable)
+                        ListPageRow(
+                          title: pluginConfigEntryName(row.rowId, bundles, state: config, l10n: l10n),
+                          subtitle: pluginConfigModeHint(config, row.rowId, l10n: l10n),
+                          value: pluginConfigModeNote(config, row.rowId, l10n: l10n),
+                        ),
+                    ],
+                  ),
+                ),
               // Loader evidence, then native UI switches and diagnostics.
               if (!gone) PluginLoadStatus(bundle: bundle),
               if (!gone) NativePluginSection(package: bundle.name),

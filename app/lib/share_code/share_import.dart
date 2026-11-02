@@ -147,10 +147,10 @@ class ImportPlan {
 String _short(Object? value) {
   final text = switch (value) {
     null => appL10n.commonNotSet,
-    String s => s.isEmpty ? appL10n.pluginsEmptyValue : s,
-    bool b => b ? appL10n.pluginsOnValue : appL10n.pluginsOffValue,
-    num n => '$n',
-    List<Object?> l => appL10n.commonItemCount(l.length),
+    final String s => s.isEmpty ? appL10n.pluginsEmptyValue : s,
+    final bool b => b ? appL10n.pluginsOnValue : appL10n.pluginsOffValue,
+    final num n => '$n',
+    final List<Object?> l => appL10n.commonItemCount(l.length),
     Map<Object?, Object?> _ => '…',
     _ => '$value',
   };
@@ -191,9 +191,9 @@ bool _hasSecret(SettingsNamespaceView? view, List<String> path, SchemaNode? node
 }
 
 bool _mentionsEndpoint(Object? value) => switch (value) {
-  Map<Object?, Object?> m =>
+  final Map<Object?, Object?> m =>
     m.keys.any((k) => k is String && _endpointKey.hasMatch(k)) || m.values.any(_mentionsEndpoint),
-  List<Object?> l => l.any(_mentionsEndpoint),
+  final List<Object?> l => l.any(_mentionsEndpoint),
   _ => false,
 };
 

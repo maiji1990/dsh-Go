@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -4963,6 +4962,9 @@ class L10nEn extends L10n {
   String get engineFieldEnterName => 'Enter a name';
 
   @override
+  String get engineFieldNameExists => 'An item with this name already exists';
+
+  @override
   String get engineFieldEnterNumber => 'Enter a number';
 
   @override
@@ -5894,6 +5896,12 @@ class L10nEn extends L10n {
 
   @override
   String get engineFieldEditOnWeb => 'Edit this item on the web';
+
+  @override
+  String get engineFieldRawJson => 'Raw JSON';
+
+  @override
+  String get engineFieldRawJsonHint => 'Advanced: edit this value as JSON';
 
   @override
   String get engineSettingsHostChanged => 'The host changed. Reopen these settings to edit.';
@@ -10754,6 +10762,27 @@ class L10nEn extends L10n {
 
   @override
   String get pluginConfigNameRalphTools => 'Ralph tools';
+
+  @override
+  String get pluginConfigModeNative => 'Native';
+
+  @override
+  String get pluginConfigModeWeb => 'Web';
+
+  @override
+  String get pluginConfigModeReadOnly => 'Read-only';
+
+  @override
+  String get pluginConfigAdapterTitle => 'How it is shown';
+
+  @override
+  String get pluginConfigAdapterNativeHint => 'Native form, editable in the app';
+
+  @override
+  String get pluginConfigAdapterWebHint => 'The plugin\'s own web UI, opened inside the app';
+
+  @override
+  String get pluginConfigAdapterReadOnlyHint => 'This host allows viewing only';
 
   @override
   String get plugInputRequired => 'Complete this field';

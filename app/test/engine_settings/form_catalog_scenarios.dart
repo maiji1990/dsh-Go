@@ -67,7 +67,8 @@ const formCatalogScenes = [
   FormCatalogScene('official-speech-to-text-0.2.1-rc.2', 'plugin', plugin: true),
 ];
 
-Object catalogFixture(String name) => jsonDecode(File('test/engine_settings/fixtures/$name.json').readAsStringSync());
+Object catalogFixture(String name) =>
+    jsonDecode(File('test/engine_settings/fixtures/$name.json').readAsStringSync()) as Object;
 
 Future<void> pumpCatalogScene(
   WidgetTester tester,

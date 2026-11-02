@@ -177,7 +177,7 @@ final subagentParentProvider = Provider.autoDispose.family<SubagentParent?, Stri
   if (self == null || !self.isSubagent || parentId == null) return null;
   final parent = sessions[parentId];
   SubagentCatalogEntry? entry;
-  for (final e in parent?.projections.subagentCatalog ?? const []) {
+  for (final e in parent?.projections.subagentCatalog ?? const <SubagentCatalogEntry>[]) {
     if (e.id == sessionId) entry = e;
   }
   final identity = self.projections.subagentIdentity;
@@ -477,10 +477,7 @@ final teamMessagesProvider = FutureProvider.autoDispose.family<TeamMessagesSnaps
       }(),
   ]);
   out.sort((a, b) => b.time.compareTo(a.time));
-  return TeamMessagesSnapshot(
-    messages: List.unmodifiable(out),
-    unreadableMembers: Set.unmodifiable(unreadable),
-  );
+  return TeamMessagesSnapshot(messages: List.unmodifiable(out), unreadableMembers: Set.unmodifiable(unreadable));
 });
 
 // -----------------------------------------------------------------------------

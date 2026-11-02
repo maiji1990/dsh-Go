@@ -21,8 +21,10 @@ import 'setup_progress.dart';
 
 enum _SetupView { choose, waiting, installing, done, failed }
 
-/// Unpacks the bundled Linux runtime (about 150 MB of xz into about 750 MB;
-/// the exact figures are in its manifest, see `local_footprint.dart`).
+/// Prepares the Linux runtime: downloads it on first run when this is a normal
+/// build, or unpacks the bundled archive for the offline flavors (about 150 MB
+/// of xz into about 750 MB; the exact figures are in its manifest, see
+/// `local_footprint.dart`).
 ///
 /// The screen is meant to be calm: one slowly filling halo, a percentage, one
 /// short line about what is happening, and a rough time estimate. Logs are one

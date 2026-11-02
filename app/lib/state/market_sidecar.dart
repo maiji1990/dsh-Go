@@ -153,7 +153,7 @@ DshGoListing? _listing(String name, Object? value) {
   final rawFlags = risk['flags'];
   if (rawFlags is! List || rawFlags.any((flag) => flag is! String || flag.isEmpty)) return null;
   final flags = _strings(rawFlags);
-  final dshGo = value['dshGo'] is Map ? value['dshGo'] as Map : const {};
+  final Map<String, Object?> dshGo = value['dshGo'] is Map ? (value['dshGo'] as Map).cast<String, Object?>() : const {};
   final minAppText = dshGo['minApp'];
   final minApp = minAppText is String ? AppVersion.tryParse(minAppText) : null;
   // An unreadable minimum would let any app install it.

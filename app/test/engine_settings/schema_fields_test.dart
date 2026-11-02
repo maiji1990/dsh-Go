@@ -133,6 +133,96 @@ void main() {
     expect(hintFor(long, const FieldCopy()), '这是一段相当长的说明文字，超过了标题能放下的长度。');
   });
 
+  test('nullable arrays and object dicts get native controls', () {
+    final accounts = SchemaNode.fromJson({
+      'type': 'union',
+      'list': [
+        {'type': 'const', 'value': null},
+        {
+          'type': 'array',
+          'inner': {
+            'type': 'object',
+            'dict': {
+              'name': {'type': 'string'},
+            },
+          },
+        },
+      ],
+    });
+    expect(kindOf(accounts), FieldKind.objectList);
+    expect(structuralNode(accounts).type, 'array');
+
+    final limits = SchemaNode.fromJson({
+      'type': 'dict',
+      'inner': {
+        'type': 'union',
+        'list': [
+          {'type': 'const', 'value': null},
+          {
+            'type': 'object',
+            'dict': {
+              'contextWindow': {'type': 'number'},
+            },
+          },
+        ],
+      },
+    });
+    expect(kindOf(limits), FieldKind.objectDict);
+    expect(rawJsonEditable(limits), isTrue);
+  });
+
+  test('raw JSON covers plain JSON shapes, not callables or mixed unions', () {
+    expect(rawJsonEditable(SchemaNode.fromJson({'type': 'object', 'dict': {}})), isTrue);
+    expect(
+      rawJsonEditable(
+        SchemaNode.fromJson({
+          'type': 'array',
+          'inner': {'type': 'string'},
+        }),
+      ),
+      isTrue,
+    );
+    expect(rawJsonEditable(SchemaNode.fromJson({'type': 'function'})), isFalse);
+    expect(
+      rawJsonEditable(
+        SchemaNode.fromJson({
+          'type': 'union',
+          'list': [
+            {'type': 'object', 'dict': {}},
+            {'type': 'object', 'dict': {}},
+          ],
+        }),
+      ),
+      isTrue,
+    );
+    expect(
+      rawJsonEditable(
+        SchemaNode.fromJson({
+          'type': 'union',
+          'list': [
+            {'type': 'number'},
+            {'type': 'const', 'value': null},
+          ],
+        }),
+      ),
+      isFalse,
+    );
+  });
+
+  test('a nullable secret stays a secret, not a text field', () {
+    final secret = SchemaNode.fromJson({
+      'type': 'union',
+      'list': [
+        {'type': 'const', 'value': null},
+        {
+          'type': 'string',
+          'meta': {'role': 'secret'},
+        },
+      ],
+    });
+    expect(kindOf(secret), FieldKind.secret);
+  });
+
   test('choices: page copy decides what is offered; aliases read as their choice', () {
     const copy = FieldCopy(
       choices: {'compact': '简洁', 'standard': '标准', 'detailed': '详细', 'verbose': '完全展开'},

@@ -274,6 +274,8 @@
     <string name="service_stop_phone">Stop actions</string>
     <string name="service_stop">Stop</string>
     <string name="service_package_checksum_failed">Runtime verification failed (SHA-256 mismatch). Reinstall the app</string>
+    <string name="service_runtime_no_source">This build has no bundled runtime and no download address. Install the offline build.</string>
+    <string name="service_runtime_download_failed">Couldn\'t download the runtime. Check the connection and try again; the retry resumes.</string>
     <string name="service_storage_insufficient">Not enough storage: about %1$s MB needed, %2$s MB available</string>
     <!-- share -->
     <string name="share_file">File</string>

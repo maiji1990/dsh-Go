@@ -9,6 +9,7 @@
 // (`adb shell run-as … sh -c 'cat > files/seams_e2e.json'`):
 //   {"url": "http://127.0.0.1:38095", "token": "…"}
 // Without it the app runs as usual.
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -69,7 +70,7 @@ Future<RuntimeStatus?> _readStatus() async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
   final status = await _readStatus();
   runApp(
     ProviderScope(

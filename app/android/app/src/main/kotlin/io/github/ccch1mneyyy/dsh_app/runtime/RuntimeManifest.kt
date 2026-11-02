@@ -4,8 +4,10 @@ import android.content.Context
 import org.json.JSONObject
 
 /**
- * Describes the Linux runtime bundled in this APK flavor
+ * Describes the Linux runtime for this APK flavor
  * (assets/runtime/manifest.json, written by runtime/build-runtime.sh).
+ * Normal flavors bundle only the manifest; `rootfsUrl` is where they fetch
+ * the archive. Offline flavors also bundle the archive and ignore it.
  */
 data class RuntimeManifest(
     val runtimeVersion: String,
@@ -13,6 +15,8 @@ data class RuntimeManifest(
     val rootfsAsset: String,
     val rootfsBytes: Long,
     val rootfsSha256: String?,
+    /** Where to download the archive when this APK does not bundle it (normal flavors). */
+    val rootfsUrl: String?,
     val uncompressedBytes: Long,
     val dshVersion: String,
     val nodeVersion: String,
@@ -26,7 +30,10 @@ data class RuntimeManifest(
 
         fun load(context: Context): RuntimeManifest {
             val text = context.assets.open("$ASSET_DIR/manifest.json").bufferedReader().use { it.readText() }
-            val json = JSONObject(text)
+            return parse(JSONObject(text))
+        }
+
+        fun parse(json: JSONObject): RuntimeManifest {
             val launch = json.optJSONObject("launch") ?: JSONObject()
             val argvJson = launch.optJSONArray("argv")
             val argv = if (argvJson != null) List(argvJson.length()) { argvJson.getString(it) } else emptyList()
@@ -38,6 +45,7 @@ data class RuntimeManifest(
                 rootfsAsset = json.getString("rootfs"),
                 rootfsBytes = json.optLong("rootfsBytes", -1L),
                 rootfsSha256 = json.optString("rootfsSha256").ifEmpty { null },
+                rootfsUrl = json.optString("rootfsUrl").ifEmpty { null },
                 uncompressedBytes = json.optLong("uncompressedBytes", -1L),
                 dshVersion = json.optString("dshVersion"),
                 nodeVersion = json.optString("nodeVersion"),

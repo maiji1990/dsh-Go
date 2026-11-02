@@ -108,7 +108,7 @@ class DrawerView {
   const DrawerView({this.loaded = false, this.folders = const [], this.sort = DrawerSort.activity});
 
   factory DrawerView.fromJson(Object? json) {
-    final map = json is Map ? json : const {};
+    final Map<String, Object?> map = json is Map ? json.cast<String, Object?>() : const {};
     final folders = map['folders'];
     final seen = <String>{};
     return DrawerView(

@@ -32,7 +32,8 @@ Offset chevronInk(WidgetTester tester, Finder row) {
   return icon.localToGlobal(Offset((DisclosureChevron.inkCentre.x + 1) / 2 * size.width, size.height / 2));
 }
 
-Object earsSchema() => jsonDecode(File('test/engine_settings/fixtures/dsh-ears-0.4.3.json').readAsStringSync());
+Object earsSchema() =>
+    jsonDecode(File('test/engine_settings/fixtures/dsh-ears-0.4.3.json').readAsStringSync()) as Object;
 FakeSettingsHost earsHost() => FakeSettingsHost(
   describe: {
     'namespaces': [

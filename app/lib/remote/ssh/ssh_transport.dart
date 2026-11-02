@@ -148,7 +148,7 @@ class DartSshTransport implements SshTransport {
     try {
       await client.authenticated;
     } catch (e) {
-      client.close();
+      unawaited(client.close());
       if (keyVerdict != null) throw keyVerdict!;
       throw describeSshError(e, params);
     }

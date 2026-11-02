@@ -282,7 +282,7 @@ class _ShareImageCellState extends ConsumerState<_ShareImageCell> {
         if (sessionId == null) return _fail();
         _subscription = ref.listenManual(sessionImageProvider((sessionId, attachmentId)), (_, next) {
           switch (next) {
-            case AsyncData(:final value):
+            case AsyncData<Uint8List>(:final value):
               _decode(MemoryImage(value));
             case AsyncError():
               _fail();

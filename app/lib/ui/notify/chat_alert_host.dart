@@ -149,7 +149,7 @@ class _AlertBannerLayerState extends ConsumerState<AlertBannerLayer> {
 
   Future<void> _open(ChatAlert alert) async {
     if (!await DiscardGuard.confirmLeave(context) || !mounted) return;
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     final alerts = ref.read(chatAlertsProvider.notifier);
     alerts.dismissBanner(alert);
     Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);

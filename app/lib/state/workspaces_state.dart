@@ -233,7 +233,7 @@ class WorkspacePrefs {
   });
 
   factory WorkspacePrefs.fromJson(Object? json) {
-    final map = json is Map ? json : const {};
+    final Map<String, Object?> map = json is Map ? json.cast<String, Object?>() : const {};
     final groups = map['groups'];
     return WorkspacePrefs(
       loaded: true,

@@ -1,0 +1,72 @@
+top-level	files	bytes
+/opt	19917	585764507
+/usr	4621	196309007
+/var	574	3606469
+/etc	119	307723
+/root	2	3267
+
+package	bytes
+@deepseek-ai/libreoffice-kit-wasm	152357942
+sherpa-onnx-linux-arm64	40306856
+@deepseek-ai/dsh-experimental-inspector	23466176
+@img/sharp-libvips-linux-arm64	18336518
+@deepseek-ai/dsh-client-ui-sidebar-documentpreview	14727865
+openai	8962090
+@mixmark-io/domino	7736522
+@google/genai	6027058
+@deepseek-ai/dsh-web-frontend	5363485
+@anthropic-ai/sdk	4818863
+@vscode/ripgrep-linux-arm64	4772942
+zod	3901684
+@opentelemetry/semantic-conventions	3761761
+@deepseek-ai/dsh-client-ui-settings-account	3471812
+web-streams-polyfill	2738451
+fontkit	2720114
+@modelcontextprotocol/client	2340878
+@earendil-works/pi-ai	2024475
+@agentclientprotocol/sdk	2006136
+undici	1802425
+koffi	1771867
+brotli	1503586
+@smithy/core	1347887
+@deepseek-ai/dsh-api-session-controller	1253579
+protobufjs	1253415
+@koromix/koffi-linux-arm64	1205199
+@deepseek-ai/dsh-api-remotes	1132002
+@js-temporal/polyfill	990819
+typebox	888269
+@deepseek-ai/dsh-client-ui-conversation	857402
+@deepseek-ai/libreoffice-kit	819588
+@deepseek-ai/dsh-session-persistence-jsonl	754765
+pako	741440
+@deepseek-ai/dsh-client-ui-sidebar-terminal	726248
+@deepseek-ai/dsh-client-ui-plugin-manager	703113
+@deepseek-ai/dsh-tool-cordis	696014
+sharp	688411
+ajv	676613
+@deepseek-ai/dsh-client-ui-chat	661701
+yaml	591691
+
+file	bytes
+opt/dsh/node_modules/@deepseek-ai/libreoffice-kit-wasm/assets/soffice.wasm	127844128
+opt/node/bin/node	123377224
+opt/dsh/node_modules/sherpa-onnx-linux-arm64/libonnxruntime.so	34606912
+opt/python/bin/python3.12	23235696
+opt/python/lib/libpython3.12.so.1.0	23203320
+opt/dsh/node_modules/@deepseek-ai/libreoffice-kit-wasm/assets/soffice.data	23024619
+opt/dsh/node_modules/@img/sharp-libvips-linux-arm64/lib/libvips-cpp.so.8.18.7	18324712
+usr/local/lib/node_modules/pnpm/dist/pnpm.mjs	15896609
+opt/dsh/node_modules/@deepseek-ai/dsh-experimental-inspector/lib/devtools/entrypoints/lighthouse_worker/lighthouse_worker.js	9204549
+opt/dsh/node_modules/@deepseek-ai/dsh-client-ui-sidebar-documentpreview/lib/client.pdf.js	7108803
+opt/dsh/node_modules/@deepseek-ai/dsh-client-ui-sidebar-documentpreview/lib/client.excel.js	7060462
+opt/dsh/node_modules/@vscode/ripgrep-linux-arm64/bin/rg	4771240
+usr/lib/aarch64-linux-gnu/libcrypto.so.3	4663464
+opt/dsh/node_modules/sherpa-onnx-linux-arm64/libsherpa-onnx-c-api.so	4613032
+usr/lib/aarch64-linux-gnu/perl/5.38.2/CORE/charclass_invlists.h	4529264
+usr/lib/git-core/git	4003072
+usr/bin/git	4003072
+usr/bin/perl5.38.2	3942240
+usr/bin/perl	3942240
+usr/lib/aarch64-linux-gnu/libperl.so.5.38.2	3747616
+opt/dsh/node_modules/@deepseek-ai/dsh-client-ui-settings-account/lib/client.js	3417829
+opt/python/lib/libtcl9tk9.0.so	3157032

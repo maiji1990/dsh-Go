@@ -205,7 +205,7 @@ class _ThisChatCardState extends ConsumerState<_ThisChatCard> {
 
   Future<void> _togglePlan(bool next) async {
     if (_busy) return;
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     setState(() {
       _busy = true;
       _plan = next;

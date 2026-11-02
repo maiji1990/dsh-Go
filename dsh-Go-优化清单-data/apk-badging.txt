@@ -1,0 +1,13 @@
+APK: dsh 1.0.8 normal (versionCode 11020700), arm64, 34,062,810 B, built 2026-11-02
+package: name='io.github.ccch1mneyyy.dsh_app' versionCode='11020700' versionName='1.0.8' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'
+sdkVersion:'26'
+targetSdkVersion:'28'
+native-code: 'arm64-v8a' 'fonts'
+runtime: manifest only; first run downloads rootfs-arm64-v8a.tar.xz (158,255,652 B) from manifest.rootfsUrl
+
+Offline APK (versionCode 11020700), 192,319,042 B:
+native-code: 'arm64-v8a' 'fonts'
+runtime: includes assets/runtime/rootfs-arm64-v8a.tar.xz
+
+x64 APK (versionCode 11012051):
+native-code: 'fonts' 'x86_64'

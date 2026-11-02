@@ -97,10 +97,10 @@ SanitizedSection? sanitizeNamespace(SettingsNamespaceView view) {
     final isRef = node?.isCredentialRef ?? false;
     if (key != null && !isRef && isSecretFieldName(key)) return _drop;
     switch (value) {
-      case String s:
+      case final String s:
         if (isRef) return _absolutePath.hasMatch(s.trim()) ? _drop : s;
         return isUnshareableString(s) ? _drop : s;
-      case Map<Object?, Object?> m:
+      case final Map<Object?, Object?> m:
         final out = <String, Object?>{};
         var removed = 0;
         for (final MapEntry(key: k, value: v) in m.entries) {
@@ -116,7 +116,7 @@ SanitizedSection? sanitizeNamespace(SettingsNamespaceView view) {
         }
         // A map emptied by removals says nothing useful.
         return out.isEmpty && removed > 0 ? _drop : out;
-      case List<Object?> l:
+      case final List<Object?> l:
         final out = <Object?>[];
         for (var i = 0; i < l.length; i++) {
           final cleaned = clean(l[i], node?.inner, [...path, '$i'], null);

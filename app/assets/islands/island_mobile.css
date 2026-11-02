@@ -1,0 +1,55 @@
+/* Phone-width adaptation for whatever a plugin renders inside an island
+ * (docs/design/plugin-auto-adapt.md). Scoped to the island frame: the official
+ * DSH shell and every other slot keep their own layout.
+ *
+ * A plugin page is arbitrary React; no stylesheet can turn a desktop grid into
+ * a designed phone layout. What this does is make the page fit and stay
+ * scrollable on a phone: media never exceeds the frame, long words wrap,
+ * form controls do not trigger text zoom, and a subtree wider than the frame
+ * (marked by island.js) scrolls inside itself instead of being clipped.
+ */
+
+html[data-dsh-go-island] [data-dsh-go-island~="frame"] {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-wrap: break-word;
+}
+
+/* Fixed-width page containers, cards and text blocks stop at the frame. */
+html[data-dsh-go-island] [data-dsh-go-island~="frame"] :where(
+    div, section, article, main, aside, header, footer, form, fieldset,
+    ul, ol, dl, p, h1, h2, h3, h4, h5, h6, blockquote, pre, table) {
+  max-width: 100% !important;
+  min-width: 0;
+}
+
+html[data-dsh-go-island] [data-dsh-go-island~="frame"] :where(img, video, canvas, svg, iframe) {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+html[data-dsh-go-island] [data-dsh-go-island~="frame"] :where(p, li, dd, dt, td, th, label, a) {
+  overflow-wrap: anywhere;
+}
+
+html[data-dsh-go-island] [data-dsh-go-island~="frame"] :where(pre, code) {
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* A desktop number/settings field keeps its control inside the frame; 16px
+ * is the size Android WebView will not enlarge on focus. */
+html[data-dsh-go-island] [data-dsh-go-island~="frame"] :where(input, select, textarea) {
+  max-width: 100% !important;
+  font-size: max(16px, 1em);
+}
+
+/* island.js marks a subtree whose content is wider than the frame. It gets
+ * its own horizontal scroller rather than being cut off by the frame. */
+html[data-dsh-go-island] [data-dsh-go-island~="frame"] [data-dsh-go-mobile-wide] {
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}

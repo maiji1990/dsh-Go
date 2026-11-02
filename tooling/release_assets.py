@@ -37,7 +37,7 @@ from build_number import MAX_VERSION_CODE, decode
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FLAVORS = ("arm64", "x64")
-REPO = "ccch1mneyyy/dsh-go"
+REPO = "maiji1990/dsh-Go"
 VERSION_RE = re.compile(r"^(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?:\+(\d+))?$")
 BADGING_RE = re.compile(r"^package: .*?\bversionCode='(\d*)' versionName='([^']*)'", re.MULTILINE)
 CACHE = pathlib.Path.home() / ".cache" / "dshgo-release" / "apk"

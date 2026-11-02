@@ -13,7 +13,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n.dart';
-import '../../../plugins/seams/seams.dart' show Slots, seatInventoryProvider;
+import '../../../plugins/seams/seams.dart'
+    show
+        PluginSeat,
+        SeatInventory,
+        SeatMode,
+        SeatPlacement,
+        SeatRequest,
+        Slots,
+        seatInventoryProvider,
+        seatPlanProvider;
 import '../../../state/engine_settings_state.dart';
 import '../../../state/plugin_config/plugin_config_state.dart';
 import '../../../state/plugins_state.dart';
@@ -85,6 +94,30 @@ DshWebTarget pluginConfigWebTarget(String ns, {required String title, List<Plugi
   final bundle = pluginConfigBundleOf(bundles, ns);
   if (bundle == null) return DshWebTarget(pluginItem: [title, ns]);
   return DshWebTarget(pluginItem: [...?bundle.meta?.title?.all, bundle.name]);
+}
+
+/// The seat a plugin's own settings page would open as an island: its
+/// `settings.section` occupant on [inventory], when the plugin declares its
+/// own page and this connection can reach DSH Web. Null when the form is
+/// generated (native), the package is unknown, or no seat is reported.
+SeatRequest? pluginConfigOwnPageRequest(
+  PluginConfigForm form,
+  String ns,
+  List<PluginBundle>? bundles,
+  SeatInventory? inventory,
+) {
+  if (!form.prefersOwnPage) return null;
+  final owner = pluginConfigBundleOf(bundles, ns);
+  if (owner == null) return null;
+  if (inventory == null || !inventory.webReachable) return null;
+  final occupants = inventory.occupantsFor(Slots.settingsSection, package: owner.name);
+  if (occupants.isEmpty) return null;
+  return SeatRequest(
+    slot: Slots.settingsSection,
+    placement: SeatPlacement.page,
+    package: owner.name,
+    cell: occupants.first.cell,
+  );
 }
 
 /// Which choice rows of [layout] draw as capsules now (an unset optional
@@ -306,6 +339,34 @@ class _PluginConfigPageState extends ConsumerState<PluginConfigPage> {
     return ok ?? false;
   }
 
+  /// A plugin that ships its own settings page (`autoGenerate: false`) gets
+  /// that page natively in a web island instead of a half-drawn form: the same
+  /// ladder every other plugin surface uses (native → island → web link).
+  /// Without an island (relay, no occupancy, no budget) the form still draws.
+  SeatRequest? _ownPageRequest(PluginConfigForm form, List<PluginBundle>? bundles) {
+    final request = pluginConfigOwnPageRequest(form, ns, bundles, ref.watch(seatInventoryProvider));
+    if (request == null) return null;
+    if (!ref.watch(seatPlanProvider(request)).visible.any((item) => item.mode == SeatMode.island)) return null;
+    return request;
+  }
+
+  Widget _ownPagePage(String title, SeatRequest request) => AppPage(
+    title: title,
+    showLargeTitle: false,
+    padBottom: false,
+    slivers: [
+      SliverFillRemaining(
+        hasScrollBody: true,
+        child: PluginSeat(
+          slot: request.slot,
+          placement: request.placement,
+          package: request.package,
+          cell: request.cell,
+        ),
+      ),
+    ],
+  );
+
   Future<void> _resetAll() async {
     final l10n = context.l10n;
     final colors = DshColors.of(context);
@@ -442,6 +503,13 @@ class _PluginConfigPageState extends ConsumerState<PluginConfigPage> {
       }
       _formShown = true;
     }
+
+    // A plugin with a page of its own: show that page in an island when the
+    // Host and the bridge make one possible. This is the same presentation
+    // ladder the plugin seats use, so a newly installed plugin never depends
+    // on a dsh-go-specific adapter. Held edits stay on the form.
+    final ownPage = state.draftOf(ns).isEmpty ? _ownPageRequest(form, bundles) : null;
+    if (ownPage != null) return _ownPagePage(title, ownPage);
 
     final settings = state.settingsFor(ns);
     final copy = namespaceCopy[ns] ?? const <String, FieldCopy>{};

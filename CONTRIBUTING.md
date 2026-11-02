@@ -50,6 +50,8 @@
 (cd app && flutter pub get && flutter analyze && flutter test)
 ```
 
+视觉改动导致 golden 失败时，先按 [golden 基准图更新](docs/testing/goldens.md) 判断是代码回归还是基准图过期，再只更新失败的那几张；被 `W3_GOLDENS` 门禁跳过的用例不算通过。
+
 **Dart 通信包：**
 
 ```bash

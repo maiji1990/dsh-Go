@@ -66,7 +66,7 @@ void main() {
   tearDown(() async {
     container.dispose();
     await client.events.close();
-    client.close();
+    unawaited(client.close());
   });
 
   test('the durable command is shown once while execute is still waiting', () async {

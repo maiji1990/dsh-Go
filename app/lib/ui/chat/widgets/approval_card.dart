@@ -2,6 +2,8 @@
 // Layout after DSH Web's ApprovalPanel (warning hairline, warning strip, title,
 // monospace command, right-aligned buttons).
 
+import 'dart:async';
+
 import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -56,7 +58,7 @@ class _ApprovalCardState extends State<ApprovalCard> {
 
   Future<void> _respond(ApprovalDecision decision) async {
     if (_busy != null) return;
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     setState(() => _busy = decision);
     await widget.onRespond(widget.request, decision);
     // 成功时卡片会随 HostRequestCancelled 消失;失败时恢复可点。
@@ -66,7 +68,7 @@ class _ApprovalCardState extends State<ApprovalCard> {
   Future<void> _allowAll() async {
     final allowAll = widget.onAllowAll;
     if (_busy != null || allowAll == null) return;
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     // The whole conversation stops asking: said once, then trusted.
     if (!await confirmRisk(context, RiskNotices.allowForChat) || !mounted) return;
     setState(() => _busy = ApprovalDecision.allowOnce);

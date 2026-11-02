@@ -104,9 +104,9 @@ void main() {
       expect(section.title, 'Fallback');
       expect(section.fields.map((f) => f.path.join('.')), ['fallback.provider', 'fallback.model']);
       expect(schemaPathDisabled(view.schema, ['fallback', 'provider']), isFalse);
-      // A dict of objects stays a row to set on the web.
+      // A dict of objects opens a keyed form (dsh-go's objectDict control).
       expect(_at(view, 'profiles').fallbackNode, isNull);
-      expect(kindOf(_node(view, 'profiles')), FieldKind.readOnly);
+      expect(kindOf(_node(view, 'profiles')), FieldKind.objectDict);
     });
 
     test('dsh-mobile 0.7.0: an optional list is a list', () {

@@ -186,11 +186,11 @@ class RuntimeController private constructor(private val app: Context) : DshProce
         setPhase(Phase.INSTALLING)
         worker.execute {
             try {
-                log("[dsh-app] unpacking runtime ${manifest.runtimeVersion} (${manifest.abi})", "system")
+                log("[dsh-app] installing runtime ${manifest.runtimeVersion} (${manifest.abi})", "system")
                 val started = System.currentTimeMillis()
                 if (dropKept) log("[dsh-app] installing without what could not be kept", "system")
-                installer.install(dropKept) { done, total ->
-                    emit(mapOf("type" to "progress", "step" to "extract", "done" to done, "total" to total))
+                installer.install(dropKept) { step, done, total ->
+                    emit(mapOf("type" to "progress", "step" to step, "done" to done, "total" to total))
                 }
                 log("[dsh-app] runtime ready in ${(System.currentTimeMillis() - started) / 1000}s", "system")
                 error = null

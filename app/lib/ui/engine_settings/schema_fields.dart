@@ -44,6 +44,9 @@ enum FieldKind {
   /// dict of strings / numbers / booleans → key-value sheet.
   dict,
 
+  /// dict of objects → key-value sheet whose values open a small form.
+  objectDict,
+
   /// object → its own group of fields.
   group,
 
@@ -56,11 +59,47 @@ enum FieldKind {
 }
 
 bool _primitive(SchemaNode node) {
-  final n = node.effective;
+  final n = structuralNode(node);
   return n.type == 'string' || n.type == 'number' || n.enumValues != null;
 }
 
-bool _containsSecret(SchemaNode source, [Set<SchemaNode>? ancestors]) {
+/// The node a control reads, with a nullable single-member union peeled off
+/// (`union([const(null), X])`): schemastery writes an optional object/array as
+/// such a union, and the form should draw `X` instead of a read-only value.
+SchemaNode structuralNode(SchemaNode source) {
+  var node = source.effective;
+  for (var i = 0; i < 8; i++) {
+    if (node.type != 'union' || !node.nullable) break;
+    final members = node.members;
+    if (members.length != 1) break;
+    node = members.single.effective;
+  }
+  return node;
+}
+
+/// Whether a value of [node] can be written from a raw JSON editor: the
+/// shapes that have no control of their own but are plain JSON (objects,
+/// arrays, dicts). Functions, instances and `never` stay read-only.
+bool rawJsonEditable(SchemaNode node, [int depth = 0]) {
+  final n = structuralNode(node);
+  if (n.type == 'object' ||
+      n.type == 'intersect' ||
+      n.type == 'array' ||
+      n.type == 'dict' ||
+      n.type == 'any' ||
+      n.type == 'unknown') {
+    return true;
+  }
+  if (n.type == 'union' && depth < 8) {
+    final members = n.members;
+    return members.isNotEmpty && members.every((member) => rawJsonEditable(member, depth + 1));
+  }
+  return false;
+}
+
+/// Whether [source] holds a write-only secret anywhere below it. Such a node
+/// never gets a raw editor: the value must not be rendered.
+bool containsSecret(SchemaNode source, [Set<SchemaNode>? ancestors]) {
   final node = source.effective;
   final seen = ancestors ?? <SchemaNode>{};
   if (seen.contains(node) || seen.length >= 32) return true;
@@ -70,7 +109,7 @@ bool _containsSecret(SchemaNode source, [Set<SchemaNode>? ancestors]) {
     ...node.dict.values,
     ...node.list,
     if (node.inner != null) node.inner!,
-  ].any((child) => _containsSecret(child, next));
+  ].any((child) => containsSecret(child, next));
 }
 
 /// The node a field's control edits: what wrappers resolve to, the string
@@ -82,8 +121,9 @@ SchemaNode valueNodeOf(SchemaNode source) => textInputNodeOf(schemaValueOf(sourc
 FieldKind kindOf(SchemaNode node) {
   final effective = node.effective;
   if (effective.meta.hidden || node.meta.hidden || effective.isCredentialRef) return FieldKind.hidden;
-  if (effective.isSecret || node.isSecret) return FieldKind.secret;
   final n = valueNodeOf(node);
+  if (n.meta.hidden || n.isCredentialRef) return FieldKind.hidden;
+  if (effective.isSecret || node.isSecret || n.isSecret) return FieldKind.secret;
   switch (n.type) {
     case 'boolean':
       return FieldKind.toggle;
@@ -98,7 +138,7 @@ FieldKind kindOf(SchemaNode node) {
     case 'any':
       return FieldKind.jsonValue;
     case 'tuple':
-      return _containsSecret(n) ? FieldKind.readOnly : FieldKind.sequence;
+      return containsSecret(n) ? FieldKind.readOnly : FieldKind.sequence;
     case 'union':
       final values = n.enumValues;
       if (values != null) return values.length > 1 ? FieldKind.choice : FieldKind.hidden;
@@ -112,19 +152,22 @@ FieldKind kindOf(SchemaNode node) {
     case 'intersect':
       return n.fields == null ? FieldKind.readOnly : FieldKind.group;
     case 'array':
-      final inner = n.inner;
+      final rawInner = n.inner;
       // Item editors show and write values in the clear; the Host never
       // returns a secret and refuses writes over one.
-      if (inner == null || _containsSecret(inner)) return FieldKind.readOnly;
-      if (inner.effective.type == 'boolean') return FieldKind.sequence;
+      if (rawInner == null || containsSecret(rawInner)) return FieldKind.readOnly;
+      final inner = structuralNode(rawInner);
+      if (inner.type == 'boolean') return FieldKind.sequence;
       if (_primitive(inner)) return FieldKind.list;
       // `array(object({}))` declares nothing to fill in: its items are opaque.
       if (inner.fields?.isNotEmpty ?? false) return FieldKind.objectList;
       return FieldKind.readOnly;
     case 'dict':
-      final inner = n.inner?.effective;
-      if (inner == null || _containsSecret(n.inner!)) return FieldKind.readOnly;
+      final rawInner = n.inner;
+      if (rawInner == null || containsSecret(rawInner)) return FieldKind.readOnly;
+      final inner = structuralNode(rawInner);
       if (inner.type == 'boolean' || _primitive(inner)) return FieldKind.dict;
+      if (inner.fields != null) return FieldKind.objectDict;
       return FieldKind.readOnly;
   }
   return FieldKind.readOnly;
@@ -433,7 +476,7 @@ class FieldCopy {
 /// preserving string transform. Edit the declared string input, never run
 /// the serialized JavaScript callback in the app.
 SchemaNode textInputNodeOf(SchemaNode source) {
-  final node = source.effective;
+  final node = structuralNode(source);
   if (node.type != 'union' || node.list.length != 2) return node;
   final inputs = node.members;
   if (inputs.where((member) => member.type == 'is').length != 1) return node;

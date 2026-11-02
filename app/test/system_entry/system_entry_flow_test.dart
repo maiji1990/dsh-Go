@@ -3,6 +3,7 @@
 // The native sides are faked the way SharePlugin.kt / ShortcutsPlugin.kt
 // behave: arrivals held until Dart says `ready`, then pushed as calls.
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -33,11 +34,13 @@ class _Native {
           _ready = true;
           final held = List.of(_held);
           _held.clear();
-          Future<void>.microtask(() async {
-            for (final args in held) {
-              await _send(args);
-            }
-          });
+          unawaited(
+            Future<void>.microtask(() async {
+              for (final args in held) {
+                await _send(args);
+              }
+            }),
+          );
           return true;
         case 'setRecent':
           recents.add(call.arguments);

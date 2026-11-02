@@ -313,7 +313,7 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
     if (!_current(operation) || _engine != VoiceEngine.system || _switching || _phase != VoicePhase.starting) return;
-    HapticFeedback.lightImpact();
+    unawaited(HapticFeedback.lightImpact());
     _setPhase(VoicePhase.listening);
   }
 
@@ -352,7 +352,7 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
       await cancel();
       return;
     }
-    HapticFeedback.lightImpact();
+    unawaited(HapticFeedback.lightImpact());
     _setPhase(VoicePhase.listening);
     if (fallback) _say(VoiceMessage(appL10n.voiceFallbackStarted));
   }
@@ -390,7 +390,7 @@ class VoiceInputController extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> stop() async {
     if (_phase != VoicePhase.listening) return;
     final operation = _operation;
-    HapticFeedback.lightImpact();
+    unawaited(HapticFeedback.lightImpact());
     _setPhase(VoicePhase.transcribing);
     if (_engine == VoiceEngine.system) {
       _finalTimeout = Timer(const Duration(seconds: 6), () {

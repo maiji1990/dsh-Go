@@ -114,7 +114,7 @@ class GenerateParams {
   /// What the mode store kept. A mode the old app saved (a model id without a
   /// service) keeps its values and starts over on a default model.
   factory GenerateParams.fromJson(Object? json) {
-    final map = json is Map ? json : const {};
+    final Map<String, Object?> map = json is Map ? json.cast<String, Object?>() : const {};
     T? read<T>(String key) => map[key] is T ? map[key] as T : null;
     return GenerateParams(
       kind: read<String>('kind') == 'video' ? GenerateKind.video : GenerateKind.image,

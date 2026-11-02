@@ -115,7 +115,7 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
     // bridge is declaring it.
     final profile = ref.watch(subscriptionProfileProvider(widget.subscription)).value;
     final models = [
-      for (final group in catalog.value?.groups ?? const [])
+      for (final group in catalog.value?.groups ?? const <ProviderGroup>[])
         if (group.id == wire) ...group.models,
     ];
     // The read failed, or the catalog says this subscription's provider did:

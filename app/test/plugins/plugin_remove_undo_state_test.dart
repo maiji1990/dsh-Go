@@ -177,7 +177,7 @@ void main() {
 
   testWidgets('same client reconnect retires waiting removal', (tester) async {
     final controller = await ready(tester);
-    client.mux.start();
+    unawaited(client.mux.start());
     await tester.pump();
     final first = controller.scheduleRemoval(bundle('first'));
     client.mux.reconnect();

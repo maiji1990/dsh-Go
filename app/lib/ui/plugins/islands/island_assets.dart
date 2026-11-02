@@ -35,7 +35,9 @@ class IslandAssets {
     final face =
         '@font-face{font-family:"JetBrains Mono";font-weight:400;font-style:normal;font-display:swap;'
         'src:url(data:font/ttf;base64,$data) format("truetype")}\n';
-    return face + await _text('islands/island.css');
+    final base = await _text('islands/island.css');
+    final mobile = await _text('islands/island_mobile.css');
+    return '$face$base\n$mobile';
   }();
 
   Future<IslandRecipeBook> get recipes => _recipes ??= _text('islands/recipes.json').then(IslandRecipeBook.parse);

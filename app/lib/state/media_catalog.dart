@@ -772,7 +772,7 @@ class _Catalog {
       if (s is Map && s['id'] is String) count[s['id'] as String] = (count[s['id'] as String] ?? 0) + 1;
     }
     final hostLimit = switch (view.value['limits']) {
-      final Map limits when limits['maxImages'] is int => limits['maxImages'] as int,
+      final Map<String, Object?> limits when limits['maxImages'] is int => limits['maxImages'] as int,
       _ => null,
     };
     final out = <MediaEntry>[];
@@ -785,7 +785,7 @@ class _Catalog {
       if (keyRef is! String || credentials[keyRef]?.configured != true) continue;
       final listed = switch (s['models']) {
         final String text => text.split(','),
-        final List list => [
+        final List<Object?> list => [
           for (final e in list)
             if (e is String) e,
         ],

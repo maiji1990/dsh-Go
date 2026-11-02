@@ -6,7 +6,7 @@ App 以 APK 分发、不上商店，更新靠 App 自己查 GitHub Releases、�
 
 ## 资产约定
 
-每个版本一个 GitHub Release，仓库 `ccch1mneyyy/dsh-go`，必须公开（私有仓库匿名访问一律 404，App 只会显示「暂时检查不了」）。同一组文件也放在公开下载桶：`https://dl.dshtui.com/download/<版本>/<文件>`，最新版的清单在 `https://dl.dshtui.com/update.json`（见「公开下载桶 dl」）。
+每个版本一个 GitHub Release，仓库 `maiji1990/dsh-Go`，必须公开（私有仓库匿名访问一律 404，App 只会显示「暂时检查不了」）。同一组文件也放在公开下载桶：`https://dl.dshtui.com/download/<版本>/<文件>`，最新版的清单在 `https://dl.dshtui.com/update.json`（见「公开下载桶 dl」）。
 
 正式版统一提供 arm64 安装包。`update.json` 供更新清单回退读取，`SHA256SUMS` 供缺少 GitHub digest 时校验 APK，`*.dshdelta` 是从最近几个旧版升上来的增量补丁（`docs/design/delta-update.md`），都由 App 自己用，不要求用户手动下载。GitHub 自动生成的 Source code 压缩包是源码快照，不是安装包。
 
@@ -31,7 +31,7 @@ App 以 APK 分发、不上商店，更新靠 App 自己查 GitHub Releases、�
   "title": "DSH 1.2.0",
   "publishedAt": "2026-11-01T08:00:00Z",
   "notes": "## 新功能\n…",
-  "page": "https://github.com/ccch1mneyyy/dsh-go/releases/tag/v1.2.0",
+  "page": "https://github.com/maiji1990/dsh-Go/releases/tag/v1.2.0",
   "assets": {
     "arm64": { "name": "dsh-go-1.2.0-arm64.apk", "size": 180107933, "sha256": "…" }
   },
@@ -108,6 +108,59 @@ versionCode = (年 - 2026) × 10^8 + MMDDhhmm      时钟固定按 UTC+8
 6. **内测期间**（`DOWNLOAD_ACCESS=key`）不加 `--github`，见下面「内测通道」。
 7. **验证**：在装着上一版的手机上 设置 → 关于 → 检查更新，走完下载和安装。
 
+## 运行时分发（OPT-02）
+
+正式包默认不再内置 158 MB 的 rootfs：APK 里只有 `assets/runtime/manifest.json`，首次启动按 `manifest.rootfsUrl` 下载、断点续传、校验 sha256 后解包。`arm64-offline` / `x64-offline` flavor 仍把 rootfs 打进 APK，用于无网、内网或弱网安装。
+
+发版前：
+
+1. **构建运行时**（有缓存时很快）：
+
+   ```sh
+   runtime/build-runtime.sh arm64-v8a
+   ```
+
+   如果下载地址已经确定，也可以直接带进去：
+
+   ```sh
+   RUNTIME_BASE_URL=https://go.dshtui.com/runtime/<runtimeVersion> \
+     runtime/build-runtime.sh arm64-v8a
+   ```
+
+   产物在 `runtime/out/arm64-v8a/assets/runtime/`；`runtime/out/arm64-v8a/assets-manifest/` 是给普通包用的 manifest-only 目录。
+
+2. **上传 rootfs 归档**：用 `tooling/publish-runtime.sh` 传到独立的 GitHub Release（tag `runtime-<runtimeVersion>`，`--latest=false`，不会抢 App 的更新），并回填 manifest 的 `rootfsUrl`：
+
+   ```sh
+   tooling/publish-runtime.sh --dry-run   # 先看会传什么
+   tooling/publish-runtime.sh             # 上传并回填 runtime/out 下两份 manifest
+   ```
+
+   一个 runtimeVersion 只传一次；App 版本更新时，只要 `runtimeVersion` 没变就不会重复下载。也可以手动把归档放到 `https://go.dshtui.com/runtime/<runtimeVersion>/`，然后执行第 3 步。
+
+3. **写入 URL**（如果第 1 步带了 `RUNTIME_BASE_URL`，或第 2 步用了 `publish-runtime.sh`，可跳过）：
+
+   ```sh
+   runtime/set-runtime-url.sh https://go.dshtui.com/runtime/<runtimeVersion>
+   ```
+
+4. **构建 APK**：
+
+   ```sh
+   tooling/build-apk.sh                 # 普通包，约 34 MB
+   tooling/build-apk.sh -f arm64-offline  # 完整离线包，约 192 MB
+   ```
+
+   普通包必须能读到 `rootfsUrl`，否则首次启动会提示安装离线包。发布前检查：
+
+   ```sh
+   unzip -p app/build/app/outputs/flutter-apk/app-arm64-release.apk \
+     assets/runtime/manifest.json | python3 -c 'import json,sys; print(json.load(sys.stdin)["rootfsUrl"])'
+   ```
+
+   普通包只进 `update.json` / 三条线路；离线包作为单独的下载项（或内测/内网分发），不要混入更新清单。
+
+
 ## 内测通道（go.dshtui.com/beta）
 
 内测包不公开：人凭**密钥**在 `https://go.dshtui.com/beta` 下载，已装的 App 凭构建时注入的**通道令牌**检查更新、App 内下载。两者分开：群里的密钥可以随时换、随时吊销，已装 App 照常收到更新。服务端是 `services/share-worker`（设计见 `docs/design/share-links.md` §14），凭据只以文件形式存在发版机器上，放在仓库之外：
@@ -175,7 +228,7 @@ npx wrangler r2 object put dshgo-share/beta/update.json --file prev.json --conte
 |---|---|---|---|
 | 国内线路 | `<CN_BASE_URL><版本>/<文件>` | 香港对象存储（阿里云 OSS 或腾讯云 COS），公共读 | `request.cf.country` 为 `CN` |
 | 海外线路 | 公开模式 `https://dl.dshtui.com/download/<版本>/<文件>`（清单 `routes` 里没有 `dl` 的旧版本是 `/download/<版本>/<文件>`）；密钥模式是 10 分钟的签名链接 | 公开模式：公开 R2 桶 `dshgo-dl`，字节不经 Worker；旧版本和密钥模式：R2 `beta/<版本>/`，经 Worker | 其他地区 |
-| GitHub | `github.com/ccch1mneyyy/dsh-go/releases/download/v<版本>/<文件>` | GitHub Release | 手动切换 |
+| GitHub | `github.com/maiji1990/dsh-Go/releases/download/v<版本>/<文件>` | GitHub Release | 手动切换 |
 
 - 页面上用分段按钮切换（纯 CSS，不跑脚本）；`?via=cn|global|github` 直接指定线路，`?lang=zh|en` 指定语言（默认跟浏览器）。
 - 一条线路只在**配置了**并且**这一版确实传上去了**时出现：`beta/update.json` 的 `routes` 由发布脚本在下载核对之后写入。`CN_BASE_URL` 为空时国内线路整项隐藏；没有 `routes` 的旧清单只给海外线路。
@@ -229,7 +282,7 @@ Worker 变量，写在 `services/share-worker/wrangler.jsonc` 的 `vars` 里：
 | 命令行 | ossutil 2.x（`ossutil version` 显示 2.x） | coscli |
 | AccessKey | RAM 用户，只授权这一个桶，策略见下 | CAM 子用户，只授权这一个桶，策略见下 |
 
-要交给发版机器的：桶名、地域、`CN_BASE_URL`，以及 AccessKey 的 ID 和 Secret（各存一个文件，权限 600）。另外建议在控制台设**费用 / 流量告警**：香港桶的外网流量按量计费（价格以控制台为准），180 MB 的包下载 1000 次约 180 GB；公共读地址谁都能刷。
+要交给发版机器的：桶名、地域、`CN_BASE_URL`，以及 AccessKey 的 ID 和 Secret（各存一个文件，权限 600）。另外建议在控制台设**费用 / 流量告警**：香港桶的外网流量按量计费（价格以控制台为准），普通包约 34 MB，首次运行还会下载约 158 MB 运行时；离线包约 192 MB。按普通包 34 MB 下载 1000 次约 34 GB，运行时 158 MB 下载 1000 次约 158 GB；公共读地址谁都能刷。
 
 阿里云 RAM 自定义策略（`dshgo-cn` 换成桶名）：
 
@@ -308,7 +361,7 @@ scripts/publish-release.sh ../../dist --github
 |---|---|
 | 页面和带令牌的 App | 上一版的清单设为最新（「内测通道」的回滚两行）。上一版若是旧脚本发的、清单里没有 `routes`，回滚后页面只给海外线路 |
 | 公开桶的 `update.json` | `npx wrangler r2 object get dshgo-dl/download/<上一版>/update.json --file prev.json --remote`，再 `npx wrangler r2 object put dshgo-dl/update.json --file prev.json --content-type 'application/json; charset=utf-8' --cache-control 'public, max-age=300' --remote`（环境变量同上）；边缘最多再给 5 分钟旧的。上一版没传过公开桶（回滚的是第一个走 dl 的版本）时没有可回的清单，删掉 `dshgo-dl/update.json` 即可 |
-| GitHub 上的这一版 | `gh release edit v<版本> --repo ccch1mneyyy/dsh-go --draft=true` 撤回成草稿，`releases/latest` 回到上一版；彻底删除用 `gh release delete v<版本> --repo ccch1mneyyy/dsh-go --cleanup-tag` |
+| GitHub 上的这一版 | `gh release edit v<版本> --repo maiji1990/dsh-Go --draft=true` 撤回成草稿，`releases/latest` 回到上一版；彻底删除用 `gh release delete v<版本> --repo maiji1990/dsh-Go --cleanup-tag` |
 | 香港桶 | 不用动：页面跟着清单走，不再指向新版；要删就删 `<版本>/` |
 | 公开下载 | `DOWNLOAD_ACCESS` 改回 `"key"` 再部署 |
 

@@ -62,5 +62,12 @@
   "pluginConfigNameWorktree": "Worktree manager",
   "pluginConfigNameWorktreeTools": "Worktree tools",
   "pluginConfigNameRalphWorkflow": "Workflow engine",
-  "pluginConfigNameRalphTools": "Ralph tools"
+  "pluginConfigNameRalphTools": "Ralph tools",
+  "pluginConfigModeNative": "Native",
+  "pluginConfigModeWeb": "Web",
+  "pluginConfigModeReadOnly": "Read-only",
+  "pluginConfigAdapterTitle": "How it is shown",
+  "pluginConfigAdapterNativeHint": "Native form, editable in the app",
+  "pluginConfigAdapterWebHint": "The plugin's own web UI, opened inside the app",
+  "pluginConfigAdapterReadOnlyHint": "This host allows viewing only"
 }

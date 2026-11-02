@@ -2,6 +2,7 @@
 // shell (LinkHost lives in its stack), with the native side faked the way
 // LinksPlugin.kt behaves: arrivals held until Dart says `ready`.
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dsh_app/links/app_links.dart';
@@ -64,11 +65,13 @@ class _FakeLinksNative {
       _ready = true;
       final held = List.of(_held);
       _held.clear();
-      Future<void>.microtask(() async {
-        for (final event in held) {
-          await _push(event);
-        }
-      });
+      unawaited(
+        Future<void>.microtask(() async {
+          for (final event in held) {
+            await _push(event);
+          }
+        }),
+      );
       return true;
     });
     addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(_channel, null));

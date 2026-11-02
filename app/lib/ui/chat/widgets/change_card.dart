@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -168,6 +170,6 @@ Future<void> copyPath(BuildContext context, String path) async {
   final l10n = context.l10n;
   final messenger = ScaffoldMessenger.maybeOf(context);
   await Clipboard.setData(ClipboardData(text: path));
-  HapticFeedback.selectionClick();
+  unawaited(HapticFeedback.selectionClick());
   messenger?.showBriefNotice(l10n.chatPathCopied);
 }

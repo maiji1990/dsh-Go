@@ -102,6 +102,7 @@ final setupRuntimeProvider = Provider<SetupRuntime>(
 class InstallEtaController extends Notifier<Duration?> {
   DateTime? _t0;
   double _f0 = 0;
+  String? _step;
 
   @override
   Duration? build() {
@@ -116,11 +117,20 @@ class InstallEtaController extends Notifier<Duration?> {
   void _reset() {
     _t0 = null;
     _f0 = 0;
+    _step = null;
     state = null;
   }
 
   void _track(RuntimeProgressEvent? progress) {
     if (progress == null) return;
+    // Download and extract report separate ranges; don't let one step's
+    // percentage become the other's starting point.
+    if (progress.step != _step) {
+      _step = progress.step;
+      _t0 = null;
+      _f0 = 0;
+      state = null;
+    }
     final now = DateTime.now();
     final f = progress.fraction;
     if (_t0 == null) {

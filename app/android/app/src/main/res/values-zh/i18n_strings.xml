@@ -267,6 +267,8 @@
     <string name="service_stop_phone">停止操作</string>
     <string name="service_stop">停止</string>
     <string name="service_package_checksum_failed">运行时包校验失败（sha256 不匹配），请重新安装 App</string>
+    <string name="service_runtime_no_source">这个安装包不含运行时，也没有下载地址。请安装离线完整包。</string>
+    <string name="service_runtime_download_failed">运行时下载失败，请检查网络后重试；重试会从断点继续。</string>
     <string name="service_storage_insufficient">存储空间不足：需要约 %1$s MB，当前可用 %2$s MB</string>
     <!-- share -->
     <string name="share_file">文件</string>

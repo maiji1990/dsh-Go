@@ -2,7 +2,9 @@
 // the generated form of a plugin, a number sheet, a locked page, the plugin
 // inventory and its detail sheet, and the hub.
 //
-//   flutter test --update-goldens test/engine_settings
+// Update only the failing pair (see docs/testing/goldens.md):
+//   flutter test --update-goldens test/engine_settings/engine_settings_golden_test.dart \
+//     --plain-name "engine_settings_hub"
 
 import 'package:dsh_app/state/settings_state.dart';
 import 'package:dsh_app/ui/engine_settings/engine_settings_hub.dart';

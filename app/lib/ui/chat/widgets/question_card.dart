@@ -46,7 +46,7 @@ class _QuestionCardState extends State<QuestionCard> {
   void initState() {
     super.initState();
     final draft = PageStorage.maybeOf(context)?.readState(context, identifier: _draftId);
-    if (draft case (List<Set<int>> picked, List<String> texts, List<bool> open)) {
+    if (draft case (final List<Set<int>> picked, final List<String> texts, final List<bool> open)) {
       for (var i = 0; i < _picked.length; i++) {
         _picked[i].addAll(picked[i]);
         _custom[i].text = texts[i];

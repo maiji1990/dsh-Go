@@ -177,7 +177,7 @@ class DrawerSeen {
   const DrawerSeen({this.loaded = false, this.baseline, this.seen = const {}});
 
   factory DrawerSeen.fromJson(Object? json) {
-    final map = json is Map ? json : const {};
+    final Map<String, Object?> map = json is Map ? json.cast<String, Object?>() : const {};
     final seen = map['seen'];
     return DrawerSeen(
       loaded: true,

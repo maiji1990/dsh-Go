@@ -20,8 +20,10 @@
 ///   replaces the public GitHub accelerator list (empty string = none).
 library;
 
-/// GitHub repository the releases live in.
-const updateRepo = 'ccch1mneyyy/dsh-go';
+/// GitHub repository the releases live in. This fork publishes to its own
+/// repository; the upstream project is only a sync source (see the repo policy
+/// in `dsh-Go-优化清单-data/dsh-Go-优化清单.md`).
+const updateRepo = 'maiji1990/dsh-Go';
 
 /// `releases/latest` of the REST API: tag, notes, assets with sizes and
 /// SHA-256 digests. Unauthenticated: 60 requests per hour per IP.

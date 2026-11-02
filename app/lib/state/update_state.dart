@@ -617,7 +617,7 @@ class AppUpdateController extends Notifier<AppUpdateState> {
         sources.downloadUrls([own, githubReleaseAsset(release.tag, name)], preferredMirror: mirror);
 
     // An APK already here (built or downloaded before) is checked and kept.
-    var outcome = patch != null && base != null && !await File('${dir.path}/${asset.name}').exists()
+    var outcome = patch != null && base != null && !File('${dir.path}/${asset.name}').existsSync()
         ? await downloader.downloadPatched(
             patch: patch,
             base: File(base),
@@ -684,7 +684,7 @@ class AppUpdateController extends Notifier<AppUpdateState> {
   /// 「重试」: install again when the APK is already here, else resume the download.
   Future<void> retry() async {
     final apk = _apk;
-    if (apk != null && await apk.file.exists()) {
+    if (apk != null && apk.file.existsSync()) {
       await install();
     } else {
       await startDownload();
@@ -698,7 +698,7 @@ class AppUpdateController extends Notifier<AppUpdateState> {
   /// before asking and it reads as cancelled. False when it couldn't open.
   Future<bool> installWithSystem() async {
     final apk = _apk;
-    if (!ref.mounted || apk == null || state.busy || !apk.isFor(state) || !await apk.file.exists()) return false;
+    if (!ref.mounted || apk == null || state.busy || !apk.isFor(state) || !apk.file.existsSync()) return false;
     return _installer.openWithSystemInstaller(apk.file.path);
   }
 

@@ -319,7 +319,7 @@ class _MediaCellState extends ConsumerState<MediaCell> {
 
   Future<void> _menu(BuildContext context, ImageProvider provider) async {
     final l10n = context.l10n;
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
     final item = _item;
     final prompt = widget.meta.promptToCopy;
     final picked = await showAppSheetMenu(
@@ -804,7 +804,7 @@ Future<void> saveMediaItems(BuildContext context, WidgetRef ref, String sessionI
     }
   }
   if (saved > 0) {
-    HapticFeedback.lightImpact();
+    unawaited(HapticFeedback.lightImpact());
     messenger?.showBriefNotice(l10n.mediaSavedCount(saved));
   }
   if (failure != null) {

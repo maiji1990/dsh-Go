@@ -12,7 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'support.dart';
 
 Object sequenceFixture() =>
-    jsonDecode(File('test/engine_settings/fixtures/schemastery-sequence.json').readAsStringSync());
+    jsonDecode(File('test/engine_settings/fixtures/schemastery-sequence.json').readAsStringSync()) as Object;
 FakeSettingsHost sequenceHost() => FakeSettingsHost(
   describe: {
     'namespaces': [
@@ -146,8 +146,12 @@ void main() {
     testWidgets('tuple narrow large text ${brightness.name}', (tester) async {
       tester.platformDispatcher.textScaleFactorTestValue = 2;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      await pumpPage(tester, const EngineSettingsPage(ns: 'sequence'),
-        overrides: engineOverrides(DshClient.withCarrier(sequenceHost())), brightness: brightness);
+      await pumpPage(
+        tester,
+        const EngineSettingsPage(ns: 'sequence'),
+        overrides: engineOverrides(DshClient.withCarrier(sequenceHost())),
+        brightness: brightness,
+      );
       tester.view.physicalSize = const Size(640, 1800);
       await tester.pump();
       await tester.tap(find.text('Tuple'));

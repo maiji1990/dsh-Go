@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dsh_app/links/launcher_entries.dart';
 import 'package:dsh_app/notify/chat_alerts.dart';
+import 'package:dsh_app/pets/pet_mood.dart' show PetEvent;
 import 'package:dsh_app/pets/pet_overlay_actions.dart';
 import 'package:dsh_app/pets/pet_signals.dart';
 import 'package:dsh_app/pets/pet_state.dart';
@@ -212,7 +213,7 @@ void main() {
 
   test('only quick ask completion gets a reply preview; merged bubbles drop it', () async {
     final bus = PetEventBus();
-    final heard = [];
+    final heard = <PetEvent>[];
     final sub = bus.events.listen(heard.add);
     final alert = ChatAlert(
       host: HostRef.local,

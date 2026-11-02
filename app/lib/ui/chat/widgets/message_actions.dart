@@ -2,6 +2,8 @@
 // The menu every message opens (long-press, or ⋯ in a reply's row) is in
 // `message_menu.dart`.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -18,7 +20,7 @@ export 'message_menu.dart';
 Future<void> copyMessage(BuildContext context, String text, {bool toast = true}) async {
   final l10n = context.l10n;
   final messenger = ScaffoldMessenger.maybeOf(context);
-  HapticFeedback.lightImpact();
+  unawaited(HapticFeedback.lightImpact());
   await Clipboard.setData(ClipboardData(text: text));
   if (toast) {
     messenger?.showBriefNotice(l10n.commonCopied);

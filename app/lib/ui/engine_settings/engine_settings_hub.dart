@@ -119,8 +119,10 @@ class EngineSettingsHubPage extends ConsumerWidget {
                   icon: AppIcons.plugin,
                   tinted: false,
                   spot: pluginFormSpot(ns, (l) => pluginConfigTitle(ns, bundles, state: config, l10n: l)),
-                  // Fixed by an overlay: said here, not only once opened.
-                  subtitle: pluginConfigReadOnlyNote(config, ns, l10n: l10n),
+                  // Fixed by an overlay: said here, not only once opened. How
+                  // the app can show it (native / web / read-only) otherwise.
+                  subtitle:
+                      pluginConfigReadOnlyNote(config, ns, l10n: l10n) ?? pluginConfigModeNote(config, ns, l10n: l10n),
                   onTap: () => _open(
                     context,
                     PluginConfigPage(

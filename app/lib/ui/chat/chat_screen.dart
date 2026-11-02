@@ -1040,7 +1040,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
       final params = GenerateParams.fromMeta(meta, catalog);
       final text = catalog.resolve(params.model, params.kind) == null ? null : params.tryMessage(prompt).text;
       if (text != null) {
-        HapticFeedback.selectionClick();
+        unawaited(HapticFeedback.selectionClick());
         await ref.read(chatProvider(sessionId).notifier).send(text);
         return;
       }
@@ -1165,7 +1165,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
   }
 
   Future<void> _runSlash(SlashCommand command, String line) async {
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     switch (command.kind) {
       case SlashCommandKind.app:
         _input.clear();

@@ -1448,6 +1448,9 @@ class _ObjectItemPageState extends State<_ObjectItemPage> {
   final Map<String, String> _errors = {};
   bool _busy = false;
 
+  bool _isCredentialRef(SchemaNode value) =>
+      value.isCredentialRef || value.effective.isCredentialRef || structuralNode(value).isCredentialRef;
+
   @override
   void dispose() {
     for (final c in _controllers.values) {
@@ -1464,7 +1467,7 @@ class _ObjectItemPageState extends State<_ObjectItemPage> {
     final fields = widget.item.effective.fields ?? const {};
     for (final MapEntry(:key, :value) in fields.entries) {
       final node = value.effective;
-      final kind = kindOf(value);
+      final kind = _isCredentialRef(value) ? FieldKind.text : kindOf(value);
       if (kind == FieldKind.text || kind == FieldKind.number) {
         final text = _controllerFor(key).text.trim();
         if (text.isEmpty) {
@@ -1500,6 +1503,7 @@ class _ObjectItemPageState extends State<_ObjectItemPage> {
     final l10n = context.l10n;
     final fields = widget.item.effective.fields ?? const {};
     final colors = DshColors.of(context);
+    bool shows(SchemaNode value) => _isCredentialRef(value) || kindOf(value) != FieldKind.hidden;
     return FieldSheetFrame(
       title: widget.title,
       actions: SheetActions(
@@ -1523,8 +1527,11 @@ class _ObjectItemPageState extends State<_ObjectItemPage> {
       ),
       children: [
         for (final MapEntry(:key, :value) in fields.entries)
-          if (kindOf(value) case final kind when kind != FieldKind.hidden)
-            Padding(padding: const EdgeInsets.only(bottom: 12), child: _draftField(key, value, kind)),
+          if (shows(value))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _draftField(key, value, _isCredentialRef(value) ? FieldKind.text : kindOf(value)),
+            ),
       ],
     );
   }
@@ -1596,6 +1603,151 @@ class _ObjectItemPageState extends State<_ObjectItemPage> {
         );
     }
   }
+}
+
+// ── Object-valued dicts ──────────────────────────────────────────────────────
+
+/// Edits a dict whose values are objects (`modelLimits`): each key opens the
+/// same small form an object list item does.
+Future<void> showObjectDictSheet(
+  BuildContext context, {
+  required String title,
+  required SchemaNode item,
+  required Map<String, Object?> Function(WidgetRef ref) read,
+  required Future<bool> Function(Map<String, Object?> entries) onChange,
+}) => showFieldSheet<void>(
+  context,
+  (_) => SheetNavigator(
+    root: (_) => _ObjectDictPage(title: title, item: item, read: read, onChange: onChange),
+  ),
+);
+
+class _ObjectDictPage extends ConsumerWidget {
+  const _ObjectDictPage({required this.title, required this.item, required this.read, required this.onChange});
+
+  final String title;
+  final SchemaNode item;
+  final Map<String, Object?> Function(WidgetRef ref) read;
+  final Future<bool> Function(Map<String, Object?> entries) onChange;
+
+  Future<void> _edit(BuildContext context, Map<String, Object?> entries, String key) async {
+    final value = asJsonMap(entries[key]);
+    SheetNavigator.of(context).push(
+      (_) => _ObjectItemPage(
+        title: key,
+        item: item,
+        initial: value,
+        onSave: (next) => onChange({...entries, key: next}),
+        onDelete: () => onChange({...entries}..remove(key)),
+      ),
+    );
+  }
+
+  Future<void> _add(BuildContext context, Map<String, Object?> entries) async {
+    final key = await showDialog<String>(
+      context: context,
+      builder: (_) => _DictKeyDialog(existing: entries.keys),
+    );
+    if (key == null || !context.mounted) return;
+    SheetNavigator.of(context).push(
+      (_) => _ObjectItemPage(
+        title: key,
+        item: item,
+        initial: defaultsOf(structuralNode(item)),
+        onSave: (next) => onChange({...entries, key: next}),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final entries = read(ref);
+    return FieldSheetFrame(
+      title: title,
+      children: [
+        if (entries.isNotEmpty)
+          SheetCard(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Material(
+              type: MaterialType.transparency,
+              child: Column(
+                children: [
+                  for (final MapEntry(:key, :value) in entries.entries)
+                    EngineFieldRow(
+                      title: key,
+                      value: compactJson(value),
+                      onTap: () => unawaited(_edit(context, entries, key)),
+                      trailing: RemoveKey(
+                        tooltip: l10n.engineFieldRemoveItem(key),
+                        onPressed: () => unawaited(onChange({...entries}..remove(key))),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        SizedBox(height: entries.isEmpty ? 0 : 12),
+        EngineFieldRow(
+          icon: AppIcons.add,
+          title: l10n.commonAdd,
+          chevron: false,
+          onTap: () => unawaited(_add(context, entries)),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+}
+
+class _DictKeyDialog extends StatefulWidget {
+  const _DictKeyDialog({required this.existing});
+
+  final Iterable<String> existing;
+
+  @override
+  State<_DictKeyDialog> createState() => _DictKeyDialogState();
+}
+
+class _DictKeyDialogState extends State<_DictKeyDialog> {
+  final _key = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _key.dispose();
+    super.dispose();
+  }
+
+  void _done() {
+    final key = _key.text.trim();
+    if (key.isEmpty) {
+      setState(() => _error = context.l10n.engineFieldEnterName);
+      return;
+    }
+    if (widget.existing.contains(key)) {
+      setState(() => _error = context.l10n.engineFieldNameExists);
+      return;
+    }
+    Navigator.of(context).pop(key);
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(context.l10n.engineFieldEnterName),
+    content: TextField(
+      key: const ValueKey('object-dict-key'),
+      controller: _key,
+      autofocus: true,
+      autocorrect: false,
+      decoration: InputDecoration(errorText: _error),
+      onSubmitted: (_) => _done(),
+    ),
+    actions: [
+      TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(context.l10n.commonCancel)),
+      FilledButton(onPressed: _done, child: Text(context.l10n.commonDone)),
+    ],
+  );
 }
 
 // ── Read-only ────────────────────────────────────────────────────────────────

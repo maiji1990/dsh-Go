@@ -12,7 +12,8 @@ import java.security.DigestInputStream
 import java.security.MessageDigest
 
 /**
- * Unpacks the bundled rootfs into app-private storage.
+ * Unpacks the runtime rootfs: from the APK's assets for the offline flavors,
+ * or downloaded first (manifest `rootfsUrl`) for normal flavors.
  *
  * Layout under filesDir/runtime:
  *   rootfs/            the active Linux root (proot -r)
@@ -45,32 +46,57 @@ class RuntimeInstaller(
     fun isCurrent(): Boolean = installedVersion() == manifest.runtimeVersion
 
     /**
-     * Extracts the bundled rootfs; [onProgress] gets (compressedBytesRead, totalCompressedBytes).
-     * Fails with [KeepFailed] when what a reset kept cannot go back; [dropKept] then gives up
-     * whatever cannot and installs anyway.
+     * Extracts the bundled rootfs, or downloads it first when this APK is a
+     * normal (non-offline) flavor. [onProgress] gets (step, done, total), where
+     * step is `download` or `extract`.
+     * Fails with [KeepFailed] when what a reset kept cannot go back; [dropKept]
+     * then gives up whatever cannot and installs anyway.
      */
-    fun install(dropKept: Boolean = false, onProgress: (Long, Long) -> Unit) {
+    fun install(dropKept: Boolean = false, onProgress: (String, Long, Long) -> Unit) {
         // A reset killed halfway finishes first, so what it keeps is in runtime-keep for the restore.
         settleReset(retiredDir, keepDir, dropKept)
         baseDir.mkdirs()
         staging.deleteRecursivelySafely()
-        checkFreeSpace()
+        val assetPath = "${RuntimeManifest.ASSET_DIR}/${manifest.rootfsAsset}"
+        val bundled = hasAsset(manifest.rootfsAsset)
+        if (!bundled && manifest.rootfsUrl == null) {
+            throw IllegalStateException(AppStrings.get(context, R.string.service_runtime_no_source))
+        }
+        // Drop a previous runtime's partial archive; the current one resumes.
+        File(baseDir, "download").listFiles()?.forEach { old ->
+            if (old.name != manifest.runtimeVersion) old.deleteRecursivelySafely()
+        }
+        // The archive and the extracted tree both live under filesDir. Count
+        // what a previous attempt already downloaded, so a retry is not asked
+        // for another full archive's worth of space.
+        val target = downloadTarget()
+        val downloaded = listOf(target, File(target.path + ".part"))
+            .filter { it.isFile }
+            .maxOfOrNull { it.length() } ?: 0L
+        val remaining = if (manifest.rootfsBytes > 0) (manifest.rootfsBytes - downloaded).coerceAtLeast(0) else 0L
+        checkFreeSpace(extraBytes = if (bundled) 0 else remaining)
+        val archive = if (bundled) null else downloadRootfs(onProgress)
+        checkFreeSpace(extraBytes = 0)
         staging.mkdirs()
 
-        val assetPath = "${RuntimeManifest.ASSET_DIR}/${manifest.rootfsAsset}"
-        val assetBytes = assetLength(assetPath)
-        val total = assetBytes.takeIf { it > 0 } ?: manifest.rootfsBytes
+        val sourceBytes = if (bundled) assetLength(assetPath) else archive!!.length()
+        val total = sourceBytes.takeIf { it > 0 } ?: manifest.rootfsBytes
         var lastReported = 0L
         val progress: (Long) -> Unit = { read ->
             if (read - lastReported >= 512 * 1024 || read == total) {
                 lastReported = read
-                onProgress(read, total)
+                onProgress("extract", read, total)
             }
         }
+        fun openSource() = if (bundled) {
+            context.assets.open(assetPath, AssetManager.ACCESS_STREAMING)
+        } else {
+            archive!!.inputStream()
+        }
         timed("verify") {
-            // Parallel readers revisit compressed bytes; hash the asset once, in order.
+            // Parallel readers revisit compressed bytes; hash the source once, in order.
             val digest = MessageDigest.getInstance("SHA-256")
-            DigestInputStream(context.assets.open(assetPath, AssetManager.ACCESS_STREAMING), digest).use { input ->
+            DigestInputStream(openSource(), digest).use { input ->
                 val buffer = ByteArray(1 shl 16)
                 while (input.read(buffer) >= 0) {}
             }
@@ -83,23 +109,24 @@ class RuntimeInstaller(
         }
         timed("extract") {
             val extractor = TarExtractor(staging, progress)
-            if (manifest.rootfsAsset.endsWith(".xz") && assetBytes > 0) {
+            if (bundled && manifest.rootfsAsset.endsWith(".xz") && sourceBytes > 0) {
                 val decoded = ParallelXZInputStream.open(
                     { AssetSeekableInputStream(context.assets.openFd(assetPath)) }, progress,
                 )
                 extractor.extractDecoded(decoded)
             } else {
-                context.assets.open(assetPath, AssetManager.ACCESS_STREAMING).use { raw ->
-                    extractor.extract(raw, manifest.rootfsAsset)
-                }
+                openSource().use { raw -> extractor.extract(raw, manifest.rootfsAsset) }
             }
         }
-        onProgress(total, total)
+        onProgress("extract", total, total)
 
         timed("activate") {
             activateRootfs(baseDir, manifest.runtimeVersion, keepDir, dropKept,
                 sync = { timed("sync") { sync() } })
         }
+        // Keep the archive only until the install has fully succeeded, so a
+        // failed extraction can be retried without downloading it again.
+        archive?.delete()
     }
 
     private inline fun <T> timed(phase: String, block: () -> T): T {
@@ -111,8 +138,8 @@ class RuntimeInstaller(
         }
     }
 
-    private fun checkFreeSpace() {
-        val need = (manifest.uncompressedBytes.takeIf { it > 0 } ?: 600L * 1024 * 1024) * 115 / 100
+    private fun checkFreeSpace(extraBytes: Long) {
+        val need = (manifest.uncompressedBytes.takeIf { it > 0 } ?: 600L * 1024 * 1024) * 115 / 100 + extraBytes
         val free = context.filesDir.usableSpace
         if (free < need) {
             val mb = { b: Long -> b / (1024 * 1024) }
@@ -123,6 +150,29 @@ class RuntimeInstaller(
     /** Deletes the runtime; [keep] (paths under the rootfs) waits in runtime-keep for the next install. */
     fun reset(keep: List<String>) {
         retireRuntime(baseDir, retiredDir, keepDir, keep)
+    }
+
+    private fun hasAsset(name: String): Boolean =
+        runCatching { context.assets.list(RuntimeManifest.ASSET_DIR)?.contains(name) == true }.getOrDefault(false)
+
+    private fun downloadTarget(): File =
+        File(File(baseDir, "download/${manifest.runtimeVersion}"), manifest.rootfsAsset)
+
+    private fun downloadRootfs(onProgress: (String, Long, Long) -> Unit): File {
+        val url = manifest.rootfsUrl
+            ?: throw IllegalStateException(AppStrings.get(context, R.string.service_runtime_no_source))
+        if (!url.startsWith("https://") && !url.startsWith("http://")) {
+            throw IllegalStateException(AppStrings.get(context, R.string.service_runtime_download_failed))
+        }
+        return try {
+            RuntimeDownloader(url, downloadTarget(), manifest.rootfsSha256, manifest.rootfsBytes).fetch { done, total ->
+                onProgress("download", done, total)
+            }
+        } catch (e: RuntimeChecksumException) {
+            throw IllegalStateException(AppStrings.get(context, R.string.service_package_checksum_failed), e)
+        } catch (e: java.io.IOException) {
+            throw IllegalStateException(AppStrings.get(context, R.string.service_runtime_download_failed), e)
+        }
     }
 
     private fun assetLength(path: String): Long = try {

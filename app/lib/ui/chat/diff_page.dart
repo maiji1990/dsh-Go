@@ -2,6 +2,7 @@
 // (layer 3 of the run information): file chips, swipe between files, a
 // unified diff with line-number gutters, wrap toggle and copy patch.
 
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -72,7 +73,7 @@ class _ChangeDiffPageState extends State<ChangeDiffPage> {
   Future<void> _copyPatch() async {
     final l10n = context.l10n;
     final messenger = ScaffoldMessenger.maybeOf(context);
-    HapticFeedback.lightImpact();
+    unawaited(HapticFeedback.lightImpact());
     await Clipboard.setData(ClipboardData(text: widget.files[_index].patch));
     messenger?.showBriefNotice(l10n.activityDiffCopied);
   }

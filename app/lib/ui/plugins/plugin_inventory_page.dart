@@ -450,7 +450,10 @@ class InventorySheet extends ConsumerWidget {
                         ListPageRow(
                           icon: AppIcons.configure,
                           title: l10n.commonSettings,
-                          subtitle: pluginForm ? pluginConfigReadOnlyNote(config, item.rowId, l10n: l10n) : null,
+                          subtitle: pluginForm
+                              ? pluginConfigReadOnlyNote(config, item.rowId, l10n: l10n) ??
+                                    pluginConfigModeNote(config, item.rowId, l10n: l10n)
+                              : null,
                           chevron: true,
                           onTap: () => unawaited(openSettingsPage(context, item.rowId, title: formTitle)),
                         ),

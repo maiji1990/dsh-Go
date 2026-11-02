@@ -59,7 +59,10 @@ void main() {
       expect(events.any((event) => event['event'] == 'layout'), isTrue);
       expect(events.any((event) => event['event'] == 'pointer-down'), isTrue);
       expect(events.any((event) => event['event'] == 'pointer-up'), isTrue);
-      expect(events.any((event) => event['event'] == 'ScrollUpdateNotification' && event['pixels'] > 0), isTrue);
+      expect(
+        events.any((event) => event['event'] == 'ScrollUpdateNotification' && (event['pixels'] as num? ?? 0) > 0),
+        isTrue,
+      );
       expect(trace.join(), isNot(contains('PRIVATE_MESSAGE_MUST_NOT_BE_LOGGED')));
       expect(events.every((event) => event['scope'] == 'test' && event['time'] is int), isTrue);
     } finally {

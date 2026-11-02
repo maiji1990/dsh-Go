@@ -68,13 +68,15 @@ class PerformanceController extends Notifier<PerformanceSnapshot> {
       if (!reply.isCompleted) reply.complete(const PerformanceSnapshot(loaded: true));
     });
     try {
-      channel.snapshot().then(
-        (value) {
-          if (!reply.isCompleted) reply.complete(value);
-        },
-        onError: (Object error, StackTrace stack) {
-          if (!reply.isCompleted) reply.completeError(error, stack);
-        },
+      unawaited(
+        channel.snapshot().then(
+          (value) {
+            if (!reply.isCompleted) reply.complete(value);
+          },
+          onError: (Object error, StackTrace stack) {
+            if (!reply.isCompleted) reply.completeError(error, stack);
+          },
+        ),
       );
       _accept(await reply.future);
     } catch (_) {
@@ -176,7 +178,12 @@ Map<String, Object?> performanceDiagnostics(Ref ref) {
   final prefs = ref.read(performancePrefsProvider);
   return {
     ...ref.read(performanceProvider).toMap(),
-    'preferences': {'mode': prefs.mode.name, 'blurOverride': prefs.blur, 'animationsOverride': prefs.animations, 'refreshRate': prefs.refreshRate.name},
+    'preferences': {
+      'mode': prefs.mode.name,
+      'blurOverride': prefs.blur,
+      'animationsOverride': prefs.animations,
+      'refreshRate': prefs.refreshRate.name,
+    },
     'defaults': ref.read(performanceDefaultsProvider).toMap(),
   };
 }

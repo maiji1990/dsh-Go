@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -4669,6 +4668,9 @@ class L10nZh extends L10n {
   String get engineFieldEnterName => '填写名称';
 
   @override
+  String get engineFieldNameExists => '已有同名项';
+
+  @override
   String get engineFieldEnterNumber => '填写数值';
 
   @override
@@ -5570,6 +5572,12 @@ class L10nZh extends L10n {
 
   @override
   String get engineFieldEditOnWeb => '在网页版编辑此项';
+
+  @override
+  String get engineFieldRawJson => '原始 JSON';
+
+  @override
+  String get engineFieldRawJsonHint => '高级：直接编辑这一项的 JSON';
 
   @override
   String get engineSettingsHostChanged => '主机已切换，请重新打开设置后编辑。';
@@ -10218,6 +10226,27 @@ class L10nZh extends L10n {
 
   @override
   String get pluginConfigNameRalphTools => 'Ralph 工具';
+
+  @override
+  String get pluginConfigModeNative => '原生';
+
+  @override
+  String get pluginConfigModeWeb => '网页';
+
+  @override
+  String get pluginConfigModeReadOnly => '只读';
+
+  @override
+  String get pluginConfigAdapterTitle => '适配情况';
+
+  @override
+  String get pluginConfigAdapterNativeHint => '原生表单，可直接在 App 里编辑';
+
+  @override
+  String get pluginConfigAdapterWebHint => '插件自带网页界面，在 App 内嵌打开';
+
+  @override
+  String get pluginConfigAdapterReadOnlyHint => '这台主机只允许查看';
 
   @override
   String get plugInputRequired => '请填写此项';

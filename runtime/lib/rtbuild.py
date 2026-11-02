@@ -724,7 +724,41 @@ def base_drop(path):
     return False
 
 
+# Packages the phone rootfs deliberately does not ship, with the reason that
+# lands in build-report.json:
+#  - optional-bundle: runtime dependencies that every shipped profile template
+#    leaves switched off (dsh-app-boot OPTIONAL_BUNDLES). The inspector is
+#    desktop devtools (a CDP hub for the web UI) the app never opens.
+#  - office-conversion: Office→PDF conversion (LibreOffice WASM, 146 MB) and the
+#    skill that drives it; this build ships no Office document conversion.
+# DSH_RUNTIME_KEEP_OPTIONAL=1 keeps all of them, e.g. to debug a bundle on the
+# host.
+DROPPED_PACKAGES = {
+    "@deepseek-ai/dsh-experimental-inspector": "optional-bundle",
+    "@deepseek-ai/dsh-experimental-inspector-profile": "optional-bundle",
+    "@deepseek-ai/dsh-experimental-session-inspector": "optional-bundle",
+    "@deepseek-ai/dsh-office-to-pdf": "office-conversion",
+    "@deepseek-ai/dsh-skill-office": "office-conversion",
+    "@deepseek-ai/libreoffice-kit": "office-conversion",
+    "@deepseek-ai/libreoffice-kit-wasm": "office-conversion",
+}
+KEEP_OPTIONAL_PACKAGES = os.environ.get("DSH_RUNTIME_KEEP_OPTIONAL") == "1"
+_DROPPED_PREFIXES = {p: "node_modules/%s/" % p for p in DROPPED_PACKAGES}
+
+
+def dropped_package_reason(rel):
+    if KEEP_OPTIONAL_PACKAGES:
+        return None
+    for package, prefix in _DROPPED_PREFIXES.items():
+        if rel.startswith(prefix):
+            return DROPPED_PACKAGES[package]
+    return None
+
+
 def dsh_drop_reason(rel, abi, prune_dev):
+    reason = dropped_package_reason(rel)
+    if reason:
+        return reason
     parts = rel.split("/")
     if "prebuilds" in parts:
         i = parts.index("prebuilds")
@@ -1448,6 +1482,8 @@ def cmd_manifest(args):
         "launch": launch_template(),
         "build": v.get("build", {}),
     }
+    if args.rootfs_url:
+        m["rootfsUrl"] = args.rootfs_url
     with open(args.out, "w") as f:
         json.dump(m, f, indent=2)
         f.write("\n")
@@ -1519,6 +1555,7 @@ def main():
     p.add_argument("--report", required=True)
     p.add_argument("--jnilibs", required=True)
     p.add_argument("--versions", required=True)
+    p.add_argument("--rootfs-url", help="absolute URL the APK can download this rootfs from")
     p.add_argument("--out", required=True)
     p.set_defaults(fn=cmd_manifest)
 

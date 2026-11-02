@@ -11,15 +11,15 @@ import 'emoji.dart';
 Map<String, Object?> _map(Object? v) => v is Map ? v.cast<String, Object?>() : const {};
 List<Object?> _list(Object? v) => v is List ? v : const [];
 int _int(Object? v, [int fallback = 0]) => switch (v) {
-  int n => n,
-  num n => n.toInt(),
-  String s => int.tryParse(s) ?? fallback,
+  final int n => n,
+  final num n => n.toInt(),
+  final String s => int.tryParse(s) ?? fallback,
   _ => fallback,
 };
 int? _intOrNull(Object? v) => switch (v) {
-  int n => n,
-  num n => n.toInt(),
-  String s => int.tryParse(s),
+  final int n => n,
+  final num n => n.toInt(),
+  final String s => int.tryParse(s),
   _ => null,
 };
 String _str(Object? v, [String fallback = '']) => v is String ? v : (v == null ? fallback : '$v');

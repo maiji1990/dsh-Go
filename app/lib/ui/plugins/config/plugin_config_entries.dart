@@ -68,6 +68,57 @@ List<PluginBundleRow> bundleConfigRows(PluginBundle bundle, PluginConfigState? s
         row,
 ];
 
+/// How a plugin's settings are presented in the app.
+enum PluginConfigMode {
+  /// A schema form the app draws (raw JSON for shapes without a control).
+  native,
+
+  /// The plugin's own web page, in an island or through DSH Web.
+  web,
+
+  /// Listed, but this host does not allow changing it.
+  readOnly,
+}
+
+/// The presentation of entry [ns], or null while nothing is known yet.
+/// [PluginConfigMode.web] means the plugin declares its own page
+/// (`autoGenerate: false`); whether the app can island it is decided where
+/// the page opens.
+PluginConfigMode? pluginConfigMode(PluginConfigState? state, String ns) {
+  final form = state?[ns];
+  final entry = state?.entries[ns];
+  if (form == null) {
+    if (entry == null) return null;
+    return entry.configurable ? null : PluginConfigMode.readOnly;
+  }
+  if (!(state?.writable ?? false) || form.failed || (entry?.readOnly ?? false)) {
+    return PluginConfigMode.readOnly;
+  }
+  return form.prefersOwnPage ? PluginConfigMode.web : PluginConfigMode.native;
+}
+
+/// The word for [pluginConfigMode].
+String? pluginConfigModeNote(PluginConfigState? state, String ns, {L10n? l10n}) {
+  final l = l10n ?? appL10n;
+  return switch (pluginConfigMode(state, ns)) {
+    PluginConfigMode.native => l.pluginConfigModeNative,
+    PluginConfigMode.web => l.pluginConfigModeWeb,
+    PluginConfigMode.readOnly => l.pluginConfigModeReadOnly,
+    null => null,
+  };
+}
+
+/// One line on why that mode is the one shown.
+String? pluginConfigModeHint(PluginConfigState? state, String ns, {L10n? l10n}) {
+  final l = l10n ?? appL10n;
+  return switch (pluginConfigMode(state, ns)) {
+    PluginConfigMode.native => l.pluginConfigAdapterNativeHint,
+    PluginConfigMode.web => l.pluginConfigAdapterWebHint,
+    PluginConfigMode.readOnly => l.pluginConfigAdapterReadOnlyHint,
+    null => null,
+  };
+}
+
 /// What entry [ns]'s row says under its name when it can be read here but
 /// not changed (the Host's list says so up front: bridge R7 `writable:
 /// false`): 「由配置文件固定」 when an overlay sets it, else 「只读」. Null for

@@ -6,12 +6,14 @@
 #
 #   tooling/build-apk.sh                       release, arm64 (phone)
 #   tooling/build-apk.sh -f x64                release, x64 (emulator)
-#   tooling/build-apk.sh -f all                both flavors with one build number (local testing only)
+#   tooling/build-apk.sh -f arm64-offline      arm64 with the 158 MB rootfs bundled
+#   tooling/build-apk.sh -f all                both normal flavors with one build number (local testing only)
+#   tooling/build-apk.sh -f all-offline        both offline flavors
 #   tooling/build-apk.sh --debug -f x64 -t lib/dev/runtime_probe_main.dart
 #   tooling/build-apk.sh --dry-run -f all      print the commands, build nothing
 #   tooling/build-apk.sh -- --dart-define=K=V  extra flags for `flutter build apk`
 #
-#   -f, --flavor arm64|x64|all       default arm64
+#   -f, --flavor arm64|x64|arm64-offline|x64-offline|all|all-offline   default arm64
 #   --release | --debug | --profile  default --release
 #   -t, --target FILE                Dart entry point, relative to app/
 #   -n, --build-number N             use N instead of the build minute (never lower than what's installed)
@@ -58,9 +60,10 @@ while (($#)); do
 done
 
 case "$flavor" in
-  arm64 | x64) flavors=("$flavor") ;;
+  arm64 | x64 | arm64-offline | x64-offline) flavors=("$flavor") ;;
   all) flavors=(arm64 x64) ;;
-  *) die "flavor is arm64, x64 or all: $flavor" ;;
+  all-offline) flavors=(arm64-offline x64-offline) ;;
+  *) die "flavor is arm64, x64, arm64-offline, x64-offline, all or all-offline: $flavor" ;;
 esac
 for arg in "${extra[@]}"; do
   case "$arg" in
@@ -85,7 +88,9 @@ else
 fi
 when=$(python3 "$ROOT/tooling/build_number.py" --decode "$code" 2>/dev/null || echo "custom")
 
-platform_of() { case "$1" in arm64) echo android-arm64 ;; x64) echo android-x64 ;; esac; }
+platform_of() { case "$1" in arm64 | arm64-offline) echo android-arm64 ;; x64 | x64-offline) echo android-x64 ;; esac; }
+gradle_flavor_of() { case "$1" in arm64-offline) echo arm64Offline ;; x64-offline) echo x64Offline ;; *) echo "$1" ;; esac; }
+apk_flavor_of() { case "$1" in arm64-offline) echo arm64offline ;; x64-offline) echo x64offline ;; *) echo "$1" ;; esac; }
 
 # Beta channel token: handed to flutter in a JSON file (600, shredded on exit),
 # so it never shows up in the commands printed here.
@@ -105,7 +110,7 @@ fi
 
 commands=()
 for f in "${flavors[@]}"; do
-  cmd=(flutter build apk "--$mode" --flavor "$f" --target-platform "$(platform_of "$f")"
+  cmd=(flutter build apk "--$mode" --flavor "$(gradle_flavor_of "$f")" --target-platform "$(platform_of "$f")"
     --build-name "$name" --build-number "$code" "--dart-define=DSH_APP_VERSION=$name+$code")
   [[ -n $target ]] && cmd+=(-t "$target")
   ((beta)) && cmd+=("--dart-define-from-file=$beta_json")
@@ -128,10 +133,9 @@ fi
 
 stop_daemon() {
   ((keep_daemon)) && return 0
+  # Stop through this project's wrapper; never pgrep/kill every GradleDaemon on
+  # the machine, or another project's build gets interrupted.
   (cd "$APP/android" && ./gradlew --stop -q >/dev/null 2>&1) || true
-  local pids
-  pids=$(pgrep -f '[G]radleDaemon' || true)
-  [[ -n $pids ]] && kill $pids 2>/dev/null || true
 }
 drop_beta() { [[ -f $beta_json ]] && shred -u "$beta_json" 2>/dev/null || rm -f "$beta_json"; }
 trap 'drop_beta; stop_daemon' EXIT
@@ -155,12 +159,19 @@ for i in "${!flavors[@]}"; do
   f=${flavors[$i]}
   echo "→ ${commands[$i]% }"
   (cd "$APP" && eval "${commands[$i]}")
-  apk="$OUT/app-$f-$mode.apk"
+  apk="$OUT/app-$(apk_flavor_of "$f")-$mode.apk"
   [[ -f $apk ]] || die "$f: no APK at $apk"
   if [[ -n $aapt2 ]]; then
     badge=$("$aapt2" dump badging "$apk" 2>/dev/null | sed -n '/^package:/p' || true)
     [[ $badge == *"versionCode='$code'"* && $badge == *"versionName='$name'"* ]] ||
       die "$f: APK says ${badge:-nothing}; expected versionName '$name' versionCode '$code'"
+    # Flavors are split by ABI; prebuilt AAR libs for another ABI must not ship
+    # (app/android/app/build.gradle.kts excludes them via androidComponents).
+    abis=$("$aapt2" dump badging "$apk" 2>/dev/null | sed -n 's/^native-code: //p' || true)
+    case "$f:$abis" in
+      arm64*:*x86_64* | arm64*:*armeabi-v7a*) die "$f: APK still carries another ABI: ${abis:-nothing}" ;;
+      x64*:*arm64* | x64*:*armeabi-v7a*) die "$f: APK still carries another ABI: ${abis:-nothing}" ;;
+    esac
   fi
   built+=("$apk")
 done

@@ -7,15 +7,16 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dsh_app/state/plugin_config/plugin_config_api.dart';
+import 'package:dsh_app/ui/engine_settings/schema_form.dart' show SchemaFormSection;
 import 'package:dsh_app/ui/plugins/config/plugin_config_layout.dart';
 import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support.dart';
 
-List<String> _keys(Iterable<dynamic> sections) => [
+List<String> _keys(Iterable<SchemaFormSection> sections) => [
   for (final s in sections)
-    for (final f in s.fields) (f.path as List<String>).join('.'),
+    for (final f in s.fields) f.path.join('.'),
 ];
 
 PluginConfigForm _form(Map<String, Object?> schema, {Map<String, Object?> base = const {}}) => PluginConfigForm(
@@ -72,7 +73,14 @@ void main() {
     final form = PluginConfigForm(translatorEntry().view());
     final layout = pluginConfigLayout(form);
     expect(layout.advanced, isEmpty);
-    expect(_keys(layout.sections), ['provider', 'apiKey', 'targetLanguage', 'timeoutMs', 'bingEndpoint', 'maxTextChars']);
+    expect(_keys(layout.sections), [
+      'provider',
+      'apiKey',
+      'targetLanguage',
+      'timeoutMs',
+      'bingEndpoint',
+      'maxTextChars',
+    ]);
   });
 
   test('everything plumbing: nothing to fold it away from', () {
@@ -101,10 +109,7 @@ void main() {
 
   test('search: titles in both languages, keys, choices; folded fields too', () {
     final form = PluginConfigForm(voiceEntry().view());
-    expect(_keys(pluginConfigLayout(form, query: '超时').sections), [
-      'prepareTimeoutMs',
-      'inferenceTimeoutMs',
-    ]);
+    expect(_keys(pluginConfigLayout(form, query: '超时').sections), ['prepareTimeoutMs', 'inferenceTimeoutMs']);
     expect(_keys(pluginConfigLayout(form, query: 'timeout').sections), [
       'prepareTimeoutMs',
       'inferenceTimeoutMs',

@@ -11,7 +11,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'support.dart';
 
-Object roleFixture() => jsonDecode(File('test/engine_settings/fixtures/schemastery-roles.json').readAsStringSync());
+Object roleFixture() =>
+    jsonDecode(File('test/engine_settings/fixtures/schemastery-roles.json').readAsStringSync()) as Object;
 FakeSettingsHost roleHost(String key, Object? value) {
   final root = SchemaNode.fromJson(roleFixture());
   // Keep the true serialized refs, changing only the root's field selection

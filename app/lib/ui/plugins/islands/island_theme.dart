@@ -16,22 +16,28 @@ class IslandTheme {
   factory IslandTheme.fromTheme(ThemeData theme, {double textScale = 1}) {
     final scheme = theme.colorScheme;
     final colors = theme.extension<DshColors>();
+    final surfaces = theme.extension<DshSurfaces>();
     final dark = theme.brightness == Brightness.dark;
     final ink = scheme.onSurface;
     Color a(Color c, double alpha) => c.withValues(alpha: alpha);
     final lines = dark ? const [0.06, 0.12, 0.16, 0.20] : const [0.04, 0.10, 0.12, 0.16];
     final tertiary = colors?.textTertiary ?? scheme.onSurfaceVariant;
+    // The same glass the App draws its own cards and sheets with, so a plugin
+    // page does not fall back to DSH Web's flatter grey surfaces.
+    final cardFill = surfaces?.card.fallbackFill ?? scheme.surfaceContainerLowest;
+    final sheetFill = surfaces?.sheet.fallbackFill ?? scheme.surfaceContainer;
+    final controlFill = surfaces?.pill.fallbackFill ?? scheme.surfaceContainerHigh;
     return IslandTheme(
       dark: dark,
       textScale: textScale,
       tokens: {
         // The page is see-through: the App's own background shows behind.
         '--dsw-alias-bg-base': 'transparent',
-        '--dsw-alias-bg-layer-1': cssColor(scheme.surfaceContainerLow),
-        '--dsw-alias-bg-layer-2': cssColor(scheme.surfaceContainer),
-        '--dsw-alias-bg-layer-3': cssColor(scheme.surfaceContainerHigh),
-        '--dsw-alias-settings-card-fill': cssColor(scheme.surfaceContainer),
-        '--dsw-alias-settings-card-stroke': cssColor(a(ink, lines[3])),
+        '--dsw-alias-bg-layer-1': cssColor(cardFill),
+        '--dsw-alias-bg-layer-2': cssColor(sheetFill),
+        '--dsw-alias-bg-layer-3': cssColor(controlFill),
+        '--dsw-alias-settings-card-fill': cssColor(cardFill),
+        '--dsw-alias-settings-card-stroke': cssColor(surfaces?.card.hairline ?? a(ink, lines[3])),
         '--dsw-alias-label-primary': cssColor(ink),
         '--dsw-alias-label-secondary': cssColor(scheme.onSurfaceVariant),
         '--dsw-alias-label-tertiary': cssColor(tertiary),

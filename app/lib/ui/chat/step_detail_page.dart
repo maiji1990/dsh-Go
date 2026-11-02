@@ -2,6 +2,7 @@
 // arguments and output, or a model request's timing and token use (the
 // official trajectory inspector's content, laid out for a phone).
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dsh_client/dsh_client.dart';
@@ -672,7 +673,7 @@ class CodeSection extends StatelessWidget {
               style: IconButton.styleFrom(minimumSize: const Size(40, 40), foregroundColor: dsh.textTertiary),
               onPressed: () async {
                 final messenger = ScaffoldMessenger.maybeOf(context);
-                HapticFeedback.lightImpact();
+                unawaited(HapticFeedback.lightImpact());
                 await Clipboard.setData(ClipboardData(text: text));
                 messenger?.showBriefNotice(l10n.activityStepCopiedSection(title));
               },

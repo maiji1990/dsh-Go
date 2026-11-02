@@ -60,6 +60,7 @@ class UpdateChecker {
   Future<CheckResult> check({
     String? preferred,
     void Function(UpdateEndpoint endpoint)? onAttempt,
+
     /// What this build is. A source that answers with something no newer than
     /// this is not the end of the search: another source may still know a
     /// release (a stale channel must not hide the GitHub release). Null keeps
@@ -72,13 +73,13 @@ class UpdateChecker {
       onAttempt?.call(endpoint);
       final outcome = await _try(endpoint);
       switch (outcome) {
-        case ReleaseInfo release:
+        case final ReleaseInfo release:
           final found = CheckFound(release, endpoint);
           if (installed == null || release.version.isNewerThan(installed)) return found;
           // Answering with an older release is not proof that nothing newer
           // exists: keep the newest answer and ask the next source.
           if (stale == null || release.version.isNewerThan(stale.release.version)) stale = found;
-        case CheckFailure failure:
+        case final CheckFailure failure:
           attempts.add((endpoint.id, failure));
       }
     }

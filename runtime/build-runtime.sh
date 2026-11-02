@@ -7,6 +7,7 @@
 #   runtime/build-runtime.sh x86_64          # one ABI
 #   COMPRESS=gz runtime/build-runtime.sh     # .tar.gz instead of .tar.xz
 #   RUNTIME_OUT=/path runtime/build-runtime.sh   # stage outputs outside runtime/out (not packaged)
+#   RUNTIME_BASE_URL=https://host/runtime/r14 runtime/build-runtime.sh  # manifest.rootfsUrl
 #
 # The DSH tree is patched with runtime/patches/*.diff (pinned per DSH version in
 # runtime/patches/pins.json; an unvetted DSH version fails the build) and the dsh-go-bridge
@@ -17,6 +18,7 @@
 # Outputs (consumed by app/android/app/build.gradle.kts flavors):
 #   runtime/out/<abi>/assets/runtime/rootfs-<abi>.tar.xz
 #   runtime/out/<abi>/assets/runtime/manifest.json      (versions, hashes, launch template)
+#   runtime/out/<abi>/assets-manifest/runtime/manifest.json  (normal APK; rootfs via rootfsUrl)
 #   runtime/out/<abi>/assets/runtime/licenses/...
 #   runtime/out/<abi>/jniLibs/<abi>/lib{proot,proot-loader,talloc,android-shmem}.so
 #   runtime/out/<abi>/build-report.json                  (ELF audit, pruned files, warnings)
@@ -37,6 +39,10 @@ PY=(python3 -I "$HERE/lib/rtbuild.py")
 
 # ---- pinned inputs (override via environment; pinned hashes then must be updated too) ----
 RUNTIME_REVISION="${RUNTIME_REVISION:-r14}"  # backend stack R7 (bundle-scoped plugin-config) + 076 callback fix + four rc.4 fixes; DSH as r12
+# Base URL the release host serves runtime archives from (no trailing slash
+# needed). When set, manifest.json carries `rootfsUrl` for the APK that ships
+# without a bundled rootfs; leave empty for offline-only builds.
+RUNTIME_BASE_URL="${RUNTIME_BASE_URL:-}"
 DSH_VERSION="${DSH_VERSION:-0.2.1-rc.4}"
 NODE_VERSION="${NODE_VERSION:-24.22.1}"
 # pnpm runs DSH's plugin installs (pluginManager / `dsh plugin`); the version the DSH repo pins.
@@ -44,7 +50,7 @@ PNPM_VERSION="${PNPM_VERSION:-11.28.5}"
 # dist.integrity of pnpm-$PNPM_VERSION.tgz, identical on registry.npmjs.org and npmmirror
 PNPM_INTEGRITY="${PNPM_INTEGRITY:-sha512-SEVj0wtMKtJ8tIqpT/KzAtvOvI/2vyiBbCWJiG4UbOf3bzVPO8GkOOb16XaMMCqgpvet2CMpA81M+BQmy8FNng==}"
 UBUNTU_VERSION="${UBUNTU_VERSION:-24.04.5}"
-PROOT_VERSION="5.1.107.98"
+PROOT_VERSION="5.1.107.101"
 TALLOC_VERSION="2.5.0"
 SHMEM_VERSION="0.7"
 UBUNTU_EXTRA="${UBUNTU_EXTRA:-tzdata ca-certificates git}"   # extra noble debs (+ dependency closure)
@@ -72,8 +78,8 @@ declare -A PIN=(
   [ubuntu-base-24.04.5-base-amd64.tar.gz]=e77b6f10c2590cef872b33ee9f635a0e3fd1f57fb074c0e52b5c7f56147a0c86
   [node-v24.22.1-linux-arm64.tar.xz]=dbabf7a1cbf947e6059ffad2c27b80041db97dea1e553b62afdee7f13fca336e
   [node-v24.22.1-linux-x64.tar.xz]=6c172a9ab6718f7b801fb5a7bd486af2ee5e32758086a04b84fcce2aa77095e6
-  [proot_5.1.107.98_aarch64.deb]=29de40efea4daa2a6168b617915206511c63e8d46bf5f4b07d48723441ef7f3b
-  [proot_5.1.107.98_x86_64.deb]=1c31ad7e1046f4d418fef19b6dfaa9a14801d2047ade6ad0375b3f5501e3e227
+  [proot_5.1.107.101_aarch64.deb]=a28355e9be257e1f87f4e9294b3118470d4fd7a5442fed8b278f4443c83407d7
+  [proot_5.1.107.101_x86_64.deb]=85adb8d0d2e1edc6c56e60c17136adf05e54ce75f69407ec7116a4c5997eaed5
   [libtalloc_2.5.0_aarch64.deb]=556591f43bb773ad8777e1a29522640866a55f95dab71914418b94a8c58ad5a7
   [libtalloc_2.5.0_x86_64.deb]=b8c6d95f20075dc1f9ec6573575b2444e8d526e48e0d8d6d5cf4e071e6e06530
   [libandroid-shmem_0.7_aarch64.deb]=0da3a24d558b93c92bcf8d611e0826a99ff96e396b148e6cdf33b47c47c57ff6
@@ -81,7 +87,7 @@ declare -A PIN=(
   [cpython-3.12.15+20261021-aarch64-unknown-linux-gnu-install_only_stripped.tar.gz]=b4567aa5a11f51b540c4dfd9e082ebf23e554f8ac17b85caa6cea23e83693394
   [cpython-3.12.15+20261021-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz]=6d7521138fd33afddc1ccd08abb007d9a2829e38117c2576f9efdc0ec73ce772
   # GPL-2.0 source of the proot binary (same archive Termux's build recipe pins); used for COPYING.
-  [proot-v5.1.107.98.zip]=9de61bddd6f5016d065e2755b72ff4747290e5f992562f031785b107b51d02ba
+  [proot-v5.1.107.101.zip]=a66743f50c7b0bac1913b83bf55e139d679c80a0ca2808eec76432a65640017f
 )
 
 log() { printf '\033[1;34m[runtime %s]\033[0m %s\n' "$(date +%H:%M:%S)" "$*" >&2; }
@@ -426,8 +432,19 @@ PYEOF
     "$runtime_version" "$DSH_VERSION" "$NODE_VERSION" "$PNPM_VERSION" "$UBUNTU_VERSION" "$PROOT_VERSION" "$TALLOC_VERSION" "$SHMEM_VERSION" \
     "$(cat "$work/dsh-patches.json")" "$bridge_version" \
     "$inputs_sha" "$(sha256 "$base")" "$(sha256 "$node")" "$(sha256 "$lockfile")" "$PNPM_INTEGRITY" "$SOURCE_DATE_EPOCH")"
+  local -a rootfs_url=()
+  if [[ -n "$RUNTIME_BASE_URL" ]]; then
+    rootfs_url=(--rootfs-url "${RUNTIME_BASE_URL%/}/$(basename "$archive")")
+  fi
   "${PY[@]}" manifest --abi "$abi" --report "$out/build-report.json" --jnilibs "$work/jnilibs.json" \
-    --versions "$versions" --out "$assets/manifest.json" >&2
+    --versions "$versions" "${rootfs_url[@]}" --out "$assets/manifest.json" >&2
+
+  # Normal APKs carry only the manifest (and licences); the archive comes from
+  # `rootfsUrl` on first run. The offline flavors use the full `assets/` tree.
+  local manifest_assets="$out/assets-manifest/runtime"
+  mkdir -p "$manifest_assets"
+  cp "$assets/manifest.json" "$manifest_assets/manifest.json"
+  [[ -d "$assets/licenses" ]] && cp -R "$assets/licenses" "$manifest_assets/licenses"
 
   # -- verification: every jniLib and every ELF in the rootfs must match the ABI --
   local f bad=0
@@ -457,7 +474,7 @@ for abi in ("x86_64", "arm64-v8a"):
     m = json.load(open(p))
     index["abis"][abi] = {k: m.get(k) for k in (  # .get: another ABI may still hold an older build
         "runtimeVersion", "rootfs", "rootfsSha256", "rootfsBytes", "uncompressedBytes", "entries",
-        "dshVersion", "nodeVersion", "pnpmVersion", "ubuntuVersion", "prootVersion")}
+        "rootfsUrl", "dshVersion", "nodeVersion", "pnpmVersion", "ubuntuVersion", "prootVersion")}
     index["abis"][abi]["jniLibs"] = {n: {"sha256": v["sha256"], "bytes": v["bytes"]} for n, v in m["jniLibs"].items()}
 json.dump(index, open(os.path.join(out, "manifest.json"), "w"), indent=2)
 print("wrote " + os.path.join(out, "manifest.json"))

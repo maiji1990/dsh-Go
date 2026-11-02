@@ -6,7 +6,9 @@
 // 设置 › 引擎参数 › 插件 and the kit's sheet — and the covered entry's page:
 // three names apart, the covered one 「由配置文件固定」.
 //
-//   flutter test --update-goldens test/plugin_config/plugin_config_golden_test.dart
+// Update only the failing pair (see docs/testing/goldens.md):
+//   flutter test --update-goldens test/plugin_config/plugin_config_golden_test.dart \
+//     --plain-name "plugin_config_hub_r7"
 
 import 'dart:async';
 

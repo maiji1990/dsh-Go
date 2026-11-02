@@ -43,7 +43,7 @@ Future<bool> saveImageToGallery(BuildContext context, ImageBytes load, {String? 
     failure = 'failed';
   }
   if (failure == null) {
-    HapticFeedback.lightImpact();
+    unawaited(HapticFeedback.lightImpact());
     messenger?.showBriefNotice(l10n.chatImageSavedToPhotos);
     return true;
   }

@@ -62,5 +62,12 @@
   "pluginConfigNameWorktree": "工作树管理",
   "pluginConfigNameWorktreeTools": "工作树工具",
   "pluginConfigNameRalphWorkflow": "工作流引擎",
-  "pluginConfigNameRalphTools": "Ralph 工具"
+  "pluginConfigNameRalphTools": "Ralph 工具",
+  "pluginConfigModeNative": "原生",
+  "pluginConfigModeWeb": "网页",
+  "pluginConfigModeReadOnly": "只读",
+  "pluginConfigAdapterTitle": "适配情况",
+  "pluginConfigAdapterNativeHint": "原生表单，可直接在 App 里编辑",
+  "pluginConfigAdapterWebHint": "插件自带网页界面，在 App 内嵌打开",
+  "pluginConfigAdapterReadOnlyHint": "这台主机只允许查看"
 }

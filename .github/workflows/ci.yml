@@ -1,0 +1,99 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          channel: stable
+          cache: true
+      - name: pub get
+        working-directory: app
+        run: flutter pub get
+      - name: analyze
+        working-directory: app
+        run: dart analyze --fatal-infos
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          channel: stable
+          cache: true
+      - name: fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk
+      - name: pub get
+        working-directory: app
+        run: flutter pub get
+      - name: test
+        working-directory: app
+        env:
+          DSH_TEST_FONT_DIR: /usr/share/fonts/opentype/noto
+        run: flutter test --total-shards 4 --shard-index ${{ matrix.shard }} --reporter github
+
+  build:
+    # The runtime bundle is a 158 MB download and the APK build needs the
+    # Android SDK/NDK; keep it off PRs and run it on main or by hand.
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          channel: stable
+          cache: true
+      - uses: actions/cache@v4
+        with:
+          path: |
+            runtime/out
+            runtime/.cache
+          key: runtime-${{ runner.os }}-${{ hashFiles('runtime/locks/**', 'runtime/patches/**', 'runtime/build-runtime.sh', 'runtime/lib/rtbuild.py') }}
+          restore-keys: |
+            runtime-${{ runner.os }}-
+      - name: runtime
+        run: bash runtime/build-runtime.sh arm64-v8a
+      - name: apk
+        env:
+          DSH_BETA_TOKEN_FILE: ''
+        run: bash tooling/build-apk.sh -f arm64-offline --keep-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dsh-go-arm64-offline-${{ github.run_id }}
+          path: app/build/app/outputs/flutter-apk/app-arm64offline-release.apk
+          if-no-files-found: error

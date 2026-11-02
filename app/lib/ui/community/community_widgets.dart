@@ -163,7 +163,7 @@ class _CommunityGroupSheetState extends State<CommunityGroupSheet> {
   }
 
   Future<void> _copy(String text) async {
-    HapticFeedback.lightImpact();
+    unawaited(HapticFeedback.lightImpact());
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
     setState(() => _copied = true);

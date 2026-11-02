@@ -49,10 +49,11 @@ class DraftStore extends Notifier<DraftState> {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(preferenceKey);
       if (raw != null) {
-        for (final MapEntry(:key, :value) in (jsonDecode(raw) as Map).entries) {
-          restored[key as String] = ChatDraft(
-            text: value['t'] as String,
-            updatedAt: DateTime.fromMillisecondsSinceEpoch(value['at'] as int),
+        for (final MapEntry(:key, :value) in (jsonDecode(raw) as Map<String, Object?>).entries) {
+          final entry = value as Map<String, Object?>;
+          restored[key] = ChatDraft(
+            text: entry['t'] as String,
+            updatedAt: DateTime.fromMillisecondsSinceEpoch(entry['at'] as int),
           );
         }
       }

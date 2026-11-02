@@ -117,7 +117,7 @@ void main() {
     final scroll = _scroll(tester);
     host.paused.add('models');
     c.invalidate(modelCatalogProvider);
-    c.read(modelCatalogProvider.future);
+    unawaited(c.read(modelCatalogProvider.future));
     final start = tester.binding.clock.now();
     final waiting = host.requests['models']!.single;
     Timer(const Duration(seconds: 3), () => waiting.complete(response));
@@ -166,7 +166,7 @@ void main() {
     expect(find.textContaining('离线'), findsWidgets);
     expect(tester.widget<Switch>(find.byType(Switch).first).onChanged, isNull);
     c.read(switchConnectionProvider.notifier).set(other.connection);
-    c.read(installedPluginsProvider.future);
+    unawaited(c.read(installedPluginsProvider.future));
     final start = tester.binding.clock.now();
     final waiting = other.requests['plugins']!.single;
     Timer(const Duration(seconds: 3), () => waiting.complete(response));
@@ -231,7 +231,7 @@ void main() {
     );
     expect(cachedRow.onTap, isNull);
     c.read(switchConnectionProvider.notifier).set(other.connection);
-    c.read(customProvidersProvider.future);
+    unawaited(c.read(customProvidersProvider.future));
     final start = tester.binding.clock.now();
     final waiting = next.pending!;
     Timer(const Duration(seconds: 3), () => waiting.complete(next.snapshot));
@@ -301,7 +301,7 @@ void main() {
     expect(tester.getTopLeft(find.byType(DrawerConversationList)).dy, closeTo(listTop, 0.01));
     expect(tester.widget<SessionTile>(find.byType(SessionTile).first).onLongPress, isNull);
     c.read(switchConnectionProvider.notifier).set(other.connection);
-    c.read(sessionsProvider.future);
+    unawaited(c.read(sessionsProvider.future));
     final start = tester.binding.clock.now();
     final waiting = other.requests['sessions']!.single;
     Timer(const Duration(seconds: 3), () {
@@ -359,7 +359,7 @@ void main() {
     final c = ProviderScope.containerOf(tester.element(find.byType(ProvidersPage)));
     backend.pending = Completer<ProviderSettings?>();
     c.invalidate(customProvidersProvider);
-    c.read(customProvidersProvider.future);
+    unawaited(c.read(customProvidersProvider.future));
     final waiting = backend.pending!;
     final start = tester.binding.clock.now();
     Timer(const Duration(seconds: 3), () => waiting.complete(backend.snapshot));

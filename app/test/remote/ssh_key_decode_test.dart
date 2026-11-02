@@ -68,7 +68,7 @@ void main() {
   for (final locale in [AppLocale.zhCN, AppLocale.en]) {
     test('key errors keep the caller locale ($locale)', () async {
       AppLocale.use(locale);
-      for (final (pem, password, message) in [
+      for (final (pem, password, message) in <(String, String?, String?)>[
         ('', null, appL10n.remoteErrPrivateKeyMissing),
         (encryptedKey, null, appL10n.remoteErrKeyNeedsPassword),
         ('not a PEM key', null, appL10n.remoteErrKeyUnreadable),

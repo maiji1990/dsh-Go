@@ -56,14 +56,32 @@ android {
             dimension = "abi"
             ndk { abiFilters += "x86_64" }
         }
+        // Offline flavors bundle the 158 MB rootfs; normal flavors carry only
+        // manifest.json and download it on first run (manifest.rootfsUrl).
+        create("arm64Offline") {
+            dimension = "abi"
+            ndk { abiFilters += "arm64-v8a" }
+        }
+        create("x64Offline") {
+            dimension = "abi"
+            ndk { abiFilters += "x86_64" }
+        }
     }
 
     sourceSets {
         getByName("arm64") {
+            assets.srcDir(File(runtimeOut, "arm64-v8a/assets-manifest"))
+            jniLibs.srcDir(File(runtimeOut, "arm64-v8a/jniLibs"))
+        }
+        getByName("arm64Offline") {
             assets.srcDir(File(runtimeOut, "arm64-v8a/assets"))
             jniLibs.srcDir(File(runtimeOut, "arm64-v8a/jniLibs"))
         }
         getByName("x64") {
+            assets.srcDir(File(runtimeOut, "x86_64/assets-manifest"))
+            jniLibs.srcDir(File(runtimeOut, "x86_64/jniLibs"))
+        }
+        getByName("x64Offline") {
             assets.srcDir(File(runtimeOut, "x86_64/assets"))
             jniLibs.srcDir(File(runtimeOut, "x86_64/jniLibs"))
         }
@@ -115,6 +133,24 @@ android {
     }
 }
 
+// abiFilters alone does not drop prebuilt AAR native libs (WebRTC, Conscrypt):
+// Flutter's default config already carries all three ABIs, and a flavor's `+=`
+// only appends. Exclude the other ABIs at packaging time instead.
+androidComponents {
+    onVariants(selector().withFlavor("abi" to "arm64")) { variant ->
+        variant.packaging.jniLibs.excludes.addAll(listOf("lib/x86_64/**", "lib/armeabi-v7a/**"))
+    }
+    onVariants(selector().withFlavor("abi" to "arm64Offline")) { variant ->
+        variant.packaging.jniLibs.excludes.addAll(listOf("lib/x86_64/**", "lib/armeabi-v7a/**"))
+    }
+    onVariants(selector().withFlavor("abi" to "x64")) { variant ->
+        variant.packaging.jniLibs.excludes.addAll(listOf("lib/arm64-v8a/**", "lib/armeabi-v7a/**"))
+    }
+    onVariants(selector().withFlavor("abi" to "x64Offline")) { variant ->
+        variant.packaging.jniLibs.excludes.addAll(listOf("lib/arm64-v8a/**", "lib/armeabi-v7a/**"))
+    }
+}
+
 kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
@@ -127,6 +163,7 @@ flutter {
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 
     // .tar.xz support for the rootfs bundle.
     implementation("org.tukaani:xz:1.10")

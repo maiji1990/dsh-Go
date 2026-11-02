@@ -96,7 +96,7 @@ def main():
             sys.exit(f'{DART.relative_to(ROOT)} is stale: run app/tool/make_replay_viewer.py')
         print('up to date')
         return
-    DART.write_text(generated, encoding='utf-8')
+    DART.write_text(generated, encoding='utf-8', newline='\n')
     out = args.out
     out.mkdir(parents=True, exist_ok=True)
     (out / 'c.html').write_text(page(src, connect="'self'", title='dsh-go 对话', data=''), encoding='utf-8')

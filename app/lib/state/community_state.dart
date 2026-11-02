@@ -286,7 +286,7 @@ class CommunityController extends AsyncNotifier<CommunityState> {
     best = best.copyWith(fetchedAt: fetchedAt);
     final now = ref.read(communityClockProvider)();
     final due = fetchedAt == null || now.isBefore(fetchedAt) || now.difference(fetchedAt) >= communityRefreshInterval;
-    if (due) Future.microtask(refresh);
+    if (due) unawaited(Future.microtask(refresh));
     return best;
   }
 

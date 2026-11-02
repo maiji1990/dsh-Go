@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dsh_app/state/engine_settings_state.dart';
+import 'package:dsh_app/ui/engine_settings/schema_fields.dart';
 import 'package:dsh_app/ui/engine_settings/schema_form.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -11,7 +12,7 @@ SettingsNamespaceView view(Object schema) =>
 void main() {
   for (final name in ['dsh-ears-0.4.3', 'goodandready-dsh-voice-0.9.42', 'official-speech-to-text-0.2.1-rc.2']) {
     test('real published plugin schema remains a native form: $name', () {
-      final schema = view(jsonDecode(File('test/engine_settings/fixtures/$name.json').readAsStringSync()));
+      final schema = view(jsonDecode(File('test/engine_settings/fixtures/$name.json').readAsStringSync()) as Object);
       final fields = schemaSections(schema).expand((s) => s.fields).toList();
       expect(fields, isNotEmpty);
       expect(fields.every((f) => f.fallbackNode == null), isTrue);
@@ -20,6 +21,51 @@ void main() {
       }
     });
   }
+
+  test('optional object arrays and object-valued dicts are native leaves', () {
+    final schema = view({
+      'type': 'object',
+      'dict': {
+        'accounts': {
+          'type': 'union',
+          'list': [
+            {'type': 'const', 'value': null},
+            {
+              'type': 'array',
+              'inner': {
+                'type': 'object',
+                'dict': {
+                  'name': {'type': 'string'},
+                },
+              },
+            },
+          ],
+        },
+        'modelLimits': {
+          'type': 'dict',
+          'inner': {
+            'type': 'union',
+            'list': [
+              {'type': 'const', 'value': null},
+              {
+                'type': 'object',
+                'dict': {
+                  'contextWindow': {'type': 'number'},
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    final fields = schemaSections(schema).expand((s) => s.fields).toList();
+    expect(fields.map((f) => f.path), [
+      ['accounts'],
+      ['modelLimits'],
+    ]);
+    expect(kindOf(schemaAt(schema.schema, ['accounts'])!), FieldKind.objectList);
+    expect(kindOf(schemaAt(schema.schema, ['modelLimits'])!), FieldKind.objectDict);
+  });
 
   test('deep objects preserve leaves rather than dropping the third group', () {
     final schema = view({
@@ -89,9 +135,21 @@ void main() {
 
   test('disabled intersection member locks only the fields it owns', () {
     final schema = view({
-      'type': 'intersect', 'list': [
-        {'type': 'object', 'meta': {'disabled': true}, 'dict': {'locked': {'type': 'boolean'}}},
-        {'type': 'object', 'dict': {'free': {'type': 'boolean'}}},
+      'type': 'intersect',
+      'list': [
+        {
+          'type': 'object',
+          'meta': {'disabled': true},
+          'dict': {
+            'locked': {'type': 'boolean'},
+          },
+        },
+        {
+          'type': 'object',
+          'dict': {
+            'free': {'type': 'boolean'},
+          },
+        },
       ],
     });
     expect(schemaPathDisabled(schema.schema, ['locked']), isTrue);

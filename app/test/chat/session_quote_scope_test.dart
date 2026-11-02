@@ -312,7 +312,7 @@ void main() {
       expect(r.h.container.read(chatProvider('S')).error, isNotNull);
       _QuoteFlow.installHandlers(r.h);
       bool? changed;
-      r.h.container.read(chatProvider('S').notifier).setModel(_currentB).then((value) => changed = value);
+      unawaited(r.h.container.read(chatProvider('S').notifier).setModel(_currentB).then((value) => changed = value));
       await ui.settleIo(tester, () => changed != null);
       expect(changed, isTrue);
       expect(r.h.container.read(chatProvider('S')).model!.toJson(), _currentB.toJson());
@@ -337,7 +337,7 @@ void main() {
       oldRelease = hold.release;
       hold.arm('session/selectModel');
       bool? changed;
-      r.h.container.read(chatProvider('S').notifier).setModel(_currentB).then((value) => changed = value);
+      unawaited(r.h.container.read(chatProvider('S').notifier).setModel(_currentB).then((value) => changed = value));
       await ui.settleIo(tester, () => hold.received!.isCompleted);
       oldRelease!.complete();
       await ui.settleIo(tester, () => !r.busy(tester));

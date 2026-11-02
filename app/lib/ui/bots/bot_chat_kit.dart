@@ -892,7 +892,7 @@ List<Map<String, Object?>> _viewChoices(Map<String, Object?> view) {
   if (!canRenderBotView(view)) return (lines: lines, control: null);
   Map<String, Object?>? control;
   void walk(Object? node, int depth) {
-    if (node is! Map || depth > 6) return;
+    if (node is! Map<String, Object?> || depth > 6) return;
     final type = node['type'];
     switch (type) {
       case 'text':

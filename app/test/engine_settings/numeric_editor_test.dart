@@ -13,7 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'support.dart';
 
 Object numericFixture() =>
-    jsonDecode(File('test/engine_settings/fixtures/schemastery-numeric-editor.json').readAsStringSync());
+    jsonDecode(File('test/engine_settings/fixtures/schemastery-numeric-editor.json').readAsStringSync()) as Object;
 Future<FakeSettingsHost> openNumber(WidgetTester tester, String key) async {
   final schema = numericFixture() as Map<String, dynamic>;
   final node = SchemaNode.fromJson(schema).fields![key]!;

@@ -373,7 +373,7 @@ class _ScheduleTaskSheetPageState extends ConsumerState<ScheduleTaskSheetPage> w
     try {
       await runScheduleNow(client, _task, timeZone: ref.read(deviceTimeZoneProvider).value);
       if (!mounted) return;
-      HapticFeedback.selectionClick();
+      unawaited(HapticFeedback.selectionClick());
       // The instruction lands in this conversation, right under the sheet.
       Navigator.of(context).pop();
     } on Object {

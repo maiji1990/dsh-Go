@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -108,7 +110,7 @@ Future<bool> activateHost(BuildContext context, WidgetRef ref, HostRef host) asy
     if (config.hostKeyFingerprint == null) {
       final messenger = ScaffoldMessenger.maybeOf(context);
       final navigator = Navigator.of(context);
-      showDialog<void>(context: context, barrierDismissible: false, builder: (_) => const _Fetching());
+      unawaited(showDialog<void>(context: context, barrierDismissible: false, builder: (_) => const _Fetching()));
       PresentedHostKey? key;
       String? error;
       try {

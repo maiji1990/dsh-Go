@@ -75,10 +75,10 @@ final class BalanceUnavailable extends BalanceResult {
 /// Parses the `/user/balance` body; prefers the CNY entry (the account
 /// currency for mainland users), else the first one.
 DeepSeekBalance? parseBalance(Object? json) {
-  if (json is! Map) return null;
+  if (json is! Map<String, Object?>) return null;
   final infos = json['balance_infos'];
-  if (infos is! List || infos.isEmpty) return null;
-  final entries = infos.whereType<Map>().toList();
+  if (infos is! List<Object?> || infos.isEmpty) return null;
+  final entries = infos.whereType<Map<String, Object?>>().toList();
   if (entries.isEmpty) return null;
   final info = entries.firstWhere((e) => e['currency'] == 'CNY', orElse: () => entries.first);
   double? amount(Object? v) => v is num ? v.toDouble() : (v is String ? double.tryParse(v) : null);

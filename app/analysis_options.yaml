@@ -1,9 +1,16 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  language:
+    strict-casts: true
   exclude:
     - build/**
     - android/**
+
+linter:
+  rules:
+    - unawaited_futures
+    - prefer_final_locals
 
 formatter:
   page_width: 120

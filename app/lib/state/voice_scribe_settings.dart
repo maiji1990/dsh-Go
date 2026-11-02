@@ -100,7 +100,7 @@ class VoiceScribeHttpTransport implements VoiceScribeTransport {
     return connection;
   }
 
-  Future<Map> _request(Map<String, Object?> body, {bool Function()? stillCurrent}) async {
+  Future<Map<String, Object?>> _request(Map<String, Object?> body, {bool Function()? stillCurrent}) async {
     void check() {
       _connection();
       if (stillCurrent?.call() == false) throw StateError('voice settings generation changed');
@@ -126,7 +126,7 @@ class VoiceScribeHttpTransport implements VoiceScribeTransport {
       throw StateError('voice settings request failed');
     }
     final decoded = jsonDecode(response.text);
-    if (decoded is! Map || decoded['ok'] != true) throw StateError('voice settings request rejected');
+    if (decoded is! Map<String, Object?> || decoded['ok'] != true) throw StateError('voice settings request rejected');
     return decoded;
   }
 

@@ -185,7 +185,7 @@ void main() {
     expect(snapshot.throughSeq, 1);
     expect(snapshot.entries.single.line, 'same');
     final done = Completer<void>();
-    messenger.handlePlatformMessage(
+    await messenger.handlePlatformMessage(
       'test/b6/events',
       const StandardMethodCodec().encodeSuccessEnvelope({
         'type': 'logs',

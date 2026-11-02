@@ -68,6 +68,7 @@
   "engineFieldItem": "item",
   "engineFieldAlreadyAdded": "Already added",
   "engineFieldEnterName": "Enter a name",
+  "engineFieldNameExists": "An item with this name already exists",
   "engineFieldEnterNumber": "Enter a number",
   "engineFieldValue": "Value",
   "engineFieldNew": "New",
@@ -344,6 +345,8 @@
   "engineModelLevels": "Available levels",
   "engineModelNeedLevel": "Pick at least one level",
   "engineFieldEditOnWeb": "Edit this item on the web",
+  "engineFieldRawJson": "Raw JSON",
+  "engineFieldRawJsonHint": "Advanced: edit this value as JSON",
   "engineSettingsHostChanged": "The host changed. Reopen these settings to edit.",
   "engineSecretTargetChanged": "This field changed. Reopen it to edit.",
   "engineSettingsGroupCount": "{count, plural, =1{1 setting} other{{count} settings}}"

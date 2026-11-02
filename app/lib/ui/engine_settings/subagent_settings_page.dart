@@ -7,7 +7,7 @@
 
 import 'dart:async';
 
-import 'package:dsh_client/dsh_client.dart' show ModelCatalog;
+import 'package:dsh_client/dsh_client.dart' show ModelCatalog, ProviderGroup;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -52,7 +52,7 @@ class ModelCandidate {
 List<(String group, List<ModelCandidate> models)> modelCandidates(ModelCatalog? catalog, List<ModelRoute> saved) {
   final left = {...saved};
   final groups = <(String, List<ModelCandidate>)>[];
-  for (final group in catalog?.groups ?? const []) {
+  for (final group in catalog?.groups ?? const <ProviderGroup>[]) {
     if (group.models.isEmpty) continue;
     groups.add((
       group.name,

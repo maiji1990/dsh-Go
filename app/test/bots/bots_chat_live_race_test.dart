@@ -32,7 +32,7 @@ void main() {
           fake.emit('hello', {'api': 1, 'boot': 'boot-1', 'seq': 0, 'revision': 7});
           await settle(12);
         }
-        fake.emit('message', Map<String, Object?>.from(f['live']['data']));
+        fake.emit('message', Map<String, Object?>.from(f['live']['data'] as Map<Object?, Object?>));
         await settle(8);
         expect(c.read(botChatProvider('b2')).items.any((i) => i.text == 'SYNTHETIC live reply'), isTrue);
         delayed.complete(f['snapshot']['value']);
@@ -54,7 +54,7 @@ void main() {
     await settle(12);
     c.listen(botChatProvider('b2'), (_, _) {});
     await settle(12);
-    fake.emit('message', Map<String, Object?>.from(f['live']['data']));
+    fake.emit('message', Map<String, Object?>.from(f['live']['data'] as Map<Object?, Object?>));
     await settle();
     delayed.complete(f['after']['value']);
     await settle(12);
@@ -84,7 +84,7 @@ void main() {
     await settle(12);
     c.listen(botChatProvider('b2'), (_, _) {});
     await settle(12);
-    fake.emit('message', Map<String, Object?>.from(f['live']['data']));
+    fake.emit('message', Map<String, Object?>.from(f['live']['data'] as Map<Object?, Object?>));
     await settle();
     delayed.completeError(StateError('synthetic history failure'));
     await settle(12);
@@ -109,7 +109,7 @@ void main() {
     final loading = c.read(botChatProvider('b2').notifier).reload();
     older.complete(f['empty']['value']);
     await settle();
-    fake.emit('message', Map<String, Object?>.from(f['live']['data']));
+    fake.emit('message', Map<String, Object?>.from(f['live']['data'] as Map<Object?, Object?>));
     await settle();
     current.complete(f['snapshot']['value']);
     await loading;
@@ -125,7 +125,10 @@ void main() {
     await settle(12);
     c.listen(botChatProvider('b2'), (_, _) {});
     await settle(12);
-    fake.emit('message', {...Map<String, Object?>.from(f['live']['data']), 'sessionId': 'different-part'});
+    fake.emit('message', {
+      ...Map<String, Object?>.from(f['live']['data'] as Map<Object?, Object?>),
+      'sessionId': 'different-part',
+    });
     await settle();
     delayed.complete(f['snapshot']['value']);
     await settle(12);

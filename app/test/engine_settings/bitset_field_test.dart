@@ -11,13 +11,16 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'support.dart';
 
-Object bitsetFixture() => jsonDecode(File('test/engine_settings/fixtures/schemastery-bitset.json').readAsStringSync());
+Object bitsetFixture() =>
+    jsonDecode(File('test/engine_settings/fixtures/schemastery-bitset.json').readAsStringSync()) as Object;
 
-FakeSettingsHost schemaHost(Object schema, {Map<String, Object?> base = const {}}) => FakeSettingsHost(describe: {
-  'namespaces': [
-    {'ns': 'structure', 'schema': schema, 'value': base, 'base': base, 'revision': 0},
-  ],
-});
+FakeSettingsHost schemaHost(Object schema, {Map<String, Object?> base = const {}}) => FakeSettingsHost(
+  describe: {
+    'namespaces': [
+      {'ns': 'structure', 'schema': schema, 'value': base, 'base': base, 'revision': 0},
+    ],
+  },
+);
 
 void main() {
   test('real serialized bit masks survive uid decoding, including signed high bit', () {
@@ -71,8 +74,12 @@ void main() {
       tester.platformDispatcher.textScaleFactorTestValue = 2;
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
       final host = schemaHost(bitsetFixture(), base: {'permissions': 1});
-      await pumpPage(tester, const EngineSettingsPage(ns: 'structure'),
-        overrides: engineOverrides(DshClient.withCarrier(host)), brightness: brightness);
+      await pumpPage(
+        tester,
+        const EngineSettingsPage(ns: 'structure'),
+        overrides: engineOverrides(DshClient.withCarrier(host)),
+        brightness: brightness,
+      );
       tester.view.physicalSize = const Size(640, 1800);
       await tester.pump();
       await tester.tap(find.text('Permissions'));

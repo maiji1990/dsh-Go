@@ -139,8 +139,8 @@ void main() {
         if (mode == 'late success' || mode == 'busy replacement') {
           pending.complete(true);
         } else {
-          final error = fixture['stale']['error'];
-          pending.completeError(DshRemoteException(error['code'], error['message']));
+          final error = fixture['stale']['error'] as Map<String, Object?>;
+          pending.completeError(DshRemoteException(error['code'] as String, error['message'] as String));
         }
         if (request != null) await request;
       } else {
@@ -238,8 +238,8 @@ void main() {
       expect(c.read(dsBotProvider.notifier).api, isNot(same(oldApi)));
       expect(c.read(dsBotProvider).hello?.boot, 'boot-2');
       final stateBefore = fb.endpoints.where((v) => v == 'state').length;
-      final error = fixture['stale']['error'];
-      pending.completeError(DshRemoteException(error['code'], error['message']));
+      final error = fixture['stale']['error'] as Map<String, Object?>;
+      pending.completeError(DshRemoteException(error['code'] as String, error['message'] as String));
       await request;
       await frames(t);
       expect(find.byType(SnackBar), findsNothing, reason: 'the old host\'s late error stays with it');

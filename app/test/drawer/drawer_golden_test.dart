@@ -3,6 +3,8 @@
 //
 //   flutter test --update-goldens test/drawer/drawer_golden_test.dart
 
+import 'dart:async';
+
 import 'package:dsh_app/state/connection_state.dart';
 import 'package:dsh_app/state/drawer_view_state.dart';
 import 'package:dsh_app/state/session_attention_state.dart';
@@ -128,7 +130,7 @@ void main() {
     overrides: () => _drawer(prefs: storedView(sampleFolders)),
     before: _before((tester) async {
       final context = tester.element(find.byType(HomeShell));
-      showFolderEditor(context, initial: sampleFolders.folders.first);
+      unawaited(showFolderEditor(context, initial: sampleFolders.folders.first));
       await _settle(tester);
     }),
   );
