@@ -260,11 +260,12 @@ EOF
 
 ### OPT-06 985 张 golden 占 304 MB
 
-- **优先级**：P1　**状态**：**部分完成**（2026-11-01，`0a02d5d`）
+- **优先级**：P1　**状态**：**部分完成，且重放同步后被重置**（2026-11-01 `0a02d5d`；2026-11-02 重放时未带 PNG）
 - **证据（修复前）**：`app/test` 331 MB（跟踪文件 314 MB），其中 git 跟踪的 golden PNG 985 张共 304 MB；单张最大 1.48 MB（`app/test/shell/adaptive/goldens/wide_panel_dark.png`）。
 - **已完成**：
   - `tooling/optimize-goldens.sh` 用 `oxipng -o4 --strip safe` 只重压编码；985 张 **304 MB → 164 MB**，`app/test` 331 → 191 MB。
   - 逐张校验像素一致；全部 golden 用例 1577 通过、158 个按 `W3_GOLDENS` 门禁跳过。
+- **重放后的现状（2026-11-02）**：`resync/e685259` 只重放了文本改动，golden 用的是上游版本（上游新增了 10 张），当前 **995 张 / 307 MB**，`app/test` 337 MB。需要在新基线上重跑一次 `tooling/optimize-goldens.sh`（`oxipng -o4 --strip safe`）并单独提交，才能恢复到 ~164 MB。
 - **未完成 / 注意**：
   - Git 历史里的旧 blob 仍在，`.git` 从 471 → 627 MB，**clone 约 851 MB，没有下降**；要真正缩小 clone，需要重写历史或迁移 LFS（破坏性/协作成本高，需单独决定）。
   - 进一步减少尺寸矩阵、删除不必要的 golden 仍可做，但会改变覆盖率；`site/home/dist`（6.5 MB）仍是构建产物入库。
@@ -464,3 +465,4 @@ EOF
 | 2026-11-02 | OPT-02 发布：`rootfs-arm64-v8a.tar.xz`（116.5 MiB）上传到 `maiji1990/dsh-Go` 的 Release `runtime-r14-…-53b4fe78516f`（`--latest=false`，HTTP 200 / 122,149,248 B），`rootfsUrl` 已回填；普通 arm64 包 32.5 MB（`11021341`，包内无 rootfs）；x86_64 未发布，其 `rootfsUrl` 置空 |
 | 2026-11-02 | OPT-04 决定保留：`flutter_webrtc` 是编译期插件，裁剪等于砍掉 P2P 直连；本项不再推进 |
 | 2026-11-02 | 上游重写历史后重新同步：以 `e685259` 为基线新建 `resync/e685259`，重放 `1207c11..main` 的净改动（排除 golden PNG），194 → 4 个手工冲突；提交 `3276e9a`。基线、OPT-14 与运行时版本（`…-8502f4e42f76`）同步更新 |
+| 2026-11-02 | 重放后 golden 回到上游版本：995 张 / 307 MB（OPT-06 的压缩需在新基线上重跑 `tooling/optimize-goldens.sh`）；已推送 `main`（`9e894ad`） |
