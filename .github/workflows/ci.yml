@@ -63,6 +63,9 @@ jobs:
         working-directory: app
         env:
           DSH_TEST_FONT_DIR: ${{ runner.temp }}/noto-cjk
+          # Turn clocks and share cards render local time; the baselines were
+          # made in UTC+8, so pin it instead of the runner's UTC.
+          TZ: Asia/Shanghai
         run: flutter test --total-shards 4 --shard-index ${{ matrix.shard }} --reporter github
 
   build:

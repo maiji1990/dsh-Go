@@ -470,4 +470,5 @@ EOF
 | 2026-11-02 | OPT-06 在新基线上重做：20 张差异图重新生成（share 二维码/插件文案），其余 `oxipng -o4 --strip safe` 无损重压，995 张 310 → 167 MB（`72d34e0`）。Linux（WSL）全量测试 8829 通过 / 287 跳过 / 5 失败：drawer 2 张与 remote_bootstrap 2 个在干净上游同样失败，share_entries 1 个是并行负载下的 `pumpAndSettle` 超时（单独跑通过） |
 | 2026-11-02 | CI 修复：`fonts-noto-cjk` 只带 Regular/Bold，测试需要 Light（`NotoSansCJK-Light.ttc`）→ test 任务改安装 `fonts-noto-cjk` + `fonts-noto-cjk-extra`；此前 test 分片在所有提交上都因缺字体直接失败 |
 | 2026-11-02 | CI 再修：发行版字体（24.04 的 2023 版 / 26.10 的 2024 版）与基准图字形不同，`run_step_*`、`activity_strip_*`、`card_reply_*` 在 CI 上像素失败。test 任务改为固定下载 `Sans2.004` OTC 包并指向它；同时用 2.004 重新生成 `drawer_g9_folder_editor` 两张图（本机 2.004 下原本失败） |
+| 2026-11-02 | CI 根因确认：像素失败来自**时区**（`TZ=UTC` 可完整复现，`TZ=Asia/Shanghai` 全部通过）——计时器与分享卡片渲染本地时间。CI test 任务固定 `TZ=Asia/Shanghai`，并在 `docs/testing/goldens.md` 写明字体/时区约定 |
 | 2026-11-02 | 运行时 `…-8502f4e42f76` 已发布（arm64，116.5 MiB，HTTP 200），`rootfsUrl` 回填；普通包 `versionCode=11021704` 32.8 MB 重打（包内无 rootfs） |
