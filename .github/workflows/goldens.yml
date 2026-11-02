@@ -1,0 +1,48 @@
+name: goldens
+
+# Regenerates the golden baselines in the CI environment (same Flutter,
+# fonts and timezone as the `ci` workflow) and uploads them as an artifact.
+# Use it when a pixel diff only shows up on the runner: download the artifact,
+# copy the touched PNGs into the tree, recompress them and commit.
+on:
+  workflow_dispatch:
+    inputs:
+      tests:
+        description: 'Test files to regenerate (space separated paths under app/)'
+        required: false
+        default: 'test/share/share_card_golden_test.dart'
+
+permissions:
+  contents: read
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          channel: stable
+          cache: true
+      - name: fonts
+        run: |
+          mkdir -p "$RUNNER_TEMP/noto-cjk"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/noto.zip" \
+            https://github.com/notofonts/noto-cjk/releases/download/Sans2.004/03_NotoSansCJK-OTC.zip
+          unzip -q "$RUNNER_TEMP/noto.zip" -d "$RUNNER_TEMP/noto-cjk"
+      - name: pub get
+        working-directory: app
+        run: flutter pub get
+      - name: regenerate
+        working-directory: app
+        env:
+          DSH_TEST_FONT_DIR: ${{ runner.temp }}/noto-cjk
+          TZ: Asia/Shanghai
+        run: flutter test --update-goldens ${{ inputs.tests }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: goldens
+          path: |
+            app/test/**/goldens/*.png
+          if-no-files-found: error
