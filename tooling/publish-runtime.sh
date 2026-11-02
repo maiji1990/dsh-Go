@@ -35,7 +35,7 @@ fi
 
 command -v gh >/dev/null 2>&1 || { echo "publish-runtime: gh not found" >&2; exit 1; }
 if ! gh release view "$tag" --repo "$REPO" >/dev/null 2>&1; then
-  gh release create "$tag" --repo "$REPO" --latest=false \
+  gh release create "$tag" --repo "$REPO" --latest=false --prerelease \
     --title "Runtime $version" \
     --notes "DSH Go runtime $version. Referenced by the app on first run; do not edit or delete while a release uses it."
 fi

@@ -480,3 +480,4 @@ EOF
 | 2026-11-02 | CI 根因确认：像素失败来自**时区**（`TZ=UTC` 可完整复现，`TZ=Asia/Shanghai` 全部通过）——计时器与分享卡片渲染本地时间。CI test 任务固定 `TZ=Asia/Shanghai`，并在 `docs/testing/goldens.md` 写明字体/时区约定 |
 | 2026-11-02 | 运行时 `…-8502f4e42f76` 已发布（arm64，116.5 MiB，HTTP 200），`rootfsUrl` 回填；普通包 `versionCode=11021704` 32.8 MB 重打（包内无 rootfs） |
 | 2026-11-02 | CI 变绿（run `41452826984`）：除字体/时区/`goldens.yml` 外，还修了 `chat_alerts_test` 的 `late tracker` 与 `remote_bootstrap_test` 的改名 symlink；`auto_approve`、`local_http_startup` 是已知 flaky（重跑即过） |
+| 2026-11-02 | runtime Release 改为 `--prerelease`（只有一个 Release 时 `--latest=false` 仍会占住 `/releases/latest`，App 的更新检查会读到 runtime tag）；已把 `…-8502f4e42f76` 标为 prerelease，`/releases/latest` 现在 404（还没有 App Release） |

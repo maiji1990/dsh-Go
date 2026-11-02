@@ -129,7 +129,7 @@ versionCode = (年 - 2026) × 10^8 + MMDDhhmm      时钟固定按 UTC+8
 
    产物在 `runtime/out/arm64-v8a/assets/runtime/`；`runtime/out/arm64-v8a/assets-manifest/` 是给普通包用的 manifest-only 目录。
 
-2. **上传 rootfs 归档**：用 `tooling/publish-runtime.sh` 传到独立的 GitHub Release（tag `runtime-<runtimeVersion>`，`--latest=false`，不会抢 App 的更新），并回填 manifest 的 `rootfsUrl`：
+2. **上传 rootfs 归档**：用 `tooling/publish-runtime.sh` 传到独立的 GitHub Release（tag `runtime-<runtimeVersion>`，`--latest=false --prerelease`，两者一起用才不会抢 App 的更新——只有一个 Release 时 `--latest=false` 仍会被当成 latest，`/releases/latest` 返回它），并回填 manifest 的 `rootfsUrl`：
 
    ```sh
    tooling/publish-runtime.sh --dry-run   # 先看会传什么
