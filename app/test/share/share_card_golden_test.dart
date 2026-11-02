@@ -15,10 +15,15 @@ import 'package:dsh_app/ui/theme/theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support.dart';
+import '../support/golden_tolerance.dart';
 
 const _cardKey = shareCardKey;
 
 void main() {
+  // The inline maths run is a synthesised italic whose anti-aliasing differs
+  // between CPUs by ~0.09%; keep the cards comparable across machines.
+  tolerateGoldenPixelDiff(0.0015);
+
   for (final template in ShareTemplate.values) {
     softShadowTest('reply card (${template.name})', (tester) async {
       await pumpShareCard(tester, ShareCard(content: sampleReplyContent(), template: template));
