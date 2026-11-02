@@ -276,9 +276,12 @@ DSHAPP url dsh web: http://127.0.0.1:51234/?token=launch-tok
 
     for (final failingPs in [false, true]) {
       test('legacy node-like unrelated process survives (ps fails: $failingPs)', () async {
-        final sleep = Process.runSync('sh', ['-c', 'command -v sleep']).stdout.toString().trim();
-        final alias = Link('${bin.path}/node-unrelated')..createSync(sleep);
-        final other = await Process.start(alias.path, ['30']);
+        // A script rather than a renamed `sleep`: newer coreutils (uutils)
+        // refuses to run a binary under another argv[0].
+        final alias = File('${bin.path}/node-unrelated')
+          ..writeAsStringSync('#!/bin/sh\nexec sleep 30\n');
+        Process.runSync('chmod', ['+x', alias.path]);
+        final other = await Process.start(alias.path, []);
         addTearDown(other.kill);
         if (failingPs) {
           final ps = File('${bin.path}/ps')..writeAsStringSync('#!/bin/sh\nexit 1\n');
