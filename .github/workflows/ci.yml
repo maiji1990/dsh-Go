@@ -49,17 +49,20 @@ jobs:
           cache: true
       - name: fonts
         run: |
-          sudo apt-get update
-          # The tests need the Light face too; `fonts-noto-cjk` ships only
-          # Regular and Bold, the extra package carries the other weights.
-          sudo apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra
+          # The goldens were made with Noto Sans CJK 2.004 (Sans2.004 release).
+          # The distro package is newer and shifts a few glyphs, which fails
+          # pixel comparisons, so pin the release the baselines came from.
+          mkdir -p "$RUNNER_TEMP/noto-cjk"
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/noto.zip" \
+            https://github.com/notofonts/noto-cjk/releases/download/Sans2.004/03_NotoSansCJK-OTC.zip
+          unzip -q "$RUNNER_TEMP/noto.zip" -d "$RUNNER_TEMP/noto-cjk"
       - name: pub get
         working-directory: app
         run: flutter pub get
       - name: test
         working-directory: app
         env:
-          DSH_TEST_FONT_DIR: /usr/share/fonts/opentype/noto
+          DSH_TEST_FONT_DIR: ${{ runner.temp }}/noto-cjk
         run: flutter test --total-shards 4 --shard-index ${{ matrix.shard }} --reporter github
 
   build:
