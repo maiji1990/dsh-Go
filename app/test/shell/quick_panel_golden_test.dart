@@ -4,6 +4,7 @@
 //
 //   flutter test --update-goldens test/shell/quick_panel_golden_test.dart
 
+import 'dart:async';
 import 'dart:ui' show GestureSettings;
 
 import 'package:dsh_app/state/adaptive_layout_state.dart';
@@ -113,6 +114,7 @@ void main() {
 }
 
 Future<void> _openItems(WidgetTester tester) async {
-  showQuickPanelItems(tester.element(find.byType(HomeShell)));
+  // The sheet is fire-and-forget; the frames below let it settle.
+  unawaited(showQuickPanelItems(tester.element(find.byType(HomeShell))));
   await pumpFrames(tester, 10);
 }
