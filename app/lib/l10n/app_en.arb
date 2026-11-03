@@ -4298,7 +4298,7 @@
   "shellRuntimeFirstSetup": "First setup takes a minute or two",
   "shellRuntimeContinuing": "Continuing shortly",
   "shellRuntimeRestoreFailed": "Couldn’t restore saved content",
-  "shellRuntimeExtractFailed": "Couldn’t extract files",
+  "shellRuntimeInstallFailed": "Couldn’t finish installing. Try again.",
   "shellInstallLogs": "Installation logs",
   "shellRuntimeLocalOnly": "Everything runs on this phone",
   "shellRuntimeContinueWithoutKept": "Continue without restoring",

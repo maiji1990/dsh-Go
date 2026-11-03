@@ -224,7 +224,7 @@ void main() {
     );
     await tester.pump();
     expect(find.text('查看日志'), findsOneWidget);
-    expect(find.text('解压时出错'), findsOneWidget);
+    expect(find.text('安装未完成，请重试'), findsOneWidget);
     expect(tester.widgetList<Text>(find.byType(Text)).any((t) => RegExp(r'[A-Za-z]').hasMatch(t.data ?? '')), isFalse);
     expect(tester.widget<ProgressHalo>(find.byType(ProgressHalo)).value, 0);
     final left = tester.getRect(find.widgetWithText(OutlinedButton, '查看日志'));

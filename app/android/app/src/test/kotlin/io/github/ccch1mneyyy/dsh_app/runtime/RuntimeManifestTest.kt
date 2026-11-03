@@ -38,4 +38,40 @@ class RuntimeManifestTest {
     @Test fun offlineManifestHasNoUrl() {
         assertNull(RuntimeManifest.parse(manifest()).rootfsUrl)
     }
+
+    /** Older manifests have no separate system-layer identity. */
+    @Test fun rootfsVersionFallsBackToTheRuntimeVersion() {
+        assertEquals("r14-test", RuntimeManifest.parse(manifest()).rootfsVersion)
+    }
+
+    @Test fun readsASeparateRootfsVersion() {
+        val parsed = RuntimeManifest.parse(manifest().put("rootfsVersion", "node24-ubuntu24-abc"))
+        assertEquals("node24-ubuntu24-abc", parsed.rootfsVersion)
+    }
+
+    @Test fun readsTheEngineBundle() {
+        val json = manifest().put(
+            "engine",
+            JSONObject(
+                """
+                {"id":"engine-0.2.1-rc.4-7cce7432f2de","archive":"engine-arm64-v8a.tar.xz",
+                 "archiveBytes":789,"archiveSha256":"def","url":"https://example.com/engine.tar.xz",
+                 "patchSet":"7cce","dshVersion":"0.2.1-rc.4","rootfsIncludesDsh":false}
+                """.trimIndent(),
+            ),
+        )
+        val parsed = RuntimeManifest.parse(json).engine!!
+        assertEquals("engine-0.2.1-rc.4-7cce7432f2de", parsed.id)
+        assertEquals("engine-arm64-v8a.tar.xz", parsed.archive)
+        assertEquals(789, parsed.bytes)
+        assertEquals("7cce", parsed.patchSet)
+        assertEquals("0.2.1-rc.4", parsed.dshVersion)
+        assertEquals(false, parsed.inRootfs)
+    }
+
+    /** A manifest that cannot name a vetted engine must not enable the engine path. */
+    @Test fun ignoresAnEngineWithoutItsPatchSet() {
+        val json = manifest().put("engine", JSONObject("""{"id":"engine-x","archive":"engine.tar.xz"}"""))
+        assertNull(RuntimeManifest.parse(json).engine)
+    }
 }

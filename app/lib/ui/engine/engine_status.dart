@@ -77,7 +77,16 @@ String? humanizeRuntimeError(String? raw) {
         : appL10n.phoneEngineStorageDetails(sizes.group(1)!, sizes.group(2)!);
   }
   // l10n:keep native engine checksum error marker
-  if (text.contains('校验失败')) return appL10n.phoneEngineRuntimeCorrupt;
+  if (text.contains('校验失败') || text.contains('verification failed')) {
+    return appL10n.phoneEngineRuntimeCorrupt;
+  }
+  // Native install/downgrade messages are already localized; show them as-is
+  // rather than the generic "couldn't finish installing".
+  // l10n:keep native engine download error marker
+  if (text.contains('运行时下载失败') || text.contains('download the runtime')) return text;
+  // l10n:keep native engine no-source error marker
+  if (text.contains('没有下载地址') || text.contains('no download address')) return text;
+  if (text.contains('Storage') && text.contains('needed')) return appL10n.commonStorageFull;
   if (text.contains('No space left') || text.contains('ENOSPC')) {
     return appL10n.commonStorageFull;
   }

@@ -25880,11 +25880,11 @@ abstract class L10n {
   /// **'没能放回保留的内容'**
   String get shellRuntimeRestoreFailed;
 
-  /// No description provided for @shellRuntimeExtractFailed.
+  /// No description provided for @shellRuntimeInstallFailed.
   ///
   /// In zh, this message translates to:
-  /// **'解压时出错'**
-  String get shellRuntimeExtractFailed;
+  /// **'安装未完成，请重试'**
+  String get shellRuntimeInstallFailed;
 
   /// No description provided for @shellInstallLogs.
   ///

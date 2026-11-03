@@ -35,15 +35,26 @@ class RuntimeInstaller(
 ) {
     val baseDir = File(context.filesDir, "runtime")
     val rootfs = File(baseDir, "rootfs")
-    private val versionFile = File(baseDir, "rootfs.version")
+    private val rootfsVersionFile = File(baseDir, "rootfs.version")
+    private val runtimeVersionFile = File(baseDir, "runtime.version")
     private val staging = File(baseDir, "staging")
     private val retiredDir = File(context.filesDir, "runtime.reset")
     private val keepDir = File(context.filesDir, "runtime-keep")
+    private val engines = EngineInstaller(context, manifest, onLog, sync)
 
-    fun installedVersion(): String? =
-        if (rootfs.isDirectory && versionFile.isFile) versionFile.readText().trim().ifEmpty { null } else null
+    /** The full runtime identity (rootfs + engine); what the app shipped. */
+    fun installedVersion(): String? = readVersion(runtimeVersionFile)
+        ?: readVersion(rootfsVersionFile)  // installed before runtime.version existed
 
-    fun isCurrent(): Boolean = installedVersion() == manifest.runtimeVersion
+    /** The system layer only: equal across engine-only updates. */
+    fun installedRootfsVersion(): String? = readVersion(rootfsVersionFile)
+
+    private fun readVersion(file: File): String? =
+        if (rootfs.isDirectory && file.isFile) file.readText().trim().ifEmpty { null } else null
+
+    /** Both the rootfs this APK expects and the engine it launches are in place. */
+    fun isCurrent(): Boolean = installedRootfsVersion() == manifest.rootfsVersion &&
+        installedVersion() == manifest.runtimeVersion && engines.isReady()
 
     /**
      * Extracts the bundled rootfs, or downloads it first when this APK is a
@@ -57,6 +68,21 @@ class RuntimeInstaller(
         settleReset(retiredDir, keepDir, dropKept)
         baseDir.mkdirs()
         staging.deleteRecursivelySafely()
+        val engine = manifest.engine
+        val engineNeeded = engine != null && engines.needed()
+        val neededEngine = engine.takeIf { engineNeeded }
+        val engineWeight = neededEngine?.bytes?.coerceAtLeast(0) ?: 0L
+        val engineUnpacked = neededEngine?.unpackedBytes?.coerceAtLeast(0) ?: 0L
+
+        // The rootfs is already this version (an earlier attempt or an engine-only
+        // update): finish that without downloading the system layer again.
+        if (!dropKept && installedRootfsVersion() == manifest.rootfsVersion) {
+            if (engineWeight > 0) checkFreeSpace(extraBytes = engineWeight + engineUnpacked)
+            installEngine(onProgress, offset = 0L, total = engineWeight)
+            markCurrent()
+            return
+        }
+
         val assetPath = "${RuntimeManifest.ASSET_DIR}/${manifest.rootfsAsset}"
         val bundled = hasAsset(manifest.rootfsAsset)
         if (!bundled && manifest.rootfsUrl == null) {
@@ -74,18 +100,28 @@ class RuntimeInstaller(
             .filter { it.isFile }
             .maxOfOrNull { it.length() } ?: 0L
         val remaining = if (manifest.rootfsBytes > 0) (manifest.rootfsBytes - downloaded).coerceAtLeast(0) else 0L
-        checkFreeSpace(extraBytes = if (bundled) 0 else remaining)
-        val archive = if (bundled) null else downloadRootfs(onProgress)
+        checkFreeSpace(extraBytes = (if (bundled) 0 else remaining) + engineWeight + engineUnpacked)
+        val rootfsWeight = if (bundled) assetLength(assetPath).coerceAtLeast(0) else manifest.rootfsBytes.coerceAtLeast(0)
+        val overall = rootfsWeight + engineWeight
+
+        // One bar for both phases: the rootfs fills its share, then the engine does.
+        fun report(step: String, done: Long, total: Long) {
+            if (overall <= 0) return onProgress(step, done, total)
+            val filled = if (total > 0) done * rootfsWeight / total else done
+            onProgress(step, filled.coerceIn(0, rootfsWeight), overall)
+        }
+
+        val archive = if (bundled) null else downloadRootfs(::report)
         checkFreeSpace(extraBytes = 0)
         staging.mkdirs()
 
-        val sourceBytes = if (bundled) assetLength(assetPath) else archive!!.length()
+        val sourceBytes = if (bundled) rootfsWeight else archive!!.length()
         val total = sourceBytes.takeIf { it > 0 } ?: manifest.rootfsBytes
         var lastReported = 0L
         val progress: (Long) -> Unit = { read ->
             if (read - lastReported >= 512 * 1024 || read == total) {
                 lastReported = read
-                onProgress("extract", read, total)
+                report("extract", read, total)
             }
         }
         fun openSource() = if (bundled) {
@@ -118,15 +154,42 @@ class RuntimeInstaller(
                 openSource().use { raw -> extractor.extract(raw, manifest.rootfsAsset) }
             }
         }
-        onProgress("extract", total, total)
+        report("extract", total, total)
 
         timed("activate") {
-            activateRootfs(baseDir, manifest.runtimeVersion, keepDir, dropKept,
+            activateRootfs(baseDir, manifest.rootfsVersion, keepDir, dropKept,
                 sync = { timed("sync") { sync() } })
         }
+        // The engine is bound over /opt/dsh, so the mount point must exist even
+        // though the split rootfs does not carry it.
+        if (engine != null) File(rootfs, "opt/dsh").mkdirs()
         // Keep the archive only until the install has fully succeeded, so a
         // failed extraction can be retried without downloading it again.
         archive?.delete()
+        installEngine(onProgress, offset = rootfsWeight, total = overall)
+        markCurrent()
+    }
+
+    /** Record the runtime identity now that rootfs and engine both match this APK. */
+    private fun markCurrent() {
+        runtimeVersionFile.writeText(manifest.runtimeVersion)
+        sync()
+    }
+
+    /** Runs the engine half of the install, filling the bar from [offset] to [total]. */
+    private fun installEngine(onProgress: (String, Long, Long) -> Unit, offset: Long, total: Long) {
+        val engine = manifest.engine ?: return
+        engines.install { done, phaseTotal ->
+            if (total <= 0) {
+                onProgress("engine", done, phaseTotal)
+            } else {
+                val filled = if (phaseTotal > 0) done * (total - offset) / phaseTotal else done
+                onProgress("engine", (offset + filled).coerceIn(offset, total), total)
+            }
+        }
+        // Reflect the finished engine on the caller's bar even if it was adopted.
+        if (total > 0) onProgress("engine", total, total)
+        onLog("[dsh-app] engine ready: ${engine.id}")
     }
 
     private inline fun <T> timed(phase: String, block: () -> T): T {

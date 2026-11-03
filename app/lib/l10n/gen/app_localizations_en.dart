@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -14862,7 +14863,7 @@ class L10nEn extends L10n {
   String get shellRuntimeRestoreFailed => 'Couldn’t restore saved content';
 
   @override
-  String get shellRuntimeExtractFailed => 'Couldn’t extract files';
+  String get shellRuntimeInstallFailed => 'Couldn’t finish installing. Try again.';
 
   @override
   String get shellInstallLogs => 'Installation logs';

@@ -39,7 +39,7 @@
   "shellRuntimeFirstSetup": "首次准备约需一两分钟",
   "shellRuntimeContinuing": "即将继续",
   "shellRuntimeRestoreFailed": "没能放回保留的内容",
-  "shellRuntimeExtractFailed": "解压时出错",
+  "shellRuntimeInstallFailed": "安装未完成，请重试",
   "shellInstallLogs": "安装日志",
   "shellRuntimeLocalOnly": "全程在本机完成",
   "shellRuntimeContinueWithoutKept": "不保留，继续安装",

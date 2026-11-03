@@ -241,7 +241,6 @@ object DirectLaunch {
         for (at in 1 until web.lastIndex) if (web[at] == "--patch") web[at + 1] = rootPath + web[at + 1]
 
         val loader = File(root, loaderPath(abi)).path
-        val libraries = libraryDirectories(abi).joinToString(":") { File(root, it).path }
         val node = File(root, "opt/node/bin/node").path
         val preload = File(root, PRELOAD).path
         val owned = File(root, OWNED)
@@ -257,6 +256,13 @@ object DirectLaunch {
         val sameBind = samePathBind(root)
         if (!proot.contains(sameBind)) proot.addAll(listOf("-b", sameBind))
         val mounts = mounts(proot, rootPath)
+        fun hostPath(path: String): String {
+            if (!path.startsWith('/') || path == rootPath || path.startsWith("$rootPath/")) return path
+            val mount = mounts.firstOrNull { path == it.guest || path.startsWith("${it.guest}/") }
+            return if (mount == null) rootPath + path else mount.host + path.removePrefix(mount.guest)
+        }
+        // /opt/dsh may live in the engine bundle rather than the rootfs.
+        val libraries = libraryDirectories(abi).joinToString(":") { hostPath("/$it") }
         val prefix = buildString {
             append("#!$hostShell\nset -e\n")
             append("unset DSH_GO_DIRECT_MAIN DSH_GO_DIRECT_ROOTFS LD_PRELOAD\n")
@@ -283,7 +289,8 @@ object DirectLaunch {
             "#!$hostShell\nexport pnpm_config_package_import_method=copy npm_config_package_import_method=copy\nexec ${quote("$bin/node")} ${quote("$rootPath/usr/local/lib/node_modules/pnpm/bin/$name.mjs")} \"\$@\"\n", true)
 
         val rgArch = if (abi == "x86_64") "x64" else "arm64"
-        val rg = File(root, "opt/dsh/node_modules/@vscode/ripgrep-linux-$rgArch/bin/rg")
+        // With an engine bundle /opt/dsh lives outside the rootfs (see EngineInstaller).
+        val rg = File(hostPath("/opt/dsh/node_modules/@vscode/ripgrep-linux-$rgArch/bin/rg"))
         require(rg.isFile) { "direct engine: packaged ripgrep missing" }
         // The manifest records this per ABI; the current pinned binaries are
         // static PIE. The host test audits PT_INTERP, rather than guessing by name.
@@ -299,11 +306,6 @@ object DirectLaunch {
         val directEnv = LinkedHashMap(hostEnv)
         directEnv.keys.removeAll { it.startsWith("PROOT_") || it == "LD_LIBRARY_PATH" || it == "LD_PRELOAD" }
         directEnv.putAll(guest)
-        fun hostPath(path: String): String {
-            if (!path.startsWith('/') || path == rootPath || path.startsWith("$rootPath/")) return path
-            val mount = mounts.firstOrNull { path == it.guest || path.startsWith("${it.guest}/") }
-            return if (mount == null) rootPath + path else mount.host + path.removePrefix(mount.guest)
-        }
         for (key in listOf("HOME", "DSH_HOME", "DSH_AGENTS_HOME", "TMPDIR", "NODE_EXTRA_CA_CERTS", "SSL_CERT_FILE")) {
             directEnv[key]?.let { directEnv[key] = hostPath(it) }
         }
@@ -317,7 +319,7 @@ object DirectLaunch {
         directEnv["DSH_GO_RUNTIME_ROOT"] = rootPath
         directEnv["DSH_GO_DIRECT_ROOTFS"] = rootPath
         directEnv["DSH_GO_DIRECT_MAIN"] = "1"
-        val launch = listOf(loader, "--library-path", libraries, node, "--import=$preload", "$rootPath/opt/dsh/node_modules/@deepseek-ai/dsh/lib/bin.js") + web
+        val launch = listOf(loader, "--library-path", libraries, node, "--import=$preload", hostPath("/opt/dsh/node_modules/@deepseek-ai/dsh/lib/bin.js")) + web
         return Plan(launch, directEnv, File(root, "root"))
     }
 

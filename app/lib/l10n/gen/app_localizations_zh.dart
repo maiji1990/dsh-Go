@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -14127,7 +14128,7 @@ class L10nZh extends L10n {
   String get shellRuntimeRestoreFailed => '没能放回保留的内容';
 
   @override
-  String get shellRuntimeExtractFailed => '解压时出错';
+  String get shellRuntimeInstallFailed => '安装未完成，请重试';
 
   @override
   String get shellInstallLogs => '安装日志';

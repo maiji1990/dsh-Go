@@ -99,7 +99,10 @@ class DshProcess(
         val argv = ArrayList<String>()
         val sameBind = DirectLaunch.samePathBind(rootfs)
         val launchArgv = DirectLaunch.prootArguments(rootfs, manifest.launchArgv, direct)
-        val allBinds = binds.filterNot { expand(it) == sameBind }.distinct()
+        // The DSH tree is its own archive (see EngineInstaller); bind it over /opt/dsh.
+        val engine = if (manifest.engine != null) EngineInstaller.activeDir(context) else null
+        val engineBinds = if (engine != null) listOf("${engine.canonicalPath}/opt/dsh:/opt/dsh") else emptyList()
+        val allBinds = (binds + engineBinds).filterNot { expand(it) == sameBind }.distinct()
         // PRoot's Node resolves through glibc, which fails A with a refused AAAA (#152): add Direct's resolver.
         val effectiveGuestEnv = guestEnv + ("DSH_GO_RUNTIME_ROOT" to rootfs.canonicalPath) +
             listOfNotNull(if (direct) null else "NODE_OPTIONS" to DirectLaunch.prootNodeOptions(guestEnv["NODE_OPTIONS"]))

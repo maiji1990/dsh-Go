@@ -486,7 +486,7 @@ class _SetupStatusSheet extends ConsumerWidget {
         ? l10n.shellRuntimeReady
         : l10n.shellRuntimePreparing;
     final body = failed
-        ? humanizeRuntimeError(state.status.error) ?? l10n.shellRuntimeExtractFailed
+        ? humanizeRuntimeError(state.status.error) ?? l10n.shellRuntimeInstallFailed
         : ready
         ? l10n.shellRuntimeLocalOnly
         : l10n.shellRuntimeFirstSetup;
