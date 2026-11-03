@@ -38,7 +38,7 @@ LOCKS="$HERE/locks"
 PY=(python3 -I "$HERE/lib/rtbuild.py")
 
 # ---- pinned inputs (override via environment; pinned hashes then must be updated too) ----
-RUNTIME_REVISION="${RUNTIME_REVISION:-r14}"  # backend stack R7 (bundle-scoped plugin-config) + 076 callback fix + four rc.4 fixes; DSH as r12
+RUNTIME_REVISION="${RUNTIME_REVISION:-r15}"  # r14 + per-family DNS under PRoot, input recovery, session deletion and upload resolver fixes, title and boot cache work; DSH as r12
 # Base URL the release host serves runtime archives from (no trailing slash
 # needed). When set, manifest.json carries `rootfsUrl` for the APK that ships
 # without a bundled rootfs; leave empty for offline-only builds.

@@ -4461,6 +4461,42 @@ class L10nZh extends L10n {
   }
 
   @override
+  String get engineNewChatDefaultsLast => '新对话默认（上次选择）';
+
+  @override
+  String get engineNewChatDefaultsFixed => '新对话默认（固定）';
+
+  @override
+  String get engineNewChatUseLast => '沿用上次';
+
+  @override
+  String get engineNewChatUseFixed => '固定默认';
+
+  @override
+  String get engineNewChatDefaultsHint => '保存在当前主机，只影响新对话的模型和思考深度。权限仍用独立默认，不继承临时会话授权。';
+
+  @override
+  String get engineNewChatDefaultsLegacy => '此引擎仅支持沿用上次选择；不支持固定默认，也无法确认切换时默认值是否保存成功。';
+
+  @override
+  String get engineNewChatDefaultsUnsupported => '此主机没有可编辑的默认模型设置';
+
+  @override
+  String get engineNewChatDefaultsSelectionUnavailable => '此模型或思考深度已不可用，请重新选择。';
+
+  @override
+  String get engineNewChatDefaultsInheritedEffort => '主机基础配置指定了思考深度，不能在这里为无思考模型清除。请先调整主机配置。';
+
+  @override
+  String get engineNewChatDefaultsSaving => '正在保存并确认默认值…';
+
+  @override
+  String get engineNewChatDefaultsUnconfirmed => '没能确认完整默认值，请刷新后检查模型和思考深度。主机基础配置或其他客户端可能已改变它们。';
+
+  @override
+  String get engineModelDefaultSaveFailed => '当前对话的模型已切换，但新对话默认未保存。请到设置 › 模型检查并重试。';
+
+  @override
   String get engineAccountSignedIn => '已登录 DeepSeek 账号';
 
   @override
@@ -7375,6 +7411,21 @@ class L10nZh extends L10n {
 
   @override
   String get hubHardwareEnterSendsHint => '开启后，Shift+Enter 换行。屏幕键盘仍换行；Ctrl/⌘+Enter 始终可发送。';
+
+  @override
+  String get hubQuickPanel => '左滑快捷入口';
+
+  @override
+  String get hubQuickPanelSwipe => '左滑打开';
+
+  @override
+  String get hubQuickPanelSwipeHint => '在对话里从右向左滑。代码块、表格这些能横向滚动的内容不受影响。';
+
+  @override
+  String get hubQuickPanelItems => '显示的入口';
+
+  @override
+  String get hubQuickPanelItemsNone => '没有选择，左滑不会打开';
 
   @override
   String get launchScreenTitle => '启动画面';
@@ -13869,6 +13920,9 @@ class L10nZh extends L10n {
   String get searchKwUsageStats => '统计,使用统计,匿名,隐私,数据,改进,遥测,分析';
 
   @override
+  String get searchKwQuickPanel => '左滑,快捷入口,手势,滑动,目录,自定义目录,快捷,常用入口';
+
+  @override
   String get shellDeletePermanently => '永久删除';
 
   @override
@@ -14844,6 +14898,14 @@ class L10nZh extends L10n {
   @override
   String shellChatsArchivedPartial(int count, int failed) {
     return '已归档 $count 个对话，$failed 个没能归档';
+  }
+
+  @override
+  String get shellQuickPanel => '快捷入口';
+
+  @override
+  String shellQuickPanelHint(String path) {
+    return '在「$path」里调整';
   }
 
   @override

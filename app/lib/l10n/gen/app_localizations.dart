@@ -8216,6 +8216,78 @@ abstract class L10n {
   /// **'{month}月{day}日'**
   String commonMonthDay(String month, int day);
 
+  /// No description provided for @engineNewChatDefaultsLast.
+  ///
+  /// In zh, this message translates to:
+  /// **'新对话默认（上次选择）'**
+  String get engineNewChatDefaultsLast;
+
+  /// No description provided for @engineNewChatDefaultsFixed.
+  ///
+  /// In zh, this message translates to:
+  /// **'新对话默认（固定）'**
+  String get engineNewChatDefaultsFixed;
+
+  /// No description provided for @engineNewChatUseLast.
+  ///
+  /// In zh, this message translates to:
+  /// **'沿用上次'**
+  String get engineNewChatUseLast;
+
+  /// No description provided for @engineNewChatUseFixed.
+  ///
+  /// In zh, this message translates to:
+  /// **'固定默认'**
+  String get engineNewChatUseFixed;
+
+  /// No description provided for @engineNewChatDefaultsHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存在当前主机，只影响新对话的模型和思考深度。权限仍用独立默认，不继承临时会话授权。'**
+  String get engineNewChatDefaultsHint;
+
+  /// No description provided for @engineNewChatDefaultsLegacy.
+  ///
+  /// In zh, this message translates to:
+  /// **'此引擎仅支持沿用上次选择；不支持固定默认，也无法确认切换时默认值是否保存成功。'**
+  String get engineNewChatDefaultsLegacy;
+
+  /// No description provided for @engineNewChatDefaultsUnsupported.
+  ///
+  /// In zh, this message translates to:
+  /// **'此主机没有可编辑的默认模型设置'**
+  String get engineNewChatDefaultsUnsupported;
+
+  /// No description provided for @engineNewChatDefaultsSelectionUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'此模型或思考深度已不可用，请重新选择。'**
+  String get engineNewChatDefaultsSelectionUnavailable;
+
+  /// No description provided for @engineNewChatDefaultsInheritedEffort.
+  ///
+  /// In zh, this message translates to:
+  /// **'主机基础配置指定了思考深度，不能在这里为无思考模型清除。请先调整主机配置。'**
+  String get engineNewChatDefaultsInheritedEffort;
+
+  /// No description provided for @engineNewChatDefaultsSaving.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在保存并确认默认值…'**
+  String get engineNewChatDefaultsSaving;
+
+  /// No description provided for @engineNewChatDefaultsUnconfirmed.
+  ///
+  /// In zh, this message translates to:
+  /// **'没能确认完整默认值，请刷新后检查模型和思考深度。主机基础配置或其他客户端可能已改变它们。'**
+  String get engineNewChatDefaultsUnconfirmed;
+
+  /// No description provided for @engineModelDefaultSaveFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前对话的模型已切换，但新对话默认未保存。请到设置 › 模型检查并重试。'**
+  String get engineModelDefaultSaveFailed;
+
   /// No description provided for @engineAccountSignedIn.
   ///
   /// In zh, this message translates to:
@@ -13507,6 +13579,36 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'开启后，Shift+Enter 换行。屏幕键盘仍换行；Ctrl/⌘+Enter 始终可发送。'**
   String get hubHardwareEnterSendsHint;
+
+  /// No description provided for @hubQuickPanel.
+  ///
+  /// In zh, this message translates to:
+  /// **'左滑快捷入口'**
+  String get hubQuickPanel;
+
+  /// No description provided for @hubQuickPanelSwipe.
+  ///
+  /// In zh, this message translates to:
+  /// **'左滑打开'**
+  String get hubQuickPanelSwipe;
+
+  /// No description provided for @hubQuickPanelSwipeHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'在对话里从右向左滑。代码块、表格这些能横向滚动的内容不受影响。'**
+  String get hubQuickPanelSwipeHint;
+
+  /// No description provided for @hubQuickPanelItems.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示的入口'**
+  String get hubQuickPanelItems;
+
+  /// No description provided for @hubQuickPanelItemsNone.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有选择，左滑不会打开'**
+  String get hubQuickPanelItemsNone;
 
   /// No description provided for @launchScreenTitle.
   ///
@@ -25394,6 +25496,12 @@ abstract class L10n {
   /// **'统计,使用统计,匿名,隐私,数据,改进,遥测,分析'**
   String get searchKwUsageStats;
 
+  /// No description provided for @searchKwQuickPanel.
+  ///
+  /// In zh, this message translates to:
+  /// **'左滑,快捷入口,手势,滑动,目录,自定义目录,快捷,常用入口'**
+  String get searchKwQuickPanel;
+
   /// No description provided for @shellDeletePermanently.
   ///
   /// In zh, this message translates to:
@@ -27151,6 +27259,18 @@ abstract class L10n {
   /// In zh, this message translates to:
   /// **'已归档 {count} 个对话，{failed} 个没能归档'**
   String shellChatsArchivedPartial(int count, int failed);
+
+  /// No description provided for @shellQuickPanel.
+  ///
+  /// In zh, this message translates to:
+  /// **'快捷入口'**
+  String get shellQuickPanel;
+
+  /// No description provided for @shellQuickPanelHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'在「{path}」里调整'**
+  String shellQuickPanelHint(String path);
 
   /// The star prompt's first line. hours is the whole hours of use so far, rounded down; 0 is half an hour (the first ask comes after 30 minutes). The word joiner keeps the ~ on the line of the word before it.
   ///
