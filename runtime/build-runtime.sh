@@ -41,7 +41,7 @@ LOCKS="$HERE/locks"
 PY=(python3 -I "$HERE/lib/rtbuild.py")
 
 # ---- pinned inputs (override via environment; pinned hashes then must be updated too) ----
-RUNTIME_REVISION="${RUNTIME_REVISION:-r15}"  # r14 + per-family DNS under PRoot, input recovery, session deletion and upload resolver fixes, title and boot cache work; DSH as r12
+RUNTIME_REVISION="${RUNTIME_REVISION:-r16}"  # r15 + the engine bundle (DSH lives in engine-<abi>.tar.xz) and DSH 0.2.1-rc.5
 # Base URL the release host serves runtime archives from (no trailing slash
 # needed). When set, manifest.json carries `rootfsUrl` for the APK that ships
 # without a bundled rootfs; leave empty for offline-only builds.
@@ -51,7 +51,7 @@ RUNTIME_BASE_URL="${RUNTIME_BASE_URL:-}"
 # it out of the rootfs once the app can install an engine.
 ENGINE_BUNDLE="${ENGINE_BUNDLE:-0}"
 WITHOUT_DSH="${WITHOUT_DSH:-0}"
-DSH_VERSION="${DSH_VERSION:-0.2.1-rc.4}"
+DSH_VERSION="${DSH_VERSION:-0.2.1-rc.5}"
 NODE_VERSION="${NODE_VERSION:-24.22.1}"
 # pnpm runs DSH's plugin installs (pluginManager / `dsh plugin`); the version the DSH repo pins.
 PNPM_VERSION="${PNPM_VERSION:-11.28.5}"
