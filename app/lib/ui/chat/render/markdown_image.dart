@@ -410,9 +410,16 @@ class _MarkdownImageState extends ConsumerState<MarkdownImage> {
     }
   }
 
+  static bool _isHttp(String url) {
+    final uri = Uri.tryParse(url);
+    return uri != null && (uri.scheme == 'http' || uri.scheme == 'https');
+  }
+
   void _resolve() {
     final source = _source;
-    if (source is WebImageSource) {
+    // Only http(s) can name the engine; a data:/blob: image must not touch the
+    // connection (which subscribes to runtime events on a real phone).
+    if (source is WebImageSource && _isHttp(source.url)) {
       final engine = ref.read(artifactFilesProvider).connection?.client.isEngineUrl(source.url) ?? false;
       final next = engine ? source.url : null;
       if (next == _engineUrl && (next == null || _future != null || _loaded != null)) return;
@@ -526,13 +533,17 @@ class _MarkdownImageState extends ConsumerState<MarkdownImage> {
   @override
   Widget build(BuildContext context) {
     // A replaced connection has its own cookie and cache: read through it again.
-    ref.listen(artifactFilesProvider.select((files) => files.connection?.client), (_, _) {
-      if (_source is! WebImageSource) return;
-      setState(() {
-        _engineUrl = null;
-        _resolve();
+    // Only an http(s) image can name the engine; listening for every data:/file
+    // image would build the connection (and its platform channels) for nothing.
+    final src = _source;
+    if (src is WebImageSource && _isHttp(src.url)) {
+      ref.listen(artifactFilesProvider.select((files) => files.connection?.client), (_, _) {
+        setState(() {
+          _engineUrl = null;
+          _resolve();
+        });
       });
-    });
+    }
     final l10n = context.l10n;
     // A media card above already shows this file: not a second time. Only
     // for a conversation already open (a previewed file never starts one).
