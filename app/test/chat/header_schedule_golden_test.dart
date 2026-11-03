@@ -14,6 +14,7 @@ import 'package:dsh_app/ui/common/status_dot.dart';
 import 'package:dsh_app/ui/features/schedule_editor/time_zones.dart';
 import 'package:dsh_client/dsh_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -103,6 +104,11 @@ void main() {
   setUpAll(() async {
     await loadTestFonts();
     _zone = await detectDeviceTimeZone();
+    // The header's status dot listens to the engine's event stream; without a
+    // host there is no plugin behind it, and the missing handler would fail
+    // every case in this file.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(const MethodChannel('dsh/runtime/events'), (call) async => null);
   });
 
   for (final brightness in Brightness.values) {
