@@ -968,6 +968,109 @@ class HashingWriter:
         self.sink.flush()
 
 
+def write_tar(entries, out, compress, xz_preset, threads, epoch, gzip_level=9):
+    """Write entries as a sorted, root-owned, fixed-mtime GNU tar through the compressor."""
+    def sort_key(p):
+        return p.split("/")
+
+    out_tmp = out + ".tmp"
+    if compress == "xz":
+        comp = subprocess.Popen(["xz", "-T%d" % threads, "-%s" % xz_preset, "-c"],
+                                stdin=subprocess.PIPE, stdout=open(out_tmp, "wb"))
+        sink = comp.stdin
+    else:
+        comp = None
+        raw = open(out_tmp, "wb")
+        sink = gzip.GzipFile(filename="", mode="wb", fileobj=raw, compresslevel=gzip_level, mtime=0)
+    hw = HashingWriter(sink)
+    counts = {"dir": 0, "file": 0, "symlink": 0}
+    file_bytes = 0
+    with tarfile.open(fileobj=hw, mode="w|", format=tarfile.GNU_FORMAT) as tar:
+        for p in sorted(entries, key=sort_key):
+            e = entries[p]
+            ti = tarfile.TarInfo(p)
+            ti.uid = ti.gid = 0
+            ti.uname = ti.gname = "root"
+            ti.mtime = epoch
+            ti.mode = e.mode
+            counts[e.kind] += 1
+            if e.kind == "dir":
+                ti.type = tarfile.DIRTYPE
+                tar.addfile(ti)
+            elif e.kind == "symlink":
+                ti.type = tarfile.SYMTYPE
+                ti.linkname = e.link
+                tar.addfile(ti)
+            else:
+                data = e.read()
+                ti.size = len(data)
+                file_bytes += len(data)
+                tar.addfile(ti, io.BytesIO(data))
+    if comp is not None:
+        comp.stdin.close()
+        if comp.wait() != 0:
+            raise SystemExit("xz failed")
+    else:
+        sink.close()
+        raw.close()
+    os.replace(out_tmp, out)
+
+    with open(out, "rb") as f:
+        archive_sha = hashlib.file_digest(f, "sha256").hexdigest() if hasattr(hashlib, "file_digest") \
+            else hashlib.sha256(f.read()).hexdigest()
+    return {
+        "archive": os.path.basename(out),
+        "archiveBytes": os.path.getsize(out),
+        "archiveSha256": archive_sha,
+        "tarBytes": hw.n,
+        "tarSha256": hw.h.hexdigest(),
+        "uncompressedBytes": file_bytes,
+        "counts": counts,
+    }
+
+
+def _dir_sha256(root):
+    """Order-independent hash of a source tree (names + contents, symlinks by target).
+
+    The glue trees have no symlinked directories or empty directories, so hashing
+    regular files and symlinks covers everything that reaches the device."""
+    h = hashlib.sha256()
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames.sort()
+        for name in sorted(filenames):
+            full = os.path.join(dirpath, name)
+            rel = os.path.relpath(full, root).replace(os.sep, "/")
+            h.update(rel.encode("utf-8") + b"\0")
+            if os.path.islink(full):
+                h.update(b"L" + os.readlink(full).encode("utf-8") + b"\0")
+                continue
+            with open(full, "rb") as f:
+                h.update(b"F" + hashlib.sha256(f.read()).digest())
+    return h.hexdigest()
+
+
+def engine_patch_set(bridge_dir, dsh_version):
+    """Identify the engine's patch set: the vetted diffs plus the app-side glue.
+
+    The device only accepts an engine whose `patchSet` matches the manifest, so a
+    package assembled without these diffs (or with a different bridge/direct/boot
+    layer) can never be substituted for one of ours."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    patches = os.path.join(here, "..", "patches")
+    h = hashlib.sha256()
+    h.update(("dsh " + dsh_version + "\0").encode())
+    for name in sorted(n for n in os.listdir(patches) if n.endswith(".diff")):
+        h.update(name.encode("utf-8") + b"\0")
+        with open(os.path.join(patches, name), "rb") as f:
+            h.update(hashlib.sha256(f.read()).digest())
+    for label, path in (("bridge", bridge_dir),
+                        ("boot", os.path.join(here, "..", "boot")),
+                        ("direct", os.path.join(here, "..", "direct"))):
+        h.update(label.encode() + b"\0")
+        h.update(_dir_sha256(path).encode() + b"\0")
+    return h.hexdigest()
+
+
 def cmd_assemble(args):
     abi = args.abi
     machine = ABI[abi]["machine"]
@@ -1268,73 +1371,67 @@ def cmd_assemble(args):
         elif e.kind == "file":
             e.mode = (e.mode & 0o777) | 0o600
 
-    # 7. Write the tar (GNU format, sorted, root-owned, fixed mtime) through the compressor
-    def sort_key(p):
-        return p.split("/")
+    # 7. Engine bundle: the DSH tree travels in its own archive, so a new engine
+    # version does not mean a new rootfs. It is cut from the same audited entries
+    # as the rootfs, so the two cannot drift apart. The app-side glue in
+    # /opt/dsh-go (bridge, boot cache, direct loader) stays in the rootfs: it is
+    # small, versioned with the app, and shared by every engine.
+    engine_paths = [p for p in entries if p == "opt/dsh" or p.startswith("opt/dsh/")]
+    if args.without_dsh and not args.engine_out:
+        raise SystemExit("--without-dsh needs --engine-out")
+    if args.engine_out:
+        if not args.bridge:
+            raise SystemExit("--engine-out needs --bridge (its hash is part of patchSet)")
+        patch_set = engine_patch_set(args.bridge, runtime_info["dshVersion"])
+        engine_id = "engine-%s-%s" % (runtime_info["dshVersion"], patch_set[:12])
+        meta = {
+            "schema": 1,
+            "id": engine_id,
+            "abi": abi,
+            "dshVersion": runtime_info["dshVersion"],
+            "nodeVersion": runtime_info["nodeVersion"],
+            "bridgeVersion": runtime_info.get("dshGoBridge") or "",
+            "patchSet": patch_set,
+            "layout": "extract at the engine dir; opt/dsh is bound over /opt/dsh",
+            "root": "/opt/dsh",
+            "bridge": DSH_GO_BRIDGE,
+            "boot": BOOT_CACHE,
+            "direct": "/opt/dsh-go/direct",
+        }
+        engine_entries = {p: entries[p] for p in engine_paths}
+        engine_entries["engine.json"] = Entry(
+            "file", 0o644, data=(json.dumps(meta, indent=2, sort_keys=True) + "\n").encode(), origin="engine")
+        engine_info = write_tar(engine_entries, args.engine_out, args.compress, args.xz_preset,
+                                args.threads, args.epoch, args.gzip_level)
+        # The manifest section and engine.json carry the same recipe fields, so a
+        # package whose tree differs from what we built is refused on the device.
+        engine_info.update(meta)
+        engine_info["metadata"] = "engine.json"
+        engine_info["rootfsIncludesDsh"] = not args.without_dsh
+        report["engine"] = engine_info
+        print("engine %s: %d files, %d dirs, %d symlinks, %.1f MiB unpacked, %.1f MiB archive" % (
+            args.engine_out, engine_info["counts"]["file"], engine_info["counts"]["dir"],
+            engine_info["counts"]["symlink"], engine_info["uncompressedBytes"] / 2**20,
+            engine_info["archiveBytes"] / 2**20))
+    if args.without_dsh:
+        for p in engine_paths:
+            del entries[p]
 
-    out_tmp = args.out + ".tmp"
-    if args.compress == "xz":
-        comp = subprocess.Popen(["xz", "-T%d" % args.threads, "-%s" % args.xz_preset, "-c"],
-                                stdin=subprocess.PIPE, stdout=open(out_tmp, "wb"))
-        sink = comp.stdin
-    else:
-        comp = None
-        raw = open(out_tmp, "wb")
-        sink = gzip.GzipFile(filename="", mode="wb", fileobj=raw, compresslevel=args.gzip_level, mtime=0)
-    hw = HashingWriter(sink)
-    counts = {"dir": 0, "file": 0, "symlink": 0}
-    file_bytes = 0
-    with tarfile.open(fileobj=hw, mode="w|", format=tarfile.GNU_FORMAT) as tar:
-        for p in sorted(entries, key=sort_key):
-            e = entries[p]
-            ti = tarfile.TarInfo(p)
-            ti.uid = ti.gid = 0
-            ti.uname = ti.gname = "root"
-            ti.mtime = args.epoch
-            ti.mode = e.mode
-            counts[e.kind] += 1
-            if e.kind == "dir":
-                ti.type = tarfile.DIRTYPE
-                tar.addfile(ti)
-            elif e.kind == "symlink":
-                ti.type = tarfile.SYMTYPE
-                ti.linkname = e.link
-                tar.addfile(ti)
-            else:
-                data = e.read()
-                ti.size = len(data)
-                file_bytes += len(data)
-                tar.addfile(ti, io.BytesIO(data))
-    if comp is not None:
-        comp.stdin.close()
-        if comp.wait() != 0:
-            raise SystemExit("xz failed")
-    else:
-        sink.close()
-        raw.close()
-    os.replace(out_tmp, args.out)
-
-    with open(args.out, "rb") as f:
-        archive_sha = hashlib.file_digest(f, "sha256").hexdigest() if hasattr(hashlib, "file_digest") \
-            else hashlib.sha256(f.read()).hexdigest()
-    report.update({
-        "archive": os.path.basename(args.out),
-        "archiveBytes": os.path.getsize(args.out),
-        "archiveSha256": archive_sha,
-        "tarBytes": hw.n,
-        "tarSha256": hw.h.hexdigest(),
-        "uncompressedBytes": file_bytes,
-        "counts": counts,
-        "origins": {o: sum(1 for e in entries.values() if e.origin == o)
-                    for o in ("ubuntu", "deb", "python", "node", "dsh", "pnpm", "bridge", "overlay", "implicit")},
-    })
+    # 8. Write the rootfs tar (GNU format, sorted, root-owned, fixed mtime)
+    rootfs_info = write_tar(entries, args.out, args.compress, args.xz_preset, args.threads,
+                            args.epoch, args.gzip_level)
+    report.update(rootfs_info)
+    report["origins"] = {o: sum(1 for e in entries.values() if e.origin == o)
+                         for o in ("ubuntu", "deb", "python", "node", "dsh", "pnpm", "bridge",
+                                   "overlay", "implicit", "engine")}
     report["droppedBytes"] = sum(report["dropped"].values())
     with open(args.report, "w") as f:
         json.dump(report, f, indent=2, sort_keys=True)
         f.write("\n")
+    counts = rootfs_info["counts"]
     print("rootfs %s: %d files, %d dirs, %d symlinks, %.1f MiB unpacked, %.1f MiB archive" % (
-        args.out, counts["file"], counts["dir"], counts["symlink"], file_bytes / 2**20,
-        report["archiveBytes"] / 2**20))
+        args.out, counts["file"], counts["dir"], counts["symlink"],
+        rootfs_info["uncompressedBytes"] / 2**20, rootfs_info["archiveBytes"] / 2**20))
     if report["warnings"]:
         print("warnings: %d (see %s)" % (len(report["warnings"]), args.report))
 
@@ -1435,6 +1532,9 @@ def cmd_manifest(args):
     m = {
         "schema": 1,
         "runtimeVersion": v["runtimeVersion"],
+        # Separate identity for the system layer: a new engine keeps this, so the
+        # app can skip the rootfs download (docs/design/engine-bundles.md).
+        "rootfsVersion": v.get("rootfsVersion", v["runtimeVersion"]),
         "abi": args.abi,
         "rootfs": report["archive"],
         "rootfsFormat": "tar.xz" if report["archive"].endswith(".xz") else "tar.gz",
@@ -1484,6 +1584,12 @@ def cmd_manifest(args):
     }
     if args.rootfs_url:
         m["rootfsUrl"] = args.rootfs_url
+    if report.get("engine"):
+        engine = dict(report["engine"])
+        # The engine archive sits next to the rootfs on the release host.
+        if args.engine_url:
+            engine["url"] = args.engine_url
+        m["engine"] = engine
     with open(args.out, "w") as f:
         json.dump(m, f, indent=2)
         f.write("\n")
@@ -1548,12 +1654,16 @@ def main():
     p.add_argument("--deb", action="append", help="extra .deb to unpack and register (no maintainer scripts)")
     p.add_argument("--python", help="python-build-standalone install_only tarball -> /opt/python")
     p.add_argument("--bridge", help="dsh-go-bridge package dir -> " + DSH_GO_BRIDGE + " (+ overlay row)")
+    p.add_argument("--engine-out", help="also write the engine bundle (opt/dsh + engine.json)")
+    p.add_argument("--without-dsh", action="store_true",
+                   help="leave the engine paths out of the rootfs (needs --engine-out)")
     p.set_defaults(fn=cmd_assemble)
 
     p = sub.add_parser("manifest")
     p.add_argument("--abi", required=True)
     p.add_argument("--report", required=True)
     p.add_argument("--jnilibs", required=True)
+    p.add_argument("--engine-url", help="absolute URL the APK can download the engine bundle from")
     p.add_argument("--versions", required=True)
     p.add_argument("--rootfs-url", help="absolute URL the APK can download this rootfs from")
     p.add_argument("--out", required=True)

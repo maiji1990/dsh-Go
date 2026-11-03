@@ -8,6 +8,8 @@
 #   COMPRESS=gz runtime/build-runtime.sh     # .tar.gz instead of .tar.xz
 #   RUNTIME_OUT=/path runtime/build-runtime.sh   # stage outputs outside runtime/out (not packaged)
 #   RUNTIME_BASE_URL=https://host/runtime/r14 runtime/build-runtime.sh  # manifest.rootfsUrl
+#   ENGINE_BUNDLE=1 runtime/build-runtime.sh  # also write engine-<abi>.tar.xz + manifest.engine
+#   ENGINE_BUNDLE=1 WITHOUT_DSH=1 runtime/build-runtime.sh  # ...and leave DSH out of the rootfs
 #
 # The DSH tree is patched with runtime/patches/*.diff (pinned per DSH version in
 # runtime/patches/pins.json; an unvetted DSH version fails the build) and the dsh-go-bridge
@@ -17,6 +19,7 @@
 #
 # Outputs (consumed by app/android/app/build.gradle.kts flavors):
 #   runtime/out/<abi>/assets/runtime/rootfs-<abi>.tar.xz
+#   runtime/out/<abi>/assets/runtime/engine-<abi>.tar.xz    (ENGINE_BUNDLE=1)
 #   runtime/out/<abi>/assets/runtime/manifest.json      (versions, hashes, launch template)
 #   runtime/out/<abi>/assets-manifest/runtime/manifest.json  (normal APK; rootfs via rootfsUrl)
 #   runtime/out/<abi>/assets/runtime/licenses/...
@@ -43,6 +46,11 @@ RUNTIME_REVISION="${RUNTIME_REVISION:-r15}"  # r14 + per-family DNS under PRoot,
 # needed). When set, manifest.json carries `rootfsUrl` for the APK that ships
 # without a bundled rootfs; leave empty for offline-only builds.
 RUNTIME_BASE_URL="${RUNTIME_BASE_URL:-}"
+# Also publish the DSH tree as a separate engine bundle (see
+# docs/design/engine-bundles.md). Additive by default; set WITHOUT_DSH=1 to leave
+# it out of the rootfs once the app can install an engine.
+ENGINE_BUNDLE="${ENGINE_BUNDLE:-0}"
+WITHOUT_DSH="${WITHOUT_DSH:-0}"
 DSH_VERSION="${DSH_VERSION:-0.2.1-rc.4}"
 NODE_VERSION="${NODE_VERSION:-24.22.1}"
 # pnpm runs DSH's plugin installs (pluginManager / `dsh plugin`); the version the DSH repo pins.
@@ -406,35 +414,58 @@ PYEOF
   local pnpm_lockfile="$LOCKS/pnpm-$PNPM_VERSION/package-lock.json"
   local inputs_sha
   inputs_sha="$( {
-      echo "$RUNTIME_REVISION $abi $DSH_VERSION $NODE_VERSION $PNPM_VERSION $UBUNTU_VERSION $COMPRESS $XZ_PRESET $PRUNE_DEV_METADATA $SOURCE_DATE_EPOCH"
+      echo "$RUNTIME_REVISION $abi $DSH_VERSION $NODE_VERSION $PNPM_VERSION $UBUNTU_VERSION $COMPRESS $XZ_PRESET $PRUNE_DEV_METADATA $SOURCE_DATE_EPOCH engine=$ENGINE_BUNDLE without-dsh=$WITHOUT_DSH"
       sha256 "$base"; sha256 "$node"; sha256 "$python"; sha256sum "${extra_debs[@]}" | cut -d' ' -f1
       sha256 "$proot_deb"; sha256 "$talloc_deb"; sha256 "$shmem_deb"
       sha256 "$lockfile"; sha256 "$pnpm_lockfile"; sha256 "$HERE/build-runtime.sh"; sha256 "$HERE/lib/rtbuild.py"
       (cd "$HERE" && find patches bridge boot direct -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum)
     } | sha256sum | cut -c1-12 )"
   local runtime_version="${RUNTIME_REVISION}-dsh${DSH_VERSION}-node${NODE_VERSION}-ubuntu${UBUNTU_VERSION}-${inputs_sha}"
+  # The rootfs identity: everything that shapes the system layer. DSH, its
+  # patches and this script's own bumpable labels (RUNTIME_REVISION, DSH_VERSION)
+  # are deliberately absent, so a new engine keeps this version and the app does
+  # not download the rootfs again (see docs/design/engine-bundles.md). rtbuild.py
+  # stays in: its drop rules and overlay shape the tree.
+  local rootfs_inputs_sha
+  rootfs_inputs_sha="$( {
+      echo "$abi $NODE_VERSION $PNPM_VERSION $UBUNTU_VERSION $COMPRESS $XZ_PRESET $PRUNE_DEV_METADATA $SOURCE_DATE_EPOCH without-dsh=$WITHOUT_DSH python=$PYTHON_VERSION"
+      sha256 "$base"; sha256 "$node"; sha256 "$python"; sha256sum "${extra_debs[@]}" | cut -d' ' -f1
+      sha256 "$proot_deb"; sha256 "$talloc_deb"; sha256 "$shmem_deb"
+      sha256 "$pnpm_lockfile"; sha256 "$HERE/lib/rtbuild.py"
+      (cd "$HERE" && find bridge boot direct -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum)
+    } | sha256sum | cut -c1-12 )"
+  local rootfs_version="node${NODE_VERSION}-ubuntu${UBUNTU_VERSION}-${rootfs_inputs_sha}"
   local runtime_info
-  runtime_info="$(printf '{"runtimeVersion":"%s","abi":"%s","dshVersion":"%s","nodeVersion":"%s","pnpmVersion":"%s","ubuntuVersion":"%s","prootVersion":"%s","dshPatches":%s,"dshGoBridge":"%s"}' \
-    "$runtime_version" "$abi" "$DSH_VERSION" "$NODE_VERSION" "$PNPM_VERSION" "$UBUNTU_VERSION" "$PROOT_VERSION" \
+  runtime_info="$(printf '{"runtimeVersion":"%s","rootfsVersion":"%s","abi":"%s","dshVersion":"%s","nodeVersion":"%s","pnpmVersion":"%s","ubuntuVersion":"%s","prootVersion":"%s","dshPatches":%s,"dshGoBridge":"%s"}' \
+    "$runtime_version" "$rootfs_version" "$abi" "$DSH_VERSION" "$NODE_VERSION" "$PNPM_VERSION" "$UBUNTU_VERSION" "$PROOT_VERSION" \
     "$(cat "$work/dsh-patches.json")" "$bridge_version")"
 
-  # -- rootfs archive --
+  # -- rootfs archive (and, with ENGINE_BUNDLE=1, the engine bundle) --
   local archive="$assets/rootfs-$abi.tar.$COMPRESS"
   local -a prune=(); [[ "$PRUNE_DEV_METADATA" == 1 ]] && prune=(--prune-dev-metadata)
+  local -a engine=()
+  local engine_name=""
+  if [[ "$ENGINE_BUNDLE" == 1 ]]; then
+    engine_name="engine-$abi.tar.$COMPRESS"
+    engine=(--engine-out "$assets/$engine_name")
+    [[ "$WITHOUT_DSH" == 1 ]] && engine+=(--without-dsh)
+    log "engine bundle enabled$( [[ "$WITHOUT_DSH" == 1 ]] && echo ' (rootfs without DSH)')"
+  fi
   log "assembling rootfs ($COMPRESS)"
   "${PY[@]}" assemble --abi "$abi" --base "$base" --node "$node" --dsh-prefix "$prefix" --pnpm-prefix "$pnpm_prefix" \
     --out "$archive" --report "$out/build-report.json" --runtime-info "$runtime_info" \
     --compress "$COMPRESS" --xz-preset "$XZ_PRESET" --threads "$XZ_THREADS" --epoch "$SOURCE_DATE_EPOCH" "${prune[@]}" \
-    "${extra_debs[@]/#/--deb=}" --python "$python" --bridge "$bridge"
+    "${extra_debs[@]/#/--deb=}" --python "$python" --bridge "$bridge" "${engine[@]}"
 
   local versions
-  versions="$(printf '{"runtimeVersion":"%s","dshVersion":"%s","nodeVersion":"%s","pnpmVersion":"%s","ubuntuVersion":"%s","prootVersion":"%s","tallocVersion":"%s","androidShmemVersion":"%s","dshPatches":%s,"dshGoBridge":"%s","build":{"inputsSha256_12":"%s","ubuntuBaseSha256":"%s","nodeSha256":"%s","dshLockSha256":"%s","pnpmIntegrity":"%s","sourceDateEpoch":%s}}' \
-    "$runtime_version" "$DSH_VERSION" "$NODE_VERSION" "$PNPM_VERSION" "$UBUNTU_VERSION" "$PROOT_VERSION" "$TALLOC_VERSION" "$SHMEM_VERSION" \
+  versions="$(printf '{"runtimeVersion":"%s","rootfsVersion":"%s","dshVersion":"%s","nodeVersion":"%s","pnpmVersion":"%s","ubuntuVersion":"%s","prootVersion":"%s","tallocVersion":"%s","androidShmemVersion":"%s","dshPatches":%s,"dshGoBridge":"%s","build":{"inputsSha256_12":"%s","ubuntuBaseSha256":"%s","nodeSha256":"%s","dshLockSha256":"%s","pnpmIntegrity":"%s","sourceDateEpoch":%s}}' \
+    "$runtime_version" "$rootfs_version" "$DSH_VERSION" "$NODE_VERSION" "$PNPM_VERSION" "$UBUNTU_VERSION" "$PROOT_VERSION" "$TALLOC_VERSION" "$SHMEM_VERSION" \
     "$(cat "$work/dsh-patches.json")" "$bridge_version" \
     "$inputs_sha" "$(sha256 "$base")" "$(sha256 "$node")" "$(sha256 "$lockfile")" "$PNPM_INTEGRITY" "$SOURCE_DATE_EPOCH")"
   local -a rootfs_url=()
   if [[ -n "$RUNTIME_BASE_URL" ]]; then
     rootfs_url=(--rootfs-url "${RUNTIME_BASE_URL%/}/$(basename "$archive")")
+    [[ -n "$engine_name" ]] && rootfs_url+=(--engine-url "${RUNTIME_BASE_URL%/}/$engine_name")
   fi
   "${PY[@]}" manifest --abi "$abi" --report "$out/build-report.json" --jnilibs "$work/jnilibs.json" \
     --versions "$versions" "${rootfs_url[@]}" --out "$assets/manifest.json" >&2
@@ -473,9 +504,13 @@ for abi in ("x86_64", "arm64-v8a"):
         continue
     m = json.load(open(p))
     index["abis"][abi] = {k: m.get(k) for k in (  # .get: another ABI may still hold an older build
-        "runtimeVersion", "rootfs", "rootfsSha256", "rootfsBytes", "uncompressedBytes", "entries",
+        "runtimeVersion", "rootfsVersion", "rootfs", "rootfsSha256", "rootfsBytes", "uncompressedBytes", "entries",
         "rootfsUrl", "dshVersion", "nodeVersion", "pnpmVersion", "ubuntuVersion", "prootVersion")}
     index["abis"][abi]["jniLibs"] = {n: {"sha256": v["sha256"], "bytes": v["bytes"]} for n, v in m["jniLibs"].items()}
+    if m.get("engine"):
+        index["abis"][abi]["engine"] = {k: m["engine"].get(k) for k in (
+            "id", "archive", "archiveSha256", "archiveBytes", "url", "dshVersion", "patchSet",
+            "rootfsIncludesDsh")}
 json.dump(index, open(os.path.join(out, "manifest.json"), "w"), indent=2)
 print("wrote " + os.path.join(out, "manifest.json"))
 PYEOF

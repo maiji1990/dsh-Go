@@ -33,6 +33,28 @@ archive="$(dirname "$MANIFEST")/$(python3 -I -c 'import json,sys;print(json.load
 rm -rf "$ROOT"; mkdir -p "$ROOT"
 tar -xf "$archive" -C "$ROOT"
 
+# Engine bundle (see docs/design/engine-bundles.md): overlay it the way the app
+# layers it over the rootfs, then check that it describes itself consistently.
+engine="$(python3 -I - "$MANIFEST" <<'PY'
+import json, sys
+e = (json.load(open(sys.argv[1])).get("engine") or {})
+print(e.get("archive", ""))
+PY
+)"
+if [[ -n "$engine" ]]; then
+  engine_path="$(dirname "$MANIFEST")/$engine"
+  tar -xf "$engine_path" -C "$ROOT"
+  python3 -I - "$MANIFEST" "$ROOT/engine.json" <<'PY'
+import json, sys
+m = json.load(open(sys.argv[1]))["engine"]
+e = json.load(open(sys.argv[2]))
+assert e["id"] == m["id"], (e["id"], m["id"])
+assert e["patchSet"] == m["patchSet"], "engine.json patchSet differs from the manifest"
+assert e["dshVersion"] == m["dshVersion"], "engine.json dshVersion differs from the manifest"
+print("engine bundle: %s, patchSet %s" % (e["id"], e["patchSet"][:12]))
+PY
+fi
+
 mapfile -t GUEST < <(python3 -I - "$MANIFEST" "$PORT" <<'PY'
 import json, sys
 m = json.load(open(sys.argv[1])); argv = m["launch"]["argv"]

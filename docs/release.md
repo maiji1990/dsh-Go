@@ -129,6 +129,17 @@ versionCode = (年 - 2026) × 10^8 + MMDDhhmm      时钟固定按 UTC+8
 
    产物在 `runtime/out/arm64-v8a/assets/runtime/`；`runtime/out/arm64-v8a/assets-manifest/` 是给普通包用的 manifest-only 目录。
 
+   **引擎包（engine bundle，实验）**：加 `ENGINE_BUNDLE=1` 会额外产出 `engine-<abi>.tar.xz`
+   （`/opt/dsh` + `/opt/dsh-go` + `engine.json`，约 34 MB）并在 manifest 里写入 `engine` 段。
+   当前是附加产物，rootfs 内容不变；等 App 支持引擎层后，再加 `WITHOUT_DSH=1` 把 DSH 从
+   rootfs 里移出（rootfs 约 90 MB，换引擎只下载 34 MB）。manifest 另有 `rootfsVersion`：
+   它只由系统层输入算出，换 DSH 版本 / 补丁不会变，App 据此跳过 rootfs 下载。
+   详见 `docs/design/engine-bundles.md`。
+
+   ```sh
+   ENGINE_BUNDLE=1 runtime/build-runtime.sh arm64-v8a
+   ```
+
 2. **上传 rootfs 归档**：用 `tooling/publish-runtime.sh` 传到独立的 GitHub Release（tag `runtime-<runtimeVersion>`，`--latest=false --prerelease`，两者一起用才不会抢 App 的更新——只有一个 Release 时 `--latest=false` 仍会被当成 latest，`/releases/latest` 返回它），并回填 manifest 的 `rootfsUrl`：
 
    ```sh

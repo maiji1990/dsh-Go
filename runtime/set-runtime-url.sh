@@ -24,12 +24,16 @@ for abi in ("arm64-v8a", "x86_64"):
         continue
     data = json.load(open(manifest))
     data["rootfsUrl"] = base + "/" + data["rootfs"]
+    if data.get("engine"):
+        data["engine"]["url"] = base + "/" + data["engine"]["archive"]
     for path in (manifest, os.path.join(out, abi, "assets-manifest", "runtime", "manifest.json")):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w") as f:
             json.dump(data, f, indent=2)
             f.write("\n")
     print(f"{abi}: {data['rootfsUrl']}")
+    if data.get("engine"):
+        print(f"{abi}: {data['engine']['url']}")
     found = True
 
 index_path = os.path.join(out, "manifest.json")
@@ -37,6 +41,8 @@ if os.path.isfile(index_path):
     index = json.load(open(index_path))
     for abi, entry in index.get("abis", {}).items():
         entry["rootfsUrl"] = base + "/" + entry["rootfs"]
+        if entry.get("engine"):
+            entry["engine"]["url"] = base + "/" + entry["engine"]["archive"]
     with open(index_path, "w") as f:
         json.dump(index, f, indent=2)
         f.write("\n")
