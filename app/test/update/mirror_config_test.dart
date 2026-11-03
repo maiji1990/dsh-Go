@@ -46,12 +46,24 @@ void main() {
       expect([for (final e in endpoints) e.url.host], isNot(contains('go.dshtui.com')));
     });
 
-    test('the shipped configuration (no token in tests) is the same', () {
+    test('the shipped configuration (no token in tests) has no upstream mirror', () {
+      // This fork has no download host of its own. Shipping dl.dshtui.com would
+      // offer the upstream APK (signed with another key) as an "update".
       final shipped = defaultUpdateSources();
       expect(shipped.channel, isNull);
-      expect(shipped.feed.toString(), _dlFeed);
-      expect(shipped.metadataEndpoints().map((e) => e.id), sources.metadataEndpoints().map((e) => e.id));
-      expect(shipped.mirrors.map((m) => m.id), sources.mirrors.map((m) => m.id));
+      expect(shipped.feed, isNull);
+      expect(shipped.mirrors.map((m) => m.id), ['github', 'ghfast', 'gh-proxy']);
+      expect(shipped.metadataEndpoints().map((e) => e.id), [
+        'manifest:github',
+        'manifest:ghfast',
+        'manifest:gh-proxy',
+        'api',
+      ]);
+      expect(shipped.metadataEndpoints().every((e) => e.url.host != 'dl.dshtui.com'), isTrue);
+      expect(
+        shipped.downloadUrls([Uri.parse(_githubApk)]).map((u) => u.url.host),
+        isNot(contains('dl.dshtui.com')),
+      );
     });
 
     test('the API is not moved ahead by having answered last time; the others are', () {
