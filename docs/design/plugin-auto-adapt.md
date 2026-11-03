@@ -65,6 +65,17 @@
 
 不改插件源码，也不改 DSH Web 自身的布局；只作用于 `[data-dsh-go-island~="frame"]` 内部。
 
+### 4.2 官方网页版里的插件页面
+
+网页模式下，插件的自带页面（`settings.section`、`plugins.*` 等 slot）仍然由 DSH Web 直接渲染，
+岛的样式不在这里。`assets/web/dsh_web_phone.css` 在手机布局（`html[data-dsh-app-layout="drawer"]`）
+下对**插件 slot 内部**补同一套“能放下、能滚动”的通用约束：宽容器/卡片/表格不超过面板宽度、
+长词断行、图片/视频自适应、`pre/code` 换行、输入框 16px 防聚焦放大、表格自己在内部横向滚动。
+
+它不碰 DSH 自己的组件（只选 `[data-slot="settings.section"]`、`[data-slot="settings.general.item"]`、
+`[data-slot^="plugins."]` 的后代），也不改颜色、字号和间距；插件的设计仍然按它自己的样子显示，
+只是不再把手机屏幕撑破。设置 → 界面 → 网页版 → 手机布局 关掉时这一层和外壳适配一起停用。
+
 ## 5. 边界
 
 - 任意 React / Canvas 界面不能自动变原生；第 4 步的网页岛是通用兜底，不是原生转换。

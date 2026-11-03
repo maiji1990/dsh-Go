@@ -27,6 +27,9 @@
  *   size).
  * - Settings → 网页版手机布局 turns all of it off, to check a plugin against
  *   the official layout.
+ * - Plugin slots (`settings.section`, `settings.general.item`, `plugins.*`)
+ *   get one extra layer: arbitrary plugin React is only made to fit and stay
+ *   scrollable on a phone, never restyled (see the section at the end).
  *
  * Selectors use DSH's stable hooks where they exist (data-slot, roles, aria
  * labels) and CSS-module class *suffixes* (`[class*="_sidebarCol"]`), never the
@@ -346,4 +349,90 @@ body > [class*="_overlay"] {
   from {
     opacity: 0;
   }
+}
+
+/* Plugin content on a phone
+ * ---------------------------------------------------------------------
+ * Everything DSH renders itself is adapted above. A plugin's own page (its
+ * settings section, bundle card, plugin item, a `plugins.*` slot) is
+ * arbitrary React built for a desktop width: it can overflow, keep a
+ * fixed-width card, or put a wide table inside the settings sheet. This
+ * layer only makes it fit the phone and stay scrollable — it never
+ * restyles colours, type or spacing, so the plugin's design still reads as
+ * itself. Same rules as an island (island_mobile.css), applied to the
+ * slots in the official Web UI instead of a seat.
+ *
+ * Kept to the plugin slots: DSH's own rows, cards and dialogs above are
+ * untouched, so a plugin that already adapts loses nothing. */
+:root[data-dsh-app-layout="drawer"] :is(
+    [data-slot="settings.section"],
+    [data-slot="settings.general.item"],
+    [data-slot^="plugins."]
+  ) {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-wrap: anywhere;
+}
+
+:root[data-dsh-app-layout="drawer"] :is(
+    [data-slot="settings.section"],
+    [data-slot="settings.general.item"],
+    [data-slot^="plugins."]
+  ) :where(
+    div, section, article, main, aside, header, footer, form, fieldset,
+    ul, ol, dl, p, h1, h2, h3, h4, h5, h6, blockquote, pre, table) {
+  max-width: 100% !important;
+  min-width: 0;
+}
+
+:root[data-dsh-app-layout="drawer"] :is(
+    [data-slot="settings.section"],
+    [data-slot="settings.general.item"],
+    [data-slot^="plugins."]
+  ) :where(img, video, canvas, svg, iframe) {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+:root[data-dsh-app-layout="drawer"] :is(
+    [data-slot="settings.section"],
+    [data-slot="settings.general.item"],
+    [data-slot^="plugins."]
+  ) :where(p, li, dd, dt, td, th, label, a) {
+  overflow-wrap: anywhere;
+}
+
+/* A desktop code/markdown block wraps instead of widening the sheet. */
+:root[data-dsh-app-layout="drawer"] :is(
+    [data-slot="settings.section"],
+    [data-slot="settings.general.item"],
+    [data-slot^="plugins."]
+  ) :where(pre, code) {
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* 16px is the size Android WebView will not enlarge when a field is focused;
+   a plugin's own 12px input would otherwise zoom the whole page. */
+:root[data-dsh-app-layout="drawer"] :is(
+    [data-slot="settings.section"],
+    [data-slot="settings.general.item"],
+    [data-slot^="plugins."]
+  ) :where(input, select, textarea) {
+  max-width: 100% !important;
+  font-size: max(16px, 1em);
+}
+
+/* A plugin table or wide grid scrolls inside itself rather than being cut
+   off by the sheet; the wrapper role goes on the table's own box. */
+:root[data-dsh-app-layout="drawer"] :is(
+    [data-slot="settings.section"],
+    [data-slot="settings.general.item"],
+    [data-slot^="plugins."]
+  ) table {
+  max-width: 100% !important;
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
