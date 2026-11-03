@@ -14,8 +14,8 @@ extension RuntimeMissing on RuntimeStatus {
   bool get runtimeMissing => phase == RuntimePhase.notInstalled && bundledVersion != null;
 }
 
-/// The phone's memory and free storage, and the bundled runtime's unpacked
-/// size; any of them null when Android did not say.
+/// The phone's memory and free storage, and the runtime's unpacked size
+/// (rootfs + engine bundle); any of them null when Android did not say.
 class LocalFootprint {
   const LocalFootprint({this.totalMemoryMb, this.freeStorageMb, this.unpackedMb});
 
@@ -25,7 +25,8 @@ class LocalFootprint {
   /// Free space where the runtime unpacks (app files dir), MiB.
   final int? freeStorageMb;
 
-  /// The rootfs once unpacked (`manifest.json` `uncompressedBytes`), MiB.
+  /// The rootfs plus the engine tree once unpacked (`uncompressedBytes` of
+  /// both, see docs/design/engine-bundles.md), MiB.
   final int? unpackedMb;
 
   /// Below this the remote host is the suggested way. Phones report less
@@ -63,11 +64,15 @@ class LocalFootprint {
 final localFootprintProvider = FutureProvider<LocalFootprint>((ref) async {
   final info = await ref.watch(diagnosticsChannelProvider).info();
   int? whole(Object? v) => v is num && v >= 0 ? v.round() : null;
-  final unpacked = info.manifest['uncompressedBytes'];
+  int? bytes(Object? v) => v is num && v > 0 ? v.round() : null;
+  // The split runtime keeps the engine in its own archive: count both trees.
+  final rootfsBytes = bytes(info.manifest['uncompressedBytes']);
+  final engine = info.manifest['engine'];
+  final totalBytes = rootfsBytes == null ? null : rootfsBytes + (engine is Map ? bytes(engine['uncompressedBytes']) ?? 0 : 0);
   final memory = whole(info.device['memoryMb']);
   return LocalFootprint(
     totalMemoryMb: memory == 0 ? null : memory,
     freeStorageMb: whole(info.device['freeStorageMb']),
-    unpackedMb: unpacked is num && unpacked > 0 ? (unpacked / (1024 * 1024)).round() : null,
+    unpackedMb: totalBytes == null ? null : (totalBytes / (1024 * 1024)).round(),
   );
 });
