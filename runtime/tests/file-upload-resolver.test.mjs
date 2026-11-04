@@ -15,7 +15,11 @@ const prefix = process.env.DSH_TEST_PREFIX ?? process.env.DSH_PREFIX;
 assert.ok(prefix, 'set DSH_TEST_PREFIX to the locked, patched DSH npm prefix');
 const require = createRequire(join(resolve(prefix), 'package.json'));
 const cliPackage = require.resolve('@deepseek-ai/dsh/package.json');
-assert.equal(JSON.parse(await readFile(cliPackage)).version, '0.2.1-rc.4');
+// The prefix must be the engine the repo pins; runtime/build-runtime.sh is where that lives.
+const buildScript = await readFile(new URL('../build-runtime.sh', import.meta.url), 'utf8');
+const pinnedVersion = /^DSH_VERSION="\$\{DSH_VERSION:-([^}]+)\}"/m.exec(buildScript)?.[1];
+assert.ok(pinnedVersion, 'runtime/build-runtime.sh must pin DSH_VERSION');
+assert.equal(JSON.parse(await readFile(cliPackage)).version, pinnedVersion);
 const cli = join(dirname(cliPackage), 'lib/bin.js');
 const observer = fileURLToPath(new URL('./file-upload-resolver-observer.mjs', import.meta.url));
 

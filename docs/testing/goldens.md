@@ -45,7 +45,7 @@ flutter test --update-goldens test/plugin_config/plugin_config_golden_test.dart 
 
 用仓库固定的 Flutter 版本（`tooling/setup-toolchain.sh` 的 `FLUTTER_VERSION`，当前 3.47.7）；不同版本的排版和字形有细微差异，不要把版本差异写进基准图。
 
-字体和时区也要固定：基准图用 **Noto Sans CJK 2.004**（`Sans2.004` 的 OTC 包）且在 **UTC+8** 下生成。换字体或换时区会让聊天计时器、分享卡片的时间文案跟着变，像素比对就会失败；CI 因此固定 `TZ=Asia/Shanghai` 并下载同一版字体。
+字体和时区也要固定：基准图用 **Noto Sans CJK 2.004**（`Sans2.004` 的 OTC 包）和 **Noto Color Emoji 2.051**，且在 **UTC+8** 下生成。换字体或换时区会让聊天计时器、分享卡片的时间文案跟着变，像素比对就会失败；CI 因此固定 `TZ=Asia/Shanghai` 并下载同一版字体。系统里没有 color emoji 字体时，emoji 会画成方块（`drawer_g9_folder_editor` 的「标记」一排踩过这个坑），所以 `goldens` 工作流也装同一版 emoji。
 
 命名规则：`configGolden` / `engineGolden` 会为每个 `name` 生成 `goldens/<name>_dark.png` 与 `<name>_light.png`。只跑需要的 `--plain-name`，`git status` 里就只会出现对应的 PNG。
 

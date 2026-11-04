@@ -20,7 +20,7 @@ from unittest import mock
 
 import apk_delta
 from build_number import MAX_VERSION_CODE
-from release_assets import BADGING_RE, ReleaseError, check_abis, patch_from, previous_releases, published_apk, release_build
+from release_assets import BADGING_RE, REPO, ReleaseError, check_abis, patch_from, previous_releases, published_apk, release_build
 
 # Stands in for gh: `release list` prints $FAKE_RELEASES, `release download`
 # copies the asset files from $FAKE_ASSETS/<tag>/; every call goes to $FAKE_LOG.
@@ -28,7 +28,7 @@ FAKE_GH = """#!{python}
 import json, os, shutil, sys
 args = sys.argv[1:]
 open(os.environ["FAKE_LOG"], "a").write(" ".join(args) + "\\n")
-assert args[:1] == ["release"] and args[args.index("--repo") + 1] == "ccch1mneyyy/dsh-go", args
+assert args[:1] == ["release"] and args[args.index("--repo") + 1] == "{repo}", args
 if args[1] == "list":
     print(os.environ["FAKE_RELEASES"])
 elif args[1] == "download":
@@ -142,7 +142,7 @@ class PublishedTest(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.dir)
         bin_dir = self.dir / "bin"
         bin_dir.mkdir()
-        (bin_dir / "gh").write_text(FAKE_GH.format(python=sys.executable))
+        (bin_dir / "gh").write_text(FAKE_GH.format(python=sys.executable, repo=REPO))
         (bin_dir / "gh").chmod(0o755)
         self.log = self.dir / "gh.log"
         self.log.write_text("")
