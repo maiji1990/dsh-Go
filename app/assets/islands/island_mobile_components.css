@@ -1,0 +1,93 @@
+/*
+ * Semantic layout for a plugin's own page inside an island
+ * (docs/design/plugin-mobile-adaptation.md §5).
+ *
+ * island.js only classifies nodes and writes data attributes; every rule here
+ * is inert without them. That keeps three promises the old boundary-only CSS
+ * made but the old runtime broke:
+ *   - a plugin that already adapts loses nothing (no attributes, no change);
+ *   - widening the frame, leaving the page or turning the App's phone layout
+ *     off restores the plugin's own layout (the attributes go away);
+ *   - nothing here restyles a colour, a type scale or the spacing inside a
+ *     card: only layout containers, form rows, overlays and scrollers.
+ *
+ * Scope: only inside an island frame, so the official DSH shell and every
+ * other slot keep their own layout.
+ */
+
+/* ── form rows: label above control ─────────────────────────────────────── */
+html[data-dsh-go-island] [data-dsh-mobile-role='form-row'][data-dsh-mobile-compact] {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 4px;
+}
+
+html[data-dsh-go-island] [data-dsh-mobile-role='form-row'][data-dsh-mobile-compact] > label {
+  width: auto !important;
+  max-width: 100% !important;
+  text-align: start !important;
+  white-space: normal !important;
+}
+
+html[data-dsh-go-island] [data-dsh-mobile-role='form-row'][data-dsh-mobile-compact] > :is(input, select, textarea) {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+/* ── toolbars: wrap instead of squeezing (order is kept) ────────────────── */
+html[data-dsh-go-island] [data-dsh-mobile-role='toolbar'][data-dsh-mobile-compact] {
+  flex-wrap: wrap !important;
+  row-gap: 6px;
+}
+
+/* ── card grids: one column; data grids never carry this role ───────────── */
+html[data-dsh-go-island] [data-dsh-mobile-role='card-grid'][data-dsh-mobile-compact] {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+/* ── wide records: horizontal scroll with the first columns readable ────── */
+html[data-dsh-go-island] [data-dsh-mobile-role='table'] {
+  display: block !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── dialogs: fit the frame, scroll the middle, keep the actions reachable ─ */
+html[data-dsh-go-island] [data-dsh-mobile-role='dialog'][data-dsh-mobile-compact] {
+  box-sizing: border-box;
+  width: auto !important;
+  max-width: none !important;
+  left: 8px !important;
+  right: 8px !important;
+  top: auto !important;
+  bottom: 8px !important;
+  max-height: calc(100vh - 16px) !important;
+  transform: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+/* Whatever the dialog puts between its header and its actions scrolls; a
+ * header/footer (or a row of buttons at either end) stays put. */
+html[data-dsh-go-island] [data-dsh-mobile-role='dialog'][data-dsh-mobile-compact] > :not(header):not(footer) {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ── tab strips: scroll sideways, selected tab centred by island.js ─────── */
+html[data-dsh-go-island] [data-dsh-mobile-role='tablist'][data-dsh-mobile-compact] {
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+html[data-dsh-go-island] [data-dsh-mobile-role='tablist'][data-dsh-mobile-compact] > * {
+  flex: 0 0 auto;
+}

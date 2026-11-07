@@ -703,69 +703,140 @@
     m.setAttribute('content', 'width=device-width, initial-scale=1, viewport-fit=cover');
   }
 
-  // Mark subtrees wider than the frame: island_mobile.css gives each one its
-  // own horizontal scroller, so desktop tables/rows stay reachable instead of
-  // being clipped by the frame. Bounded so a huge plugin page cannot stall.
-  function fitToWidth() {
+  // ---- plugin content on a phone ----------------------------------------------
+  // Everything below is expressed as data attributes; island_mobile_components.css
+  // owns the layout. That keeps it reversible: widening the frame, leaving the
+  // page or turning the App's phone layout off only has to drop attributes, and
+  // no plugin colour, type or spacing is written (the old fitToWidth restyled
+  // cards and wrapped every flex row, and could not be undone).
+
+  var ROLE = 'data-dsh-mobile-role';
+  var COMPACT = 'data-dsh-mobile-compact';
+  var WIDE = 'data-dsh-go-mobile-wide';
+  var touched = []; // [element, attribute] this controller set, to drop later
+
+  function own(el, attr) {
+    for (var i = 0; i < touched.length; i++) if (touched[i][0] === el && touched[i][1] === attr) return;
+    touched.push([el, attr]);
+  }
+  function setRole(el, role) {
+    if (el.getAttribute(ROLE) === role) return;
+    el.setAttribute(ROLE, role);
+    own(el, ROLE);
+  }
+  function setCompact(el, on) {
+    if (on) {
+      if (!el.hasAttribute(COMPACT)) { el.setAttribute(COMPACT, ''); own(el, COMPACT); }
+    } else if (el.hasAttribute(COMPACT)) {
+      // The node was classified before and is wide enough now: drop the mark,
+      // the CSS rule stops applying and the plugin's own layout comes back.
+      el.removeAttribute(COMPACT);
+    }
+  }
+  function isControl(tag) { return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA'; }
+  function columnsOf(table) {
+    var row = table.rows && table.rows[0];
+    if (row) return row.cells ? row.cells.length : 0;
+    return table.querySelectorAll('th').length;
+  }
+  // A card grid holds short, independent boxes; a data grid holds records and
+  // must keep its width (table.scroll, not card-grid.collapse).
+  function cardish(el) {
+    var kids = el.children;
+    if (!kids || kids.length < 3) return false;
+    for (var i = 0; i < kids.length; i++) {
+      var k = kids[i];
+      if (k.tagName === 'TABLE') return false;
+      var role = k.getAttribute('role') || '';
+      if (role === 'row' || role === 'gridcell' || role === 'table') return false;
+      if (k.querySelector && (k.querySelector('table') || k.querySelector('[role="row"]'))) return false;
+    }
+    return true;
+  }
+  function scrollSelectedTab(list) {
+    var selected = list.querySelector('[aria-selected="true"]');
+    if (selected && selected.scrollIntoView) selected.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }
+  function classify(el, compact) {
+    var tag = el.tagName;
+    if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'LINK') return;
+    if (tag === 'TABLE') {
+      if (columnsOf(el) >= 5) setRole(el, 'table');
+      return;
+    }
+    var role = el.getAttribute('role');
+    if (role === 'dialog' || el.getAttribute('aria-modal') === 'true') {
+      setRole(el, 'dialog');
+      setCompact(el, compact);
+      return;
+    }
+    if (role === 'tablist') {
+      setRole(el, 'tablist');
+      setCompact(el, compact);
+      if (compact) scrollSelectedTab(el);
+      return;
+    }
+    var cs = getComputedStyle(el);
+    if (cs.display === 'flex' && cs.flexDirection.indexOf('row') === 0) {
+      var kids = el.children, buttons = 0, labels = 0, controls = 0;
+      for (var k = 0; k < kids.length; k++) {
+        var t = kids[k].tagName;
+        if (t === 'BUTTON') buttons++;
+        else if (t === 'LABEL') labels++;
+        else if (isControl(t)) controls++;
+      }
+      // A label beside its control stacks; a row of buttons wraps. Anything
+      // else (an icon and a caption, a chip and a value) is left alone.
+      if (labels > 0 && controls > 0) {
+        setRole(el, 'form-row');
+        setCompact(el, compact);
+      } else if (buttons >= 2 && buttons >= kids.length - 1) {
+        setRole(el, 'toolbar');
+        setCompact(el, compact);
+      }
+      return;
+    }
+    if (cs.display === 'grid' && cardish(el)) {
+      var tracks = cs.gridTemplateColumns ? cs.gridTemplateColumns.trim().split(/\s+/).length : 0;
+      if (tracks >= 3) {
+        setRole(el, 'card-grid');
+        setCompact(el, compact);
+      }
+    }
+  }
+  function adaptPluginContent() {
     var frame = st.frame;
     if (!frame || st.phase !== 'ready') return;
     var width = frame.clientWidth;
     if (width <= 0) return;
+    var compact = width < 480;
     var nodes = frame.querySelectorAll('*');
-    var limit = Math.min(nodes.length, 1200);
-    for (var i = 0; i < limit; i++) {
-      var el = nodes[i];
-      var tag = el.tagName;
-      if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'LINK') continue;
-      var cs = getComputedStyle(el);
-      // A desktop row of controls: let it wrap instead of squeezing its first
-      // cell into one character per line. flex-wrap only wraps when needed.
-      if (cs.display === 'flex' && cs.flexDirection.indexOf('row') === 0) {
-        el.style.flexWrap = 'wrap';
-      } else if (cs.display === 'grid' && el.scrollWidth > width + 4) {
-        // A fixed multi-column grid (a desktop account row, a 3-up card grid)
-        // stacks on a phone rather than scrolling sideways.
-        var tracks = cs.gridTemplateColumns ? cs.gridTemplateColumns.trim().split(/\s+/) : [];
-        if (tracks.length >= 3) el.style.gridTemplateColumns = 'minmax(0, 1fr)';
-      }
-      // App-style cards: the App draws its own cards at 14px. A plugin card is
-      // a large translucent box with an 8-18px radius; bring it to the same
-      // corner without touching pills (99px) or small chips.
-      if (!el.hasAttribute('data-dsh-go-card')) {
-        var radius = parseFloat(cs.borderTopLeftRadius) || 0;
-        var bg = cs.backgroundColor || '';
-        var filled = bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)';
-        if (filled && radius >= 8 && radius < 18 && el.clientWidth >= width * 0.55 && el.clientHeight >= 48) {
-          el.style.backgroundColor = 'var(--dsw-alias-settings-card-fill)';
-          el.style.borderColor = 'var(--dsw-alias-settings-card-stroke)';
-          el.style.borderRadius = '14px';
-          el.setAttribute('data-dsh-go-card', '');
-        }
-      }
-      // App type scale: the App's body text is 14-16px; a settings plugin often
-      // ships 11-13px labels. Raise only elements that carry their own text,
-      // once, and leave code, icons and pills alone.
-      if (!el.hasAttribute('data-dsh-go-type')) {
-        var direct = false;
-        for (var n = el.firstChild; n; n = n.nextSibling) {
-          if (n.nodeType === 3 && n.nodeValue && n.nodeValue.trim()) { direct = true; break; }
-        }
-        var tagName = el.tagName;
-        var family = cs.fontFamily || '';
-        if (direct && tagName !== 'CODE' && tagName !== 'PRE' && tagName !== 'SCRIPT' && tagName !== 'STYLE' &&
-            !/icon|awesome|phosphor|material/i.test(family)) {
-          var size = parseFloat(cs.fontSize) || 0;
-          if (size >= 9 && size < 14) {
-            el.style.fontSize = Math.min(15, Math.max(12, size * 1.1)).toFixed(1) + 'px';
-            el.setAttribute('data-dsh-go-type', '');
-          }
-        }
-      }
-      if (el.hasAttribute('data-dsh-go-mobile-wide')) continue;
+    var limit = Math.min(nodes.length, 1200); // bounded: a huge page must not stall
+    for (var i = 0; i < limit; i++) classify(nodes[i], compact);
+    // Boundary layer: a subtree still wider than the frame gets its own
+    // horizontal scroller (island_mobile.css). Tracked so it can be dropped.
+    for (var j = 0; j < limit; j++) {
+      var el = nodes[j];
+      if (el.hasAttribute(WIDE)) continue;
       if (el.scrollWidth > width + 4 && el.clientWidth >= width - 8) {
-        el.setAttribute('data-dsh-go-mobile-wide', '');
+        el.setAttribute(WIDE, '');
+        own(el, WIDE);
       }
     }
+  }
+  var adaptScheduled = false;
+  // One pass per frame: a mutation storm must not queue a scan each.
+  function scheduleAdapt() {
+    if (adaptScheduled) return;
+    adaptScheduled = true;
+    var run = function () { adaptScheduled = false; adaptPluginContent(); };
+    if (window.requestAnimationFrame) requestAnimationFrame(run);
+    else setTimeout(run, 16);
+  }
+  // Leave the page as we found it: only what this controller wrote is removed.
+  function dropMobileRoles() {
+    for (var i = 0; i < touched.length; i++) touched[i][0].removeAttribute(touched[i][1]);
+    touched = [];
   }
 
   // ---- navigation -------------------------------------------------------------
@@ -1209,13 +1280,14 @@
       scheduleReapply();
       measure();
       reportHits();
+      scheduleAdapt();
     }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-ds-dark-theme', 'class', 'style', 'aria-expanded', 'data-state', 'inert'] });
     if (window.ResizeObserver) {
-      var ro = new ResizeObserver(function () { measure(); reportHits(); });
+      var ro = new ResizeObserver(function () { measure(); reportHits(); scheduleAdapt(); });
       ro.observe(document.documentElement);
       st.resizeObserver = ro;
     }
-    window.addEventListener('resize', function () { measure(); reportHits(); fitToWidth(); });
+    window.addEventListener('resize', function () { measure(); reportHits(); adaptPluginContent(); });
     document.addEventListener('scroll', function () { reportHits(); }, true);
     setInterval(function () { if (st.cfg && st.cfg.mode === 'overlay') reportHits(); }, 250);
     // A plugin that selects another conversation (the official sessions
@@ -1357,9 +1429,9 @@
     apply();
     st.phase = 'ready';
     observe();
-    fitToWidth();
-    setTimeout(fitToWidth, 500);
-    setTimeout(fitToWidth, 1600);
+    adaptPluginContent();
+    setTimeout(adaptPluginContent, 500);
+    setTimeout(adaptPluginContent, 1600);
     watchContent();
     var found = 0;
     for (var f = 0; f < (st.slotEls || [outlet]).length; f++) found += entries((st.slotEls || [outlet])[f]);
@@ -1377,6 +1449,9 @@
   window.addEventListener('pagehide', function () {
     st.leaving = true;
     restoreViewPreference();
+    // The page is going away: leave the DOM as we found it (the plugin may come
+    // back at a wider size in the same WebView).
+    dropMobileRoles();
   });
 
   window.__dshGoIsland = {

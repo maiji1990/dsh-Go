@@ -37,7 +37,10 @@ class IslandAssets {
         'src:url(data:font/ttf;base64,$data) format("truetype")}\n';
     final base = await _text('islands/island.css');
     final mobile = await _text('islands/island_mobile.css');
-    return '$face$base\n$mobile';
+    // Semantic layout for plugin content: driven by the data attributes
+    // island.js sets, inert without them (docs/design/plugin-mobile-adaptation.md).
+    final components = await _text('islands/island_mobile_components.css');
+    return '$face$base\n$mobile\n$components';
   }();
 
   Future<IslandRecipeBook> get recipes => _recipes ??= _text('islands/recipes.json').then(IslandRecipeBook.parse);

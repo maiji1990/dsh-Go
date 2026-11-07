@@ -673,6 +673,13 @@ const context = vm.createContext({
   setInterval: setIntervalV,
   clearInterval: clearTimer,
   MutationObserver: class { observe() {} disconnect() {} },
+  // island.js re-runs the adapter from a ResizeObserver; the model reports the
+  // frame once so a page that never resizes is still classified.
+  ResizeObserver: class {
+    constructor(fn) { this.fn = fn; }
+    observe() { if (this.fn) this.fn([]); }
+    disconnect() {}
+  },
   Date: { now: () => now },
   URL,
 });
@@ -718,9 +725,13 @@ if (target === 'plugin') {
     .map((e) => ({ node: e.reportName, props: { ...e._styleProps } }));
   out.cards = nodes.filter((e) => e.hasAttribute('data-dsh-go-card')).map((e) => e.reportName);
   out.wide = nodes.filter((e) => e.hasAttribute('data-dsh-go-mobile-wide')).map((e) => e.reportName);
-  out.residual = nodes
-    .filter((e) => Object.keys(e._styleProps).length || e.hasAttribute('data-dsh-go-card') || e.hasAttribute('data-dsh-go-mobile-wide'))
-    .map((e) => e.reportName);
+  const touched = (e) =>
+    Object.keys(e._styleProps).length ||
+    e.hasAttribute('data-dsh-go-card') ||
+    e.hasAttribute('data-dsh-go-mobile-wide') ||
+    e.hasAttribute('data-dsh-mobile-role') ||
+    e.hasAttribute('data-dsh-mobile-compact');
+  out.residual = nodes.filter(touched).map((e) => e.reportName);
   // Which named rule produced each write (docs/design/plugin-mobile-adaptation.md
   // §5). island.js writes properties, not rule ids, so this is the mapping.
   const RULES = {
@@ -730,11 +741,29 @@ if (target === 'plugin') {
     borderColor: 'card.restyle',
     borderRadius: 'card.restyle',
   };
+  const ROLE_RULES = {
+    'form-row': 'form.stack',
+    toolbar: 'toolbar.wrap',
+    'card-grid': 'card-grid.collapse',
+    table: 'table.scroll',
+    dialog: 'dialog.fit',
+    tablist: 'tab.scroll',
+  };
+  // The adapter writes data attributes now, island_mobile_components.css does
+  // the layout; `changed` only carries any inline style the runtime still writes.
+  out.roles = {};
+  for (const e of nodes) {
+    const role = e.getAttribute('data-dsh-mobile-role');
+    if (role) out.roles[e.reportName] = { role, compact: e.hasAttribute('data-dsh-mobile-compact') };
+  }
   out.diagnostics = {
     slot: 'settings.section',
     mode: 'page',
     width: s.width ?? null,
-    rules: [...new Set(out.changed.flatMap((c) => Object.keys(c.props).map((k) => RULES[k]).filter(Boolean)))].sort(),
+    rules: [...new Set([
+      ...Object.values(out.roles).map((r) => ROLE_RULES[r.role]).filter(Boolean),
+      ...out.changed.flatMap((c) => Object.keys(c.props).map((k) => RULES[k]).filter(Boolean)),
+    ])].sort(),
     cards: out.cards,
     wide: out.wide,
     // The island cleared what the official shell marked inert above its frame.

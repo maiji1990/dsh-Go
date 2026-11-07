@@ -43,19 +43,28 @@ harness 的页面模型已按 r17 的 `dsh-prefix` 校准到 0.2.2-rc.1（§1 �
 
 **B 层 · `app/assets/islands/island_mobile.css`（55 行）** 只有 5 条边界规则：`text-size-adjust` 与换行（12-16）、块级 `max-width:100%`（19-24）、媒体不越界（26-29）、控件 `max-width` + 16px 防聚焦缩放（43-46）、超宽子树横向滚动（50-55）。**没有** label/控件纵排、没有工具栏换行、没有弹窗限高、没有 tab 横滑。
 
-**B 层 · `island.js` 的 `fitToWidth()`（709-731）** 是唯一的布局变换，问题都已确认：
+**B 层 · `island.js` 的适配器（PR-3 前是 `fitToWidth()`）**
 
-| 行为 | 位置 | 问题 |
-|---|---|---|
-| 取 `*` 前 1200 个节点 | `:715` `Math.min(nodes.length, 1200)` | 大页面后面的节点永远不处理 |
-| `display:flex` 且横向 → `flexWrap='wrap'` | `:724` | 工具栏「碰巧」对了；「图标 + 文本」「按钮 + 输入框」这种不该断的行也被断 |
-| `gridTemplateColumns` 轨道 ≥3 → `minmax(0,1fr)` | `:728-729` | 卡片网格对了，**8 列数据网格被压成一列**（误伤） |
-| 只有 `resize` + 500ms/1600ms 各跑一次 | `:1218`、`:1360-1362` | 没有 MutationObserver，动态节点不处理 |
-| 写 `el.style.*` 内联样式 | `:724`、`:729` | 没有恢复逻辑；变宽、切页、关闭开关都不会撤销 |
+改造前（已修，留作对照）的问题，全部有测试固定过：
+
+| 行为 | 问题 |
+|---|---|
+| 取 `*` 前 1200 个节点 | 大页面后面的节点不处理 |
+| `display:flex` 且横向 → `flexWrap='wrap'` | 工具栏「碰巧」对了；「图标 + 文本」这种不该断的行也被断 |
+| `gridTemplateColumns` 轨道 ≥3 → `minmax(0,1fr)` | 卡片网格对了，**8 列数据网格被压成一列**（误伤） |
+| 只写内联样式 | 没有恢复逻辑；变宽、切页、关闭开关都不撤销 |
+| 改卡片 `backgroundColor` / `borderColor` / `borderRadius`、抬高 11–13px 字号 | 与「不重绘外观」的承诺相反 |
+
+改造后（本次）：`adaptPluginContent()` **只写数据属性**，布局交给 `island_mobile_components.css`：
+
+- 角色：`data-dsh-mobile-role="form-row | toolbar | card-grid | table | dialog | tablist"`，窄容器再加 `data-dsh-mobile-compact`。
+- 分类依据是语义而不是几何：label + 控件 → `form-row`；全是按钮 → `toolbar`；grid 且子项不含表格/记录 → `card-grid`；`<table>` ≥5 列 → `table`；`[role=dialog]|[aria-modal]` → `dialog`；`[role=tablist]` → `tablist`。
+- 动态：MutationObserver 与 ResizeObserver 都接到 `scheduleAdapt()`，一帧一次；`pagehide` 调 `dropMobileRoles()`，只删自己写的属性。
+- 不再改任何颜色、圆角、字号；内联样式写入为 **0**（测试断言 `changed` 为空）。
 
 **C 层 · `dsh_web_phone.css` 插件 slot 段（末尾 86 行）** 只在 `[data-slot="settings.section"]`、`[data-slot="settings.general.item"]`、`[data-slot^="plugins."]` 上做 `max-width` / `overflow-wrap` / `pre,code` 换行，没有组件语义。
 
-**B 层 · 一处自相矛盾（本次审计新发现）**：`island_mobile.css:17-20` 的注释写明「Never restyle a component's look (colours, type, spacing inside cards)」，但 `island.js:734-743` 对判定为「卡片」的节点直接改了 `backgroundColor`、`borderColor`、`borderRadius`，并打上 `data-dsh-go-card` 永久标记（不会撤销）。这条规则要么补进设计、要么删掉——按 §0 的承诺（适配只保可操作性）建议**删掉**，或者改成只加一个可撤销的 `data-dsh-mobile-role="card"` 标记，样式交给宿主主题。
+**B 层 · 已修的自相矛盾**：`island_mobile.css:17-20` 的注释写明「Never restyle a component's look (colours, type, spacing inside cards)」，而旧 `island.js` 会改卡片 `backgroundColor` / `borderColor` / `borderRadius` 并留下 `data-dsh-go-card`，还会把 11–13px 的字号抬到 12–15px。两处**都已删除**（PR-3）：适配只保留布局与可操作性；插件自己的视觉完整保留。
 
 **A 层 · 原生 Seat**
 
@@ -69,9 +78,9 @@ fixture 在 `app/test/plugins/islands/fixtures/`。`island_page_harness.mjs` 新
 
 | fixture | 应达到 | 会出现什么 |
 |---|---|---|
-| `mobile_form.html` | L1 | **实测**：`toolbar`、`row-api`、`row-model` 三个 flex 行都被写 `flexWrap: wrap`——工具栏碰巧对了，两个 label+控件行换行后 label 仍是 `width:140px; text-align:right`，控件仍被挤出 frame，**不到 L1**；`card-summary` 被改 `backgroundColor` / `borderColor` / `borderRadius` 并留下 `data-dsh-go-card`；`residual` 列出所有被碰过的节点，**没有一处被撤销**。`.actions` 吸底条在键盘下的问题没有规则覆盖 |
-| `mobile_table.html` | L1，卡片网格到 L2 | **实测**：`cards` 的 `gridTemplateColumns` 被改成 `minmax(0, 1fr)`（卡片网格压成 1 列，正确）；`filters` 被 wrap（可接受）；`data-table` **没有任何规则**，只被标成 wide，靠 `island_mobile.css` 的横向滚动兜住（可访问，算 L1）。注意 3-up 卡片宽度 180 < frame 的 55%，所以没有触发卡片重绘——重绘只在近满宽的卡片上发生 |
-| `mobile_dialog_tabs.html` | L1 | **实测**：`dialog` 与 `dialog-body` **完全没有规则**——620px 高的固定弹窗在 360px 高的 frame 里，底部「取消 / 确认」落在视口外（L0 不达标）；`tabs` 只拿到通用的 `flexWrap: wrap`，不是横向滚动，选中项也不会被 `scrollIntoView`；`dialog-footer` 被 wrap（无害） |
+| `mobile_form.html` | L1 | **实测（PR-3 后）**：`row-api` / `row-model` → `form-row` + compact（label 与控件纵排）；`toolbar` → `toolbar` + compact（换行）；`card-summary` 不再被重绘、也没有标记；内联样式写入 **0** |
+| `mobile_table.html` | L1，卡片网格到 L2 | **实测（PR-3 后）**：`cards` → `card-grid` + compact（CSS 压成 1 列）；`data-table` → `table`（保持宽度，CSS 给横向滚动，**不再被压成单列**）；`filters` → `toolbar` |
+| `mobile_dialog_tabs.html` | L1 | **实测（PR-3 后）**：`dialog` → `dialog` + compact（CSS 限高、中间区滚动、头尾固定）；`tabs` → `tablist` + compact（横向滚动 + 选中项 `scrollIntoView`）；`dialog-footer` → `toolbar`。三个 fixture 的 `pagehide` 之后 `roles` 与 `residual` 都为空 |
 
 ### 2.4 审计结论
 
@@ -125,12 +134,12 @@ enum MobileAdaptMode { pluginResponsive, automatic, compatibility, desktop }
 
 | 规则 | 命中依据 | 手机行为 | 保护条件 | 现状 |
 |---|---|---|---|---|
-| `form.stack` | 同级 `label` + 控件，容器 < 480 | label 与控件纵排，控件满宽 | 不改 switch/checkbox 语义 | 未实现 |
-| `toolbar.wrap` | 子元素都是按钮且一行放不下 | wrap，主操作保持可见 | 不碰 `tablist` / `nav` | 部分（无条件 wrap） |
-| `card-grid.collapse` | Grid 且子项是卡片（标题 + 短内容），列数 ≥3 | 1 列 | 表格式 Grid 不适用 | 会误伤 |
-| `table.scroll` | `table` 且列数 ≥5 | 包一层横向滚动容器，首列可读 | 不拆行、不改列宽 | 部分（仅 CSS） |
-| `dialog.fit` | `[role=dialog]` / `[aria-modal]` | 限高（视口 − 安全区），头尾固定、body 滚动 | 不改 portal 层级 | 未实现 |
-| `tab.scroll` | `[role=tablist]` 溢出 | 横向滑动 + 选中项 `scrollIntoView` | 不改 tab 顺序 | 未实现 |
+| `form.stack` | flex 行里同时有 `label` 与控件 | label 与控件纵排，控件满宽 | 不改 switch/checkbox 语义 | ✅ PR-3 |
+| `toolbar.wrap` | flex 行里全是按钮（≥2） | wrap，顺序不变 | 不碰 `tablist` / `nav` | ✅ PR-3 |
+| `card-grid.collapse` | Grid + 子项不含表格/记录 + 轨道 ≥3 | 1 列 | 数据网格永远走 `table.scroll` | ✅ PR-3 |
+| `table.scroll` | `<table>` 且列数 ≥5 | 表格自身 `display:block` + 横向滚动 | 不拆行、不改列宽 | ✅ PR-3 |
+| `dialog.fit` | `[role=dialog]` / `[aria-modal]` | 限高（视口 − 安全区），头尾固定、中间滚动 | 不改 portal 层级 | ✅ PR-3 |
+| `tab.scroll` | `[role=tablist]` | 横向滑动 + 选中项 `scrollIntoView` | 不改 tab 顺序 | ✅ PR-3 |
 
 规则只加 `data-dsh-mobile-role` / `data-dsh-mobile-compact` 这类自己的标记，样式放在独立的 `island_mobile_components.css`，不改插件原有 inline style。
 
@@ -140,7 +149,7 @@ enum MobileAdaptMode { pluginResponsive, automatic, compatibility, desktop }
 |---|---|---|
 | **PR-1 基座与可测性** | ✅ 已完成：`plugin` target + 三个 fixture + 页面模型校准到 0.2.2-rc.1 + `diagnostics`（slot / mode / width / rules / cards / wide / inertShell / shellStillInert）+ 幂等断言（同一 fixture 跑两次 `changed` 与 `diagnostics` 必须一致） | `flutter test test/plugins/islands/` 83 个用例全绿 |
 | **PR-2 原生 Seat** | ✅ 已完成：`seat_island` 补横屏左右留白（`pageInsetsFor()`，单测覆盖竖/横屏）；新增 320/360/393 × 2.0 字号的 9 个用例（岛页面、网页兜底、设置行、超长标题）。实测没有溢出，`SettingsTile` 与 `AppPage.list` 无需改动 | `flutter test test/plugins/mobile/` 9 个用例全绿 |
-| **PR-3 Web 适配核心** | `fitToWidth()` → `MobileLayoutController`（ResizeObserver + MutationObserver + `requestAnimationFrame` 批处理 + 节点/时间预算 + `changed` 表可撤销）；新增 `island_mobile_components.css`；实现 §5 六条规则 | 三个 fixture 达到 L1；变宽/卸载后 `residual` 为空；单帧 ≤8ms |
+| **PR-3 Web 适配核心** | ✅ 已完成：`fitToWidth()` → `adaptPluginContent()`（角色分类 + `scheduleAdapt()` 一帧一次 + `dropMobileRoles()`）；新增 `island_mobile_components.css`；六条规则全部由「数据属性 + CSS」实现；删掉卡片重绘与字号抬升 | 三个 fixture 的角色与规则命中已断言；`pagehide` 后 `residual` 为空；`changed`（内联样式写入）为空 |
 | **PR-4 双宿主收尾** | 同一套规则接进 `dsh_web_phone.css` 的插件 slot 段（只碰那 86 行）；与「网页版手机布局」开关联动；弹窗/触控/旋转专项；真机记录 | 关掉开关后 DOM 无残留标记；Android 真机截图 + 步骤 |
 
 ## 7. 测试
