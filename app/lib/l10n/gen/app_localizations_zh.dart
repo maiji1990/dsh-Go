@@ -12630,6 +12630,27 @@ class L10nZh extends L10n {
   }
 
   @override
+  String get pluginsMobileLayout => '插件手机布局';
+
+  @override
+  String get pluginsMobileLayoutHint => '按组件适配插件界面；关闭可恢复插件布局';
+
+  @override
+  String get pluginsMobileDefault => '遵循默认设置';
+
+  @override
+  String get pluginsMobileAutomatic => '自动适配';
+
+  @override
+  String get pluginsMobileCompatibility => '兼容视图';
+
+  @override
+  String get pluginsMobileResponsive => '插件响应式';
+
+  @override
+  String get pluginsMobileDesktop => '桌面布局';
+
+  @override
   String get plugViewInvalid => '插件界面有误';
 
   @override

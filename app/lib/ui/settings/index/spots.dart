@@ -810,6 +810,12 @@ abstract final class Spots {
     title: (l) => l.hubInterfaceOpenWeb,
     keywords: (l) => l.searchKwOpenWeb,
   );
+  static final pluginMobileLayout = SettingSpot(
+    'plugin-mobile-layout',
+    page: SettingsPageId.interface,
+    title: (l) => l.pluginsMobileLayout,
+    keywords: (l) => l.pluginsMobileLayoutHint,
+  );
   static final webPhoneLayout = SettingSpot(
     'web-phone-layout',
     page: SettingsPageId.interface,
@@ -1084,6 +1090,7 @@ final _rows = <SettingSpot>[
   Spots.tableTint,
   Spots.webApp,
   Spots.openWeb,
+  Spots.pluginMobileLayout,
   Spots.webPhoneLayout,
   Spots.webCodingView,
   Spots.webCollapse,

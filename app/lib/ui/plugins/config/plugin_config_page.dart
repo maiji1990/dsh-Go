@@ -48,6 +48,7 @@ import '../seats/seat_links.dart' show seatWebOpenerProvider;
 import 'plugin_config_entries.dart' show pluginConfigNamedByBundle, pluginConfigTitle, retryPluginList;
 import 'plugin_config_layout.dart';
 import 'plugin_config_save_bar.dart';
+import '../mobile/plugin_mobile_menu.dart';
 
 /// A plugin form's fields read and write [PluginConfigController].
 class PluginConfigSource extends SchemaFormSource {
@@ -353,6 +354,7 @@ class _PluginConfigPageState extends ConsumerState<PluginConfigPage> {
 
   Widget _ownPagePage(String title, SeatRequest request) => AppPage(
     title: title,
+    actions: [if (request.package case final package?) PluginMobileMenu(package: package)],
     showLargeTitle: false,
     padBottom: false,
     slivers: [

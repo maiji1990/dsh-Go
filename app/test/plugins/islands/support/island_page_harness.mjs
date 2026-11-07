@@ -116,7 +116,7 @@ function parseSelector(list) {
   return list.split(',').map((part) => {
     const words = part.trim().split(/\s+/);
     const tests = words.map((word) => {
-      const m = /^([a-zA-Z]+|\*)?((?:\[[^\]]+\])*)$/.exec(word);
+      const m = /^([a-zA-Z][a-zA-Z0-9-]*|\*)?((?:\[[^\]]+\])*)$/.exec(word);
       if (!m) throw new Error('selector the model does not know: ' + part);
       const tag = m[1] && m[1] !== '*' ? m[1].toUpperCase() : null;
       const attrs = [];
@@ -145,9 +145,27 @@ function parseSelector(list) {
   });
 }
 
+const mutationObservers = new Set();
+function mutated(record) {
+  for (const observer of mutationObservers) {
+    const {root, options} = observer;
+    if (!root || (record.target !== root && (!options.subtree || !root.contains(record.target)))) continue;
+    if (record.type === 'attributes' && (!options.attributes || (options.attributeFilter && !options.attributeFilter.includes(record.attributeName)))) continue;
+    if (record.type === 'childList' && !options.childList) continue;
+    observer.records.push(record);
+    if (!observer.timer) observer.timer = setTimeoutV(() => {
+      observer.timer = 0;
+      const records = observer.records.splice(0);
+      if (mutationObservers.has(observer) && records.length) observer.callback(records);
+    }, 0);
+  }
+}
 class El {
   constructor(tag, attrs = {}, text = '') {
     this.tagName = tag.toUpperCase();
+    this.nodeType = 1;
+    this.handlers = {};
+    this.scrollLeft = 0;
     this.attrs = { ...attrs };
     this.kids = [];
     this.parentElement = null;
@@ -184,9 +202,9 @@ class El {
   set id(v) { this.attrs.id = String(v); }
   get className() { return this.attrs.class || ''; }
   getAttribute(n) { return n in this.attrs ? String(this.attrs[n]) : null; }
-  setAttribute(n, v) { this.attrs[n] = String(v); }
+  setAttribute(n, v) { if (this.getAttribute(n) === String(v)) return; this.attrs[n] = String(v); mutated({type:'attributes', target:this, attributeName:n}); }
   hasAttribute(n) { return n in this.attrs; }
-  removeAttribute(n) { delete this.attrs[n]; }
+  removeAttribute(n) { if (!(n in this.attrs)) return; delete this.attrs[n]; mutated({type:'attributes', target:this, attributeName:n}); }
   toggleAttribute(n, force) {
     const on = force === undefined ? !(n in this.attrs) : !!force;
     if (on) this.attrs[n] = ''; else delete this.attrs[n];
@@ -197,6 +215,7 @@ class El {
       if (e.parentElement) e.remove();
       e.parentElement = this;
       this.kids.push(e);
+      mutated({type:'childList', target:this, addedNodes:[e], removedNodes:[]});
     }
     return this;
   }
@@ -207,7 +226,10 @@ class El {
     if (!p) return;
     p.kids.splice(p.kids.indexOf(this), 1);
     this.parentElement = null;
+    mutated({type:'childList', target:p, addedNodes:[], removedNodes:[this]});
   }
+  addEventListener(type, fn) { (this.handlers[type] ||= []).push(fn); }
+  removeEventListener(type, fn) { this.handlers[type] = (this.handlers[type] || []).filter(x => x !== fn); }
   contains(o) {
     for (let e = o; e; e = e.parentElement) if (e === this) return true;
     return false;
@@ -622,6 +644,17 @@ const document = {
   querySelectorAll: (sel) => html.querySelectorAll(sel),
   getElementById: (id) => html.descendants().find((e) => e.attrs.id === id) || null,
   createElement: (tag) => new El(tag),
+  createTreeWalker: (root) => ({ root, currentNode: root, nextNode() {
+    let node = this.currentNode;
+    if (node.firstElementChild) return this.currentNode = node.firstElementChild;
+    while (node !== root) {
+      if (node.nextElementSibling) return this.currentNode = node.nextElementSibling;
+      node = node.parentElement;
+      if (!node) return null;
+    }
+    return null;
+  } }),
+  removeEventListener: (type, fn) => { documentHandlers[type] = (documentHandlers[type] || []).filter(x => x !== fn); },
   addEventListener: (type, fn) => { (documentHandlers[type] = documentHandlers[type] || []).push(fn); },
 };
 const window = {
@@ -632,6 +665,7 @@ const window = {
     },
   },
   addEventListener: (type, fn) => { (windowHandlers[type] = windowHandlers[type] || []).push(fn); },
+  removeEventListener: (type, fn) => { windowHandlers[type] = (windowHandlers[type] || []).filter(x => x !== fn); },
   innerWidth: 360,
   innerHeight: 760,
   devicePixelRatio: 2,
@@ -644,7 +678,7 @@ if (s.occupants || windowExtra.openTab) {
     ...(windowExtra.openTab ? { openTab: windowExtra.openTab } : {}),
   };
 }
-const style = (el) => ({
+const fixtureStyle = (el) => ({
   // A plugin node carries the computed style its fixture declares; the page
   // model's own nodes keep the defaults below.
   ...(el.computed || {}),
@@ -660,6 +694,17 @@ const style = (el) => ({
   overflowY: 'visible',
   paddingBottom: '0px',
 });
+// Model only the computed-style feedback of the two shipped compact rules.
+// Geometry still comes from fixtures; real layout is covered by Android tests.
+const style = el => {
+  if (s.throwAtNode && el.reportName === s.throwAtNode) throw new Error('fixture error must not escape into diagnostics');
+  const result = fixtureStyle(el);
+  if (el.hasAttribute('data-dsh-mobile-compact')) {
+    if (el.getAttribute('data-dsh-mobile-role') === 'form-row') result.flexDirection = 'column';
+    if (el.getAttribute('data-dsh-mobile-role') === 'card-grid') result.gridTemplateColumns = '344px';
+  }
+  return result;
+};
 const context = vm.createContext({
   window,
   document,
@@ -668,21 +713,28 @@ const context = vm.createContext({
   location: { href: 'http://127.0.0.1:3080/?token=t', origin: 'http://127.0.0.1:3080' },
   getComputedStyle: style,
   requestAnimationFrame: (fn) => setTimeoutV(fn, 16),
+  cancelAnimationFrame: clearTimer,
   setTimeout: setTimeoutV,
   clearTimeout: clearTimer,
   setInterval: setIntervalV,
   clearInterval: clearTimer,
-  MutationObserver: class { observe() {} disconnect() {} },
+  MutationObserver: class {
+    constructor(callback) { this.callback = callback; this.records = []; }
+    observe(root, options) { this.root = root; this.options = options; mutationObservers.add(this); }
+    disconnect() { mutationObservers.delete(this); if (this.timer) clearTimer(this.timer); this.timer = 0; this.records = []; }
+  },
   // island.js re-runs the adapter from a ResizeObserver; the model reports the
   // frame once so a page that never resizes is still classified.
   ResizeObserver: class {
     constructor(fn) { this.fn = fn; }
     observe() { if (this.fn) this.fn([]); }
+    unobserve() {}
     disconnect() {}
   },
   Date: { now: () => now },
   URL,
 });
+new vm.Script(fs.readFileSync(new URL('../../../../assets/islands/mobile_layout.js', import.meta.url), 'utf8'), { filename: 'mobile_layout.js' }).runInContext(context);
 new vm.Script(fs.readFileSync(islandPath, 'utf8'), { filename: islandPath }).runInContext(context);
 
 const configs = {
@@ -708,7 +760,29 @@ window.__dshGoIsland.init({
   slotMs: 4000,
 });
 await runUntil(now + (s.run || 60000));
-if (s.pagehide) for (const fn of windowHandlers.pagehide || []) fn();
+for (const action of s.mobileActions || []) {
+  const nodes = html.descendants();
+  const frame = nodes.find(e => (e.getAttribute('data-dsh-go-island') || '').split(' ').includes('frame'));
+  const named = nodes.find(e => e.reportName === action.node);
+  if (action.width) {
+    frame.box = {width:action.width, height:640};
+    // The fixture page is max-width:100% in the real island. Model its
+    // responsive containing block too, rather than retaining a 344px parent.
+    const page = nodes.find(e => e.reportName === 'page');
+    if (page && page.box) page.box = {...page.box, width:Math.min(640,action.width)};
+    for (const fn of windowHandlers.resize || []) fn();
+  }
+  if (action.mode) window.__dshGoIsland.setMobile({mode:action.mode});
+  if (action.append) named.append(buildDom(action.append));
+  if (action.remove) named.remove();
+  await runUntil(now + 500);
+}
+out.mobile = window.__dshGoIsland.mobileDiagnostics();
+if (s.pagehide) {
+  for (const fn of windowHandlers.pagehide || []) fn();
+  await runUntil(now+1000);
+  out.observersAfterHide=mutationObservers.size;
+}
 
 out.shown = model.shown();
 const marked = html.descendants().find((e) => (e.getAttribute('data-dsh-go-island') || '').split(' ').includes('shown'));

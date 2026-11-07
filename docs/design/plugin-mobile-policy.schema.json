@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dsh-go.local/schema/plugin-mobile-policy-v1.json",
+  "title": "Plugin DOM mobile layout declaration v1",
+  "type": "object",
+  "required": ["v", "mode"],
+  "properties": {
+    "v": {"const": 1},
+    "mode": {"enum": ["pluginResponsive", "automatic", "compatibility", "desktop"]},
+    "compact": {"type": "number", "minimum": 240, "maximum": 1024},
+    "rules": {
+      "type": "object",
+      "properties": {
+        "form.stack": {"type": "boolean"},
+        "toolbar.wrap": {"type": "boolean"},
+        "card-grid.collapse": {"type": "boolean"},
+        "table.scroll": {"type": "boolean"},
+        "dialog.fit": {"type": "boolean"},
+        "tab.scroll": {"type": "boolean"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

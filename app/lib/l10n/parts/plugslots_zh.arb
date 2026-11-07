@@ -235,5 +235,12 @@
         "type": "String"
       }
     }
-  }
+  },
+  "pluginsMobileLayout": "插件手机布局",
+  "pluginsMobileLayoutHint": "按组件适配插件界面；关闭可恢复插件布局",
+  "pluginsMobileDefault": "遵循默认设置",
+  "pluginsMobileAutomatic": "自动适配",
+  "pluginsMobileCompatibility": "兼容视图",
+  "pluginsMobileResponsive": "插件响应式",
+  "pluginsMobileDesktop": "桌面布局"
 }

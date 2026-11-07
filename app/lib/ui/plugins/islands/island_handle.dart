@@ -8,6 +8,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../plugins/seams/seat_models.dart';
 import 'island_assets.dart';
+import '../mobile/plugin_mobile_policy.dart';
 import 'island_messages.dart';
 import 'island_navigation.dart';
 import 'island_platform.dart';
@@ -81,10 +82,12 @@ class IslandHandle extends ChangeNotifier {
     required IslandPlatform platform,
     required IslandTheme theme,
     this.onPhase,
+    PluginMobilePolicy mobile = const PluginMobilePolicy(),
   }) : _assets = assets, // ignore: prefer_initializing_formals
        _platform = platform, // ignore: prefer_initializing_formals
        _theme = theme, // ignore: prefer_initializing_formals
-       _initialTheme = theme;
+       _initialTheme = theme,
+       _mobile = mobile; // ignore: prefer_initializing_formals
 
   final IslandSpec spec;
 
@@ -143,6 +146,7 @@ class IslandHandle extends ChangeNotifier {
   /// What attach and init gave the page (later themes go by setTheme).
   final IslandTheme _initialTheme;
   EdgeInsets _insets = EdgeInsets.zero;
+  PluginMobilePolicy _mobile;
   Timer? _readyTimer;
   final _requests = StreamController<IslandMessage>.broadcast();
 
@@ -263,7 +267,8 @@ class IslandHandle extends ChangeNotifier {
     'target': target,
     'css': await _assets.css,
     'theme': _theme.toJson(),
-    'insets': {'top': _insets.top, 'bottom': _insets.bottom},
+    'insets': _insetsJson,
+    'mobile': _mobile.toJson(),
     'load': _load,
     'bootMs': IslandTiming.bootMs,
     'slotMs': IslandTiming.slotMs,
@@ -281,6 +286,8 @@ class IslandHandle extends ChangeNotifier {
         _ready = message;
         _readyAfter = clock.elapsed;
         _setPhase(IslandPhase.ready);
+        // Settings may change after init was sent but before the slot is ready.
+        unawaited(setMobile(_mobile));
       case IslandGaveUp(:final failure, :final detail):
         if (kDebugMode && detail.isNotEmpty) debugPrint('[island] ${spec.slot} says: ${failure.name} $detail');
         _fail(failure);
@@ -360,13 +367,35 @@ class IslandHandle extends ChangeNotifier {
     await _run('window.__dshGoIsland && window.__dshGoIsland.setTheme(${jsonEncode(theme.toJson())});');
   }
 
-  /// Room the frame keeps clear at the top and bottom (logical px).
+  Map<String, double> get _insetsJson => {
+    'top': _insets.top,
+    'right': _insets.right,
+    'bottom': _insets.bottom,
+    'left': _insets.left,
+  };
+
+  Future<void> setMobile(PluginMobilePolicy policy) async {
+    _mobile = policy;
+    if (_phase != IslandPhase.ready) return;
+    await _run('window.__dshGoIsland && window.__dshGoIsland.setMobile(${jsonEncode(policy.toJson())});');
+  }
+
+  Future<bool> handleBack() async {
+    try {
+      final answer = await controller
+          .runJavaScriptReturningResult('window.__dshGoIsland ? window.__dshGoIsland.back() : false')
+          .timeout(const Duration(seconds: 1));
+      return answer == true || answer == 'true';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Room the frame keeps clear on all four edges (logical px).
   Future<void> setInsets(EdgeInsets insets) async {
     if (insets == _insets) return;
     _insets = insets;
-    await _run(
-      'window.__dshGoIsland && window.__dshGoIsland.setInsets(${jsonEncode({'top': insets.top, 'bottom': insets.bottom})});',
-    );
+    await _run('window.__dshGoIsland && window.__dshGoIsland.setInsets(${jsonEncode(_insetsJson)});');
   }
 
   Future<void> _run(String script) async {
@@ -391,12 +420,14 @@ class IslandHandle extends ChangeNotifier {
   }
 
   Future<void> pause() async {
+    await _run('window.__dshGoIsland && window.__dshGoIsland.pauseMobile();');
     if (paused || _webViewId == null) return;
     paused = true;
     await _platform.pause(_webViewId!);
   }
 
   Future<void> resume() async {
+    await _run('window.__dshGoIsland && window.__dshGoIsland.resumeMobile();');
     if (!paused || _webViewId == null) return;
     paused = false;
     await _platform.resume(_webViewId!);

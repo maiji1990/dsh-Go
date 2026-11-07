@@ -95,16 +95,21 @@ void openDshWeb(BuildContext context, WidgetRef ref, {DshWebTarget target = cons
     case LocalDshWeb():
       page = LocalWebScreen(target: target);
     case SshDshWeb(:final url, :final hostName):
-      page = WebViewPage(
-        url: url,
-        title: context.l10n.webTitle,
-        subtitle: hostName,
-        externalDisabledReason: context.l10n.webSshAppOnly,
-        // Android suspends the page in the background and its socket drops.
-        reloadAfterBackground: const Duration(seconds: 60),
-        dshWeb: true,
-        phoneLayout: ref.read(settingsProvider).webPhoneLayout,
-        openTarget: target,
+      page = Consumer(
+        builder: (context, ref, _) => WebViewPage(
+          key: ValueKey((url, ref.watch(settingsProvider.select((s) => s.webPhoneLayout)))),
+          url: url,
+          title: context.l10n.webTitle,
+          subtitle: hostName,
+          externalDisabledReason: context.l10n.webSshAppOnly,
+          // Android suspends the page in the background and its socket drops.
+          reloadAfterBackground: const Duration(seconds: 60),
+          dshWeb: true,
+          phoneLayout: ref.watch(settingsProvider.select((s) => s.webPhoneLayout)),
+          pluginMobileEnabled: ref.watch(settingsProvider.select((s) => s.mobileAdapterEnabled)),
+          pluginMobileModes: ref.watch(settingsProvider.select((s) => s.pluginMobileModes)),
+          openTarget: target,
+        ),
       );
     case NoDshWeb(:final reason):
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(reason)));

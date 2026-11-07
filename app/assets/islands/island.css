@@ -53,8 +53,8 @@ html[data-dsh-go-island] [data-dsh-go-island~="frame"] {
   position: fixed !important;
   top: var(--dsh-go-island-top, 0px) !important;
   bottom: var(--dsh-go-island-bottom, 0px) !important;
-  left: 0 !important;
-  right: 0 !important;
+  left: var(--dsh-go-island-left, 0px) !important;
+  right: var(--dsh-go-island-right, 0px) !important;
   width: auto !important;
   height: auto !important;
   min-width: 0 !important;

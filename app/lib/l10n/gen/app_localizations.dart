@@ -23270,6 +23270,48 @@ abstract class L10n {
   /// **'网页插件 · {names}'**
   String plugslotsChatWebFrom(String names);
 
+  /// No description provided for @pluginsMobileLayout.
+  ///
+  /// In zh, this message translates to:
+  /// **'插件手机布局'**
+  String get pluginsMobileLayout;
+
+  /// No description provided for @pluginsMobileLayoutHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'按组件适配插件界面；关闭可恢复插件布局'**
+  String get pluginsMobileLayoutHint;
+
+  /// No description provided for @pluginsMobileDefault.
+  ///
+  /// In zh, this message translates to:
+  /// **'遵循默认设置'**
+  String get pluginsMobileDefault;
+
+  /// No description provided for @pluginsMobileAutomatic.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动适配'**
+  String get pluginsMobileAutomatic;
+
+  /// No description provided for @pluginsMobileCompatibility.
+  ///
+  /// In zh, this message translates to:
+  /// **'兼容视图'**
+  String get pluginsMobileCompatibility;
+
+  /// No description provided for @pluginsMobileResponsive.
+  ///
+  /// In zh, this message translates to:
+  /// **'插件响应式'**
+  String get pluginsMobileResponsive;
+
+  /// No description provided for @pluginsMobileDesktop.
+  ///
+  /// In zh, this message translates to:
+  /// **'桌面布局'**
+  String get pluginsMobileDesktop;
+
   /// No description provided for @plugViewInvalid.
   ///
   /// In zh, this message translates to:

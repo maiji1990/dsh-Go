@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:theme="@android:style/Theme.Material.Light.NoActionBar" android:label="DSH mobile layout tests">
+        <activity android:name=".TestActivity" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden" android:windowSoftInputMode="adjustResize" />
+    </application>
+    <instrumentation android:name=".MobileInstrumentation" android:targetPackage="io.github.dshgo.mobiletest" android:label="Mobile layout regression" />
+</manifest>

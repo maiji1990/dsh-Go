@@ -8,9 +8,14 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:dsh_app/state/settings_state.dart';
+
+import '../../shell/golden_harness.dart' show FakeSettings;
+
 import 'package:dsh_app/plugins/seams/seat_models.dart';
 import 'package:dsh_app/state/hosts_state.dart';
 import 'package:dsh_app/ui/plugins/islands/islands.dart';
+import 'package:dsh_app/ui/plugins/mobile/plugin_mobile_policy.dart';
 import 'package:dsh_app/ui/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,8 +38,26 @@ late IslandHost _host;
 
 Widget _fallback(BuildContext context) => const Text('在网页版打开');
 
-Widget _app(Widget child, {Brightness brightness = Brightness.light}) => ProviderScope(
-  overrides: [islandHostProvider.overrideWith((ref) => _host), islandHostUrlProvider.overrideWith((ref, host) => _url)],
+class _MobileSettings extends FakeSettings {
+  _MobileSettings() : super(const AppSettings(loaded: true));
+  void disable() => state = state.copyWith(mobileAdapterEnabled: false);
+}
+
+class _DelayedAssets extends TestIslandAssets {
+  final gate = Completer<void>();
+  @override
+  Future<IslandRecipeBook> get recipes async {
+    await gate.future;
+    return super.recipes;
+  }
+}
+
+Widget _app(Widget child, {Brightness brightness = Brightness.light, FakeSettings? settings}) => ProviderScope(
+  overrides: [
+    settingsProvider.overrideWith(() => settings ?? FakeSettings(const AppSettings(loaded: true))),
+    islandHostProvider.overrideWith((ref) => _host),
+    islandHostUrlProvider.overrideWith((ref, host) => _url),
+  ],
   child: MaterialApp(
     theme: brightness == Brightness.light ? buildLightTheme() : buildDarkTheme(),
     home: Scaffold(body: child),
@@ -103,6 +126,50 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(_webOpacity(tester), 1);
     expect(_host.live.single.phase, IslandPhase.ready);
+  });
+
+  _testIsland('four safe-area edges reach initial config and live updates', (tester) async {
+    const insets = EdgeInsets.fromLTRB(44, 12, 36, 20);
+    await tester.pumpWidget(_app(IslandView(spec: _models, fallback: _fallback, insets: insets)));
+    await _settle(tester);
+    final config = await _host.live.single.initConfig();
+    expect(config['insets'], {'left': 44.0, 'top': 12.0, 'right': 36.0, 'bottom': 20.0});
+    await _ready(tester);
+    await tester.pumpWidget(_app(IslandView(spec: _models, fallback: _fallback, insets: EdgeInsets.zero)));
+    await _settle(tester);
+    expect(_page.scripts.last, contains('setInsets({"top":0.0,"right":0.0,"bottom":0.0,"left":0.0})'));
+  });
+
+  _testIsland('a mode changed during boot reaches the ready document', (tester) async {
+    await tester.pumpWidget(_app(IslandView(spec: _models, fallback: _fallback)));
+    await _settle(tester);
+    await _page.finish();
+    await _settle(tester);
+    await _host.live.single.setMobile(const PluginMobilePolicy(mode: MobileAdaptMode.desktop));
+    _page.post('{"t":"ready","slot":"settings.section","found":1}');
+    await _settle(tester);
+    expect(_page.scripts.any((script) => script.contains('setMobile({"mode":"desktop"})')), isTrue);
+  });
+
+  _testIsland('settings loaded while acquiring reach the attached island', (tester) async {
+    _host.dispose();
+    final assets = _DelayedAssets();
+    _host = IslandHost(platform: _platform, assets: assets);
+    final settings = _MobileSettings();
+    await tester.pumpWidget(
+      _app(
+        IslandView(spec: _models, fallback: _fallback),
+        settings: settings,
+      ),
+    );
+    await _settle(tester);
+    expect(_host.live, isEmpty);
+    settings.disable();
+    await tester.pump();
+    assets.gate.complete();
+    await _settle(tester);
+    await _ready(tester);
+    expect(_page.scripts.any((script) => script.contains('setMobile({"mode":"desktop"})')), isTrue);
   });
 
   _testIsland('a missing slot falls back and is remembered', (tester) async {

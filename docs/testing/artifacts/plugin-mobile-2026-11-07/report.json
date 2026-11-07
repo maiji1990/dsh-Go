@@ -1,0 +1,394 @@
+{
+  "passed": true,
+  "sdk": 37,
+  "webView": "155.0.8059.43",
+  "checks": [
+    {
+      "name": "mobile_form.html\/320\/settled",
+      "pass": true
+    },
+    {
+      "name": "form direction\/320",
+      "pass": true
+    },
+    {
+      "name": "mobile_form.html\/360\/settled",
+      "pass": true
+    },
+    {
+      "name": "form direction\/360",
+      "pass": true
+    },
+    {
+      "name": "mobile_form.html\/393\/settled",
+      "pass": true
+    },
+    {
+      "name": "form direction\/393",
+      "pass": true
+    },
+    {
+      "name": "mobile_form.html\/480\/settled",
+      "pass": true
+    },
+    {
+      "name": "form direction\/480",
+      "pass": true
+    },
+    {
+      "name": "mobile_form.html\/600\/settled",
+      "pass": true
+    },
+    {
+      "name": "form direction\/600",
+      "pass": true
+    },
+    {
+      "name": "mobile_form.html\/768\/settled",
+      "pass": true
+    },
+    {
+      "name": "form direction\/768",
+      "pass": true
+    },
+    {
+      "name": "mobile_form.html\/1024\/settled",
+      "pass": true
+    },
+    {
+      "name": "form direction\/1024",
+      "pass": true
+    },
+    {
+      "name": "mobile_form.html\/360\/settled",
+      "pass": true
+    },
+    {
+      "name": "form direction\/360",
+      "pass": true
+    },
+    {
+      "name": "fixed page fits frame",
+      "pass": true
+    },
+    {
+      "name": "toolbar wraps in frame",
+      "pass": true
+    },
+    {
+      "name": "rollback\/mobile_form.html",
+      "pass": true
+    },
+    {
+      "name": "mobile_table.html\/320\/settled",
+      "pass": true
+    },
+    {
+      "name": "grid columns\/320",
+      "pass": true
+    },
+    {
+      "name": "mobile_table.html\/360\/settled",
+      "pass": true
+    },
+    {
+      "name": "grid columns\/360",
+      "pass": true
+    },
+    {
+      "name": "mobile_table.html\/393\/settled",
+      "pass": true
+    },
+    {
+      "name": "grid columns\/393",
+      "pass": true
+    },
+    {
+      "name": "mobile_table.html\/480\/settled",
+      "pass": true
+    },
+    {
+      "name": "grid columns\/480",
+      "pass": true
+    },
+    {
+      "name": "mobile_table.html\/600\/settled",
+      "pass": true
+    },
+    {
+      "name": "grid columns\/600",
+      "pass": true
+    },
+    {
+      "name": "mobile_table.html\/768\/settled",
+      "pass": true
+    },
+    {
+      "name": "grid columns\/768",
+      "pass": true
+    },
+    {
+      "name": "mobile_table.html\/1024\/settled",
+      "pass": true
+    },
+    {
+      "name": "grid columns\/1024",
+      "pass": true
+    },
+    {
+      "name": "mobile_table.html\/360\/settled",
+      "pass": true
+    },
+    {
+      "name": "grid columns\/360",
+      "pass": true
+    },
+    {
+      "name": "table keeps columns within scrollport",
+      "pass": true
+    },
+    {
+      "name": "rollback\/mobile_table.html",
+      "pass": true
+    },
+    {
+      "name": "mobile_dialog_tabs.html\/320\/settled",
+      "pass": true
+    },
+    {
+      "name": "mobile_dialog_tabs.html\/360\/settled",
+      "pass": true
+    },
+    {
+      "name": "mobile_dialog_tabs.html\/393\/settled",
+      "pass": true
+    },
+    {
+      "name": "mobile_dialog_tabs.html\/480\/settled",
+      "pass": true
+    },
+    {
+      "name": "mobile_dialog_tabs.html\/600\/settled",
+      "pass": true
+    },
+    {
+      "name": "mobile_dialog_tabs.html\/768\/settled",
+      "pass": true
+    },
+    {
+      "name": "mobile_dialog_tabs.html\/1024\/settled",
+      "pass": true
+    },
+    {
+      "name": "mobile_dialog_tabs.html\/360\/settled",
+      "pass": true
+    },
+    {
+      "name": "rollback\/mobile_dialog_tabs.html",
+      "pass": true
+    },
+    {
+      "name": "web slot adapted",
+      "pass": true
+    },
+    {
+      "name": "official untouched",
+      "pass": true
+    },
+    {
+      "name": "hidden slot stops controller",
+      "pass": true
+    },
+    {
+      "name": "visible slot resumes controller",
+      "pass": true
+    },
+    {
+      "name": "web layout off cleans markers",
+      "pass": true
+    },
+    {
+      "name": "web slot removal releases controllers",
+      "pass": true
+    },
+    {
+      "name": "beyond 1200 nodes",
+      "pass": true
+    },
+    {
+      "name": "bounded batch",
+      "pass": true
+    },
+    {
+      "name": "dynamic DOM",
+      "pass": true
+    },
+    {
+      "name": "removed nodes release markers",
+      "pass": true
+    },
+    {
+      "name": "100 restarts",
+      "pass": true
+    },
+    {
+      "name": "30 rotations",
+      "pass": true
+    },
+    {
+      "name": "back consumes root portal dialog",
+      "pass": true
+    },
+    {
+      "name": "plugin closes dialog asynchronously",
+      "pass": true
+    },
+    {
+      "name": "native dialog has semantic layout",
+      "pass": true
+    },
+    {
+      "name": "native focus\/text",
+      "pass": true
+    },
+    {
+      "name": "native input\/text",
+      "pass": true
+    },
+    {
+      "name": "focused control visible\/text",
+      "pass": true
+    },
+    {
+      "name": "native focus\/password",
+      "pass": true
+    },
+    {
+      "name": "native input\/password",
+      "pass": true
+    },
+    {
+      "name": "focused control visible\/password",
+      "pass": true
+    },
+    {
+      "name": "native focus\/email",
+      "pass": true
+    },
+    {
+      "name": "native input\/email",
+      "pass": true
+    },
+    {
+      "name": "focused control visible\/email",
+      "pass": true
+    },
+    {
+      "name": "native focus\/url",
+      "pass": true
+    },
+    {
+      "name": "native input\/url",
+      "pass": true
+    },
+    {
+      "name": "focused control visible\/url",
+      "pass": true
+    },
+    {
+      "name": "native focus\/tel",
+      "pass": true
+    },
+    {
+      "name": "native input\/tel",
+      "pass": true
+    },
+    {
+      "name": "focused control visible\/tel",
+      "pass": true
+    },
+    {
+      "name": "native focus\/search",
+      "pass": true
+    },
+    {
+      "name": "native input\/search",
+      "pass": true
+    },
+    {
+      "name": "focused control visible\/search",
+      "pass": true
+    },
+    {
+      "name": "native focus\/number",
+      "pass": true
+    },
+    {
+      "name": "native input\/number",
+      "pass": true
+    },
+    {
+      "name": "focused control visible\/number",
+      "pass": true
+    },
+    {
+      "name": "native focus\/textarea",
+      "pass": true
+    },
+    {
+      "name": "native input\/textarea",
+      "pass": true
+    },
+    {
+      "name": "focused control visible\/textarea",
+      "pass": true
+    },
+    {
+      "name": "keyboard back preserves values",
+      "pass": true
+    },
+    {
+      "name": "selection range",
+      "pass": true
+    },
+    {
+      "name": "picker returns\/select",
+      "pass": true
+    },
+    {
+      "name": "picker returns\/date",
+      "pass": true
+    },
+    {
+      "name": "picker returns\/time",
+      "pass": true
+    },
+    {
+      "name": "picker returns\/color",
+      "pass": true
+    },
+    {
+      "name": "picker returns\/file",
+      "pass": true
+    },
+    {
+      "name": "checkbox usable",
+      "pass": true
+    },
+    {
+      "name": "radio usable",
+      "pass": true
+    },
+    {
+      "name": "save accessible",
+      "pass": true
+    }
+  ],
+  "assets": {
+    "mobile_layout.js": "e7c3587892a169543ee3fa940806ada1b059ccbfc4362a608f318a370148f09e",
+    "island.js": "a5c01a986dfadf86d369e7e4c906ce8e0b373dbf3294d1802ae7a146c4f06269",
+    "island_mobile_components.css": "aea413e48448921a58d82c0fa916743c1f4559ed05e15d488b434e3e7f29686b",
+    "island_mobile.css": "75a49868d42b96345652fc753e4bc45fc2f3794cfec29e5aa811b5ea3ca4bd70",
+    "plugin_mobile.js": "199b7a5ff42b46c86413c9316da0a19acf61ae7797e68d354f996192e056c1a4"
+  }
+}

@@ -13253,6 +13253,27 @@ class L10nEn extends L10n {
   }
 
   @override
+  String get pluginsMobileLayout => 'Plugin mobile layout';
+
+  @override
+  String get pluginsMobileLayoutHint => 'Adapt plugin components; turn off to restore the plugin layout';
+
+  @override
+  String get pluginsMobileDefault => 'Use default';
+
+  @override
+  String get pluginsMobileAutomatic => 'Automatic';
+
+  @override
+  String get pluginsMobileCompatibility => 'Compatibility view';
+
+  @override
+  String get pluginsMobileResponsive => 'Plugin responsive';
+
+  @override
+  String get pluginsMobileDesktop => 'Desktop layout';
+
+  @override
   String get plugViewInvalid => 'Plugin view has an error';
 
   @override

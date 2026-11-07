@@ -46,7 +46,17 @@ Future<void> _pump(
 }) async {
   await tester.runAsync(loadGoldenFonts);
   usePhoneSurface(tester);
-  await tester.pumpWidget(goldenApp(home: home, brightness: brightness, overrides: [...extra, ...seats]));
+  await tester.pumpWidget(
+    goldenApp(
+      home: home,
+      brightness: brightness,
+      overrides: [
+        settingsProvider.overrideWith(() => FakeSettings(const AppSettings(loaded: true))),
+        ...extra,
+        ...seats,
+      ],
+    ),
+  );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 600));
 }
@@ -81,7 +91,6 @@ Future<void> _openProbeSheet(WidgetTester tester) async {
 
 final _hub = [
   localRuntimeProvider.overrideWith(() => FakeRuntime(const LocalRuntimeState(loaded: true, status: runningStatus))),
-  settingsProvider.overrideWith(() => FakeSettings(const AppSettings(loaded: true))),
 ];
 
 /// 对话详情 over the timed sample session (test/chat/support).

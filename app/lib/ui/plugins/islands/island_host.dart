@@ -10,6 +10,7 @@ import 'island_assets.dart';
 import 'island_budget.dart';
 import 'island_gate.dart';
 import 'island_handle.dart';
+import '../mobile/plugin_mobile_policy.dart';
 import 'island_messages.dart';
 import 'island_platform.dart';
 import 'island_theme.dart';
@@ -97,9 +98,11 @@ class IslandHost extends ChangeNotifier {
     required IslandTheme theme,
     List<String> labels = const [],
     bool visible = true,
+    PluginMobilePolicy mobile = const PluginMobilePolicy(),
   }) async {
     final warm = _live[spec.key];
     if (warm != null && warm.phase != IslandPhase.closed && warm.phase != IslandPhase.failed && warm.url == url) {
+      unawaited(warm.setMobile(mobile));
       attachView(warm);
       setVisible(warm, visible);
       return warm;
@@ -111,7 +114,9 @@ class IslandHost extends ChangeNotifier {
     if (target == null) return null;
     // From here on no awaits until the island is in the pool: two views
     // asking at once must see each other.
-    if (_live.containsKey(spec.key)) return acquire(spec, url: url, theme: theme, labels: labels, visible: visible);
+    if (_live.containsKey(spec.key)) {
+      return acquire(spec, url: url, theme: theme, labels: labels, visible: visible, mobile: mobile);
+    }
     final evict = evictionsFor(spec.form, _liveView, max, key: spec.key);
     if (evict == null) return null;
     for (final key in evict) {
@@ -131,6 +136,7 @@ class IslandHost extends ChangeNotifier {
             assets: assets,
             platform: platform,
             theme: theme,
+            mobile: mobile,
             onPhase: _onPhase,
           )
           ..views = 1

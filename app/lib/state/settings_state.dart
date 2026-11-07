@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -20,6 +22,8 @@ class AppSettings {
     this.autoApproveCommands = false,
     this.phoneStorage = false,
     this.webPhoneLayout = true,
+    this.mobileAdapterEnabled = true,
+    this.pluginMobileModes = const {},
     this.hardwareEnterSends = false,
     this.chatTextScale = 1.0,
     this.foldCompletedTurns = true,
@@ -47,6 +51,9 @@ class AppSettings {
   /// Fit the embedded DSH Web to a phone (`assets/web/`). Off shows the
   /// official layout untouched, e.g. to check a plugin that restyles it.
   final bool webPhoneLayout;
+
+  final bool mobileAdapterEnabled;
+  final Map<String, String> pluginMobileModes;
 
   /// Hardware Enter sends; Shift+Enter and the software keyboard still insert newlines.
   final bool hardwareEnterSends;
@@ -83,6 +90,8 @@ class AppSettings {
     bool? autoApproveCommands,
     bool? phoneStorage,
     bool? webPhoneLayout,
+    bool? mobileAdapterEnabled,
+    Map<String, String>? pluginMobileModes,
     bool? hardwareEnterSends,
     double? chatTextScale,
     bool? foldCompletedTurns,
@@ -97,6 +106,8 @@ class AppSettings {
     autoApproveCommands: autoApproveCommands ?? this.autoApproveCommands,
     phoneStorage: phoneStorage ?? this.phoneStorage,
     webPhoneLayout: webPhoneLayout ?? this.webPhoneLayout,
+    mobileAdapterEnabled: mobileAdapterEnabled ?? this.mobileAdapterEnabled,
+    pluginMobileModes: pluginMobileModes ?? this.pluginMobileModes,
     hardwareEnterSends: hardwareEnterSends ?? this.hardwareEnterSends,
     chatTextScale: chatTextScale ?? this.chatTextScale,
     foldCompletedTurns: foldCompletedTurns ?? this.foldCompletedTurns,
@@ -121,6 +132,8 @@ class SettingsController extends Notifier<AppSettings> {
   static const _autoApproveKey = 'auto_approve_commands';
   static const _phoneStorageKey = 'phone_storage';
   static const _webPhoneLayoutKey = 'web_phone_layout';
+  static const _mobileAdapterKey = 'mobile_adapter_enabled';
+  static const _mobileModesKey = 'plugin_mobile_modes';
   static const _hardwareEnterKey = 'hardware_enter_sends';
   static const _chatTextScaleKey = 'chat_text_scale';
   static const _foldTurnsKey = 'fold_completed_turns';
@@ -167,6 +180,8 @@ class SettingsController extends Notifier<AppSettings> {
       autoApproveCommands: prefs.getBool(_autoApproveKey) ?? false,
       phoneStorage: prefs.getBool(_phoneStorageKey) ?? false,
       webPhoneLayout: prefs.getBool(_webPhoneLayoutKey) ?? true,
+      mobileAdapterEnabled: prefs.getBool(_mobileAdapterKey) ?? true,
+      pluginMobileModes: _readMobileModes(prefs.getString(_mobileModesKey)),
       hardwareEnterSends: prefs.getBool(_hardwareEnterKey) ?? false,
       chatTextScale: _knownScale(prefs.getDouble(_chatTextScaleKey)),
       foldCompletedTurns: prefs.getBool(_foldTurnsKey) ?? true,
@@ -239,6 +254,47 @@ class SettingsController extends Notifier<AppSettings> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_visualRepliesKey, value);
     state = state.copyWith(visualReplies: value);
+  }
+
+  static Map<String, String> _readMobileModes(String? raw) {
+    try {
+      final value = raw == null ? null : jsonDecode(raw);
+      return value is Map
+          ? {
+              for (final e in value.entries)
+                if (e.key is String &&
+                    const {'automatic', 'pluginResponsive', 'compatibility', 'desktop'}.contains(e.value))
+                  e.key as String: e.value as String,
+            }
+          : const {};
+    } on FormatException {
+      return const {};
+    }
+  }
+
+  Future<void> setMobileAdapterEnabled(bool value) async {
+    await _loaded;
+    if (!ref.mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_mobileAdapterKey, value);
+    if (ref.mounted) state = state.copyWith(mobileAdapterEnabled: value);
+  }
+
+  Future<void> setPluginMobileMode(String package, String? mode) async {
+    if (mode != null && !const {'automatic', 'pluginResponsive', 'compatibility', 'desktop'}.contains(mode)) {
+      throw ArgumentError.value(mode);
+    }
+    await _loaded;
+    if (!ref.mounted) return;
+    final modes = {...state.pluginMobileModes};
+    if (mode == null) {
+      modes.remove(package);
+    } else {
+      modes[package] = mode;
+    }
+    state = state.copyWith(pluginMobileModes: Map.unmodifiable(modes));
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_mobileModesKey, jsonEncode(modes));
   }
 
   Future<void> setWebPhoneLayout(bool value) async {

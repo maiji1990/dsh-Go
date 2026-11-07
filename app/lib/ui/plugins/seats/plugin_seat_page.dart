@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n.dart';
+import '../mobile/plugin_mobile_menu.dart';
 import '../../../plugins/seams/seams.dart';
 import '../../common/empty_view.dart';
 import '../../shell/page_frame.dart';
@@ -34,13 +35,15 @@ class PluginSeatPage extends ConsumerWidget {
       cell: request.cell,
       layout: layout,
     );
+    final actions = <Widget>[if (request.package case final package?) PluginMobileMenu(package: package)];
     // A form reads like any settings page.
     if (items.isNotEmpty && items.every((i) => i.mode == SeatMode.native)) {
-      return AppPage.list(title: title, children: [seat()]);
+      return AppPage.list(title: title, actions: actions, children: [seat()]);
     }
     // An island (or the way to DSH Web) takes the page under the bar.
     return AppPage(
       title: title,
+      actions: actions,
       showLargeTitle: false,
       padBottom: false,
       slivers: [

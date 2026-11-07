@@ -55,6 +55,8 @@ class LocalWebScreen extends ConsumerWidget {
         externalDisabledReason: context.l10n.webLocalAppOnly,
         dshWeb: true,
         phoneLayout: phoneLayout,
+        pluginMobileEnabled: ref.watch(settingsProvider.select((s) => s.mobileAdapterEnabled)),
+        pluginMobileModes: ref.watch(settingsProvider.select((s) => s.pluginMobileModes)),
         openTarget: target,
         leading: handle,
         root: handle != null,

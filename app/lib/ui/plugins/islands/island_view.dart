@@ -9,6 +9,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../l10n/l10n.dart';
+import '../../../state/settings_state.dart';
+import '../mobile/plugin_mobile_policy.dart';
 import '../../../plugins/seams/seat_models.dart';
 import '../../common/app_dialog.dart';
 import '../../common/smooth_size.dart';
@@ -148,6 +150,7 @@ class _IslandViewState extends ConsumerState<IslandView> {
       url: url,
       theme: _theme(context),
       labels: widget.labels,
+      mobile: _mobilePolicy(),
       visible: _visible(context),
     );
     _acquiring = false;
@@ -166,6 +169,9 @@ class _IslandViewState extends ConsumerState<IslandView> {
       return;
     }
     _handle = handle;
+    // acquire awaits assets and WebView startup; persisted settings can load
+    // while there is no attached handle for the provider listener to update.
+    unawaited(handle.setMobile(_mobilePolicy()));
     _url = url;
     _host.setVisible(handle, _visible(context));
     handle.addListener(_onHandle);
@@ -259,8 +265,23 @@ class _IslandViewState extends ConsumerState<IslandView> {
     super.dispose();
   }
 
+  PluginMobilePolicy _mobilePolicy() {
+    final settings = ref.read(settingsProvider);
+    return MobilePolicyResolver.resolve(
+      enabled: settings.mobileAdapterEnabled,
+      override: settings.pluginMobileModes[widget.spec.package],
+      probe: widget.spec.form == IslandForm.probe,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen(settingsProvider, (previous, next) {
+      if (previous?.mobileAdapterEnabled != next.mobileAdapterEnabled ||
+          previous?.pluginMobileModes != next.pluginMobileModes) {
+        unawaited(_handle?.setMobile(_mobilePolicy()));
+      }
+    });
     final url = ref.watch(islandHostUrlProvider(widget.spec.host));
     if (url == null) return widget.fallback(context);
     if (_url != null && url != _url) {
@@ -284,7 +305,18 @@ class _IslandViewState extends ConsumerState<IslandView> {
     final ready = handle.phase == IslandPhase.ready;
     final web = WebViewWidget(key: ObjectKey(handle), controller: handle.controller, gestureRecognizers: _gestures);
     return switch (widget.spec.form) {
-      IslandForm.page => _stack(web, ready),
+      IslandForm.page => PopScope(
+        canPop: !ready,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          if (MediaQuery.viewInsetsOf(context).bottom > 0) {
+            await handle.controller.runJavaScript('document.activeElement && document.activeElement.blur()');
+            return;
+          }
+          if (!await handle.handleBack() && context.mounted) Navigator.of(context).pop();
+        },
+        child: _stack(web, ready),
+      ),
       IslandForm.panel => SmoothSize(
         duration: AppMotion.of(context, AppMotion.standard),
         curve: AppMotion.std,

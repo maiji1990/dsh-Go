@@ -6,7 +6,7 @@
 //   window.__dshGoIsland.init(cfg)     once per load: navigate, find the slot,
 //                                      hide everything else, report `ready`
 //   window.__dshGoIsland.setTheme(t)   App light/dark, accent, tokens
-//   window.__dshGoIsland.setInsets(i)  {top, bottom} CSS px the frame keeps clear
+//   window.__dshGoIsland.setInsets(i)  {top, right, bottom, left} CSS px the frame keeps clear
 //
 // Messages go to the app's `DshGoIsland` channel as JSON, `t` is the type:
 //   ready {slot, cell, release, found}     empty / error {slot, code, detail}
@@ -31,7 +31,7 @@
     marked: [],
     baseline: null, // <body> children before ready: never shown as layers
     theme: null,
-    insets: { top: 0, bottom: 0 },
+    insets: { top: 0, right: 0, bottom: 0, left: 0 },
     lastSize: -1,
     lastHit: '',
     hitTimer: 0,
@@ -676,6 +676,8 @@
     var root = document.documentElement.style;
     root.setProperty('--dsh-go-island-top', Math.max(0, +st.insets.top || 0) + 'px');
     root.setProperty('--dsh-go-island-bottom', Math.max(0, +st.insets.bottom || 0) + 'px');
+    root.setProperty('--dsh-go-island-left', Math.max(0, +st.insets.left || 0) + 'px');
+    root.setProperty('--dsh-go-island-right', Math.max(0, +st.insets.right || 0) + 'px');
   }
 
   function installCss(css) {
@@ -710,133 +712,38 @@
   // no plugin colour, type or spacing is written (the old fitToWidth restyled
   // cards and wrapped every flex row, and could not be undone).
 
-  var ROLE = 'data-dsh-mobile-role';
-  var COMPACT = 'data-dsh-mobile-compact';
-  var WIDE = 'data-dsh-go-mobile-wide';
-  var touched = []; // [element, attribute] this controller set, to drop later
-
-  function own(el, attr) {
-    for (var i = 0; i < touched.length; i++) if (touched[i][0] === el && touched[i][1] === attr) return;
-    touched.push([el, attr]);
-  }
-  function setRole(el, role) {
-    if (el.getAttribute(ROLE) === role) return;
-    el.setAttribute(ROLE, role);
-    own(el, ROLE);
-  }
-  function setCompact(el, on) {
-    if (on) {
-      if (!el.hasAttribute(COMPACT)) { el.setAttribute(COMPACT, ''); own(el, COMPACT); }
-    } else if (el.hasAttribute(COMPACT)) {
-      // The node was classified before and is wide enough now: drop the mark,
-      // the CSS rule stops applying and the plugin's own layout comes back.
-      el.removeAttribute(COMPACT);
-    }
-  }
-  function isControl(tag) { return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA'; }
-  function columnsOf(table) {
-    var row = table.rows && table.rows[0];
-    if (row) return row.cells ? row.cells.length : 0;
-    return table.querySelectorAll('th').length;
-  }
-  // A card grid holds short, independent boxes; a data grid holds records and
-  // must keep its width (table.scroll, not card-grid.collapse).
-  function cardish(el) {
-    var kids = el.children;
-    if (!kids || kids.length < 3) return false;
-    for (var i = 0; i < kids.length; i++) {
-      var k = kids[i];
-      if (k.tagName === 'TABLE') return false;
-      var role = k.getAttribute('role') || '';
-      if (role === 'row' || role === 'gridcell' || role === 'table') return false;
-      if (k.querySelector && (k.querySelector('table') || k.querySelector('[role="row"]'))) return false;
-    }
-    return true;
-  }
-  function scrollSelectedTab(list) {
-    var selected = list.querySelector('[aria-selected="true"]');
-    if (selected && selected.scrollIntoView) selected.scrollIntoView({ inline: 'center', block: 'nearest' });
-  }
-  function classify(el, compact) {
-    var tag = el.tagName;
-    if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'LINK') return;
-    if (tag === 'TABLE') {
-      if (columnsOf(el) >= 5) setRole(el, 'table');
-      return;
-    }
-    var role = el.getAttribute('role');
-    if (role === 'dialog' || el.getAttribute('aria-modal') === 'true') {
-      setRole(el, 'dialog');
-      setCompact(el, compact);
-      return;
-    }
-    if (role === 'tablist') {
-      setRole(el, 'tablist');
-      setCompact(el, compact);
-      if (compact) scrollSelectedTab(el);
-      return;
-    }
-    var cs = getComputedStyle(el);
-    if (cs.display === 'flex' && cs.flexDirection.indexOf('row') === 0) {
-      var kids = el.children, buttons = 0, labels = 0, controls = 0;
-      for (var k = 0; k < kids.length; k++) {
-        var t = kids[k].tagName;
-        if (t === 'BUTTON') buttons++;
-        else if (t === 'LABEL') labels++;
-        else if (isControl(t)) controls++;
-      }
-      // A label beside its control stacks; a row of buttons wraps. Anything
-      // else (an icon and a caption, a chip and a value) is left alone.
-      if (labels > 0 && controls > 0) {
-        setRole(el, 'form-row');
-        setCompact(el, compact);
-      } else if (buttons >= 2 && buttons >= kids.length - 1) {
-        setRole(el, 'toolbar');
-        setCompact(el, compact);
-      }
-      return;
-    }
-    if (cs.display === 'grid' && cardish(el)) {
-      var tracks = cs.gridTemplateColumns ? cs.gridTemplateColumns.trim().split(/\s+/).length : 0;
-      if (tracks >= 3) {
-        setRole(el, 'card-grid');
-        setCompact(el, compact);
-      }
-    }
+  var mobileControllers = new Map();
+  function mobileOptions() {
+    var policy = st.cfg.mobile || { mode: 'automatic' };
+    return Object.assign({}, policy, { form: st.cfg.mode, widthTarget: st.frame,
+      onDiagnostics: function () { measure(); reportHits(); } });
   }
   function adaptPluginContent() {
-    var frame = st.frame;
-    if (!frame || st.phase !== 'ready') return;
-    var width = frame.clientWidth;
-    if (width <= 0) return;
-    var compact = width < 480;
-    var nodes = frame.querySelectorAll('*');
-    var limit = Math.min(nodes.length, 1200); // bounded: a huge page must not stall
-    for (var i = 0; i < limit; i++) classify(nodes[i], compact);
-    // Boundary layer: a subtree still wider than the frame gets its own
-    // horizontal scroller (island_mobile.css). Tracked so it can be dropped.
-    for (var j = 0; j < limit; j++) {
-      var el = nodes[j];
-      if (el.hasAttribute(WIDE)) continue;
-      if (el.scrollWidth > width + 4 && el.clientWidth >= width - 8) {
-        el.setAttribute(WIDE, '');
-        own(el, WIDE);
-      }
-    }
+    if (!st.frame || st.phase !== 'ready' || !window.DshGoMobileLayout || st.leaving || st.mobilePaused) return;
+    var roots = (st.slotEls || [st.slotEl]).filter(Boolean);
+    var layers = document.querySelectorAll('[' + MARK + '~="layer"]');
+    for (var i = 0; i < layers.length; i++) roots.push(layers[i]);
+    roots = roots.filter(function (root, index) { return roots.indexOf(root) === index && !roots.some(function (other) { return other !== root && other.contains(root); }); });
+    mobileControllers.forEach(function (controller, root) {
+      if (roots.indexOf(root) < 0 || !root.isConnected) { controller.stop(); mobileControllers.delete(root); }
+    });
+    roots.forEach(function (root) {
+      if (mobileControllers.has(root)) return;
+      var controller = window.DshGoMobileLayout.create(root, mobileOptions());
+      mobileControllers.set(root, controller);
+      controller.start();
+    });
   }
-  var adaptScheduled = false;
-  // One pass per frame: a mutation storm must not queue a scan each.
-  function scheduleAdapt() {
-    if (adaptScheduled) return;
-    adaptScheduled = true;
-    var run = function () { adaptScheduled = false; adaptPluginContent(); };
-    if (window.requestAnimationFrame) requestAnimationFrame(run);
-    else setTimeout(run, 16);
-  }
-  // Leave the page as we found it: only what this controller wrote is removed.
+  function scheduleAdapt() { adaptPluginContent(); }
   function dropMobileRoles() {
-    for (var i = 0; i < touched.length; i++) touched[i][0].removeAttribute(touched[i][1]);
-    touched = [];
+    mobileControllers.forEach(function (controller) { controller.stop(); });
+    mobileControllers.clear();
+  }
+  function setMobile(policy) {
+    if (!st.cfg) return;
+    st.cfg.mobile = policy;
+    mobileControllers.forEach(function (controller) { controller.update(mobileOptions()); });
+    adaptPluginContent();
   }
 
   // ---- navigation -------------------------------------------------------------
@@ -1266,10 +1173,12 @@
 
   var observing = false;
 
+  function islandResize() { measure(); reportHits(); adaptPluginContent(); }
+  function islandScroll() { reportHits(); }
   function observe() {
     if (observing) return;
     observing = true;
-    new MutationObserver(function (records) {
+    st.mutationObserver = new MutationObserver(function (records) {
       for (var i = 0; i < records.length; i++) {
         var r = records[i];
         if (r.type === 'attributes' && r.target === document.body && r.attributeName === 'data-ds-dark-theme') {
@@ -1281,19 +1190,20 @@
       measure();
       reportHits();
       scheduleAdapt();
-    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-ds-dark-theme', 'class', 'style', 'aria-expanded', 'data-state', 'inert'] });
+    });
+    st.mutationObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-ds-dark-theme', 'class', 'style', 'aria-expanded', 'data-state', 'inert'] });
     if (window.ResizeObserver) {
       var ro = new ResizeObserver(function () { measure(); reportHits(); scheduleAdapt(); });
       ro.observe(document.documentElement);
       st.resizeObserver = ro;
     }
-    window.addEventListener('resize', function () { measure(); reportHits(); adaptPluginContent(); });
-    document.addEventListener('scroll', function () { reportHits(); }, true);
-    setInterval(function () { if (st.cfg && st.cfg.mode === 'overlay') reportHits(); }, 250);
+    window.addEventListener('resize', islandResize);
+    document.addEventListener('scroll', islandScroll, true);
+    st.hitInterval = setInterval(function () { if (st.cfg && st.cfg.mode === 'overlay') reportHits(); }, 250);
     // A plugin that selects another conversation (the official sessions
     // service writes the stored selection): the app opens it natively.
     st.selection = storedSession();
-    setInterval(function () {
+    st.sessionInterval = setInterval(function () {
       var now = storedSession();
       if (now && now !== st.selection) post({ t: 'session', id: now });
       st.selection = now;
@@ -1452,6 +1362,14 @@
     // The page is going away: leave the DOM as we found it (the plugin may come
     // back at a wider size in the same WebView).
     dropMobileRoles();
+    if (st.mutationObserver) st.mutationObserver.disconnect();
+    if (st.resizeObserver) st.resizeObserver.disconnect();
+    clearInterval(st.hitInterval);
+    clearInterval(st.sessionInterval);
+    clearTimeout(st.hitTimer);
+    window.removeEventListener('resize', islandResize);
+    document.removeEventListener('scroll', islandScroll, true);
+    observing = false;
   });
 
   window.__dshGoIsland = {
@@ -1463,6 +1381,29 @@
     },
     setTheme: applyTheme,
     setInsets: applyInsets,
+    setMobile: setMobile,
+    pauseMobile: function () { st.mobilePaused = true; dropMobileRoles(); },
+    resumeMobile: function () { st.mobilePaused = false; adaptPluginContent(); },
+    mobileDiagnostics: function () { return Array.from(mobileControllers.values()).map(function (c) { return c.diagnostics(); }); },
+    back: function () {
+      var active = document.activeElement;
+      if (active && /^(INPUT|SELECT|TEXTAREA)$/.test(active.tagName)) { active.blur(); return true; }
+      var dialogs = document.querySelectorAll(
+        '[' + MARK + '~="layer"]:is(dialog,[role="dialog"]), [' + MARK + '~="layer"] :is(dialog,[role="dialog"]), ' +
+        '[data-dsh-mobile-root]:is(dialog,[role="dialog"]), [data-dsh-mobile-root] :is(dialog,[role="dialog"])');
+      for (var i = dialogs.length - 1; i >= 0; i--) {
+        var dialog = dialogs[i];
+        if (!dialog.getClientRects().length) continue;
+        // Ask the plugin to close itself. Never remove its DOM or bypass a confirmation.
+        var cancelled = !dialog.dispatchEvent(new Event('cancel', { cancelable: true }));
+        if (dialog.tagName === 'DIALOG' && dialog.open && !cancelled) dialog.close();
+        else dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true }));
+        // React may apply the close on its next render. Consume this back
+        // while the modal owns it, rather than popping the native page first.
+        return true;
+      }
+      return false;
+    },
     // Debugging and the PoC's measurements: no side effects. `leaks` are
     // boxes on screen outside the island (should always be none).
     inspect: function () {

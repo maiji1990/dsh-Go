@@ -166,6 +166,8 @@ class _WebHomeState extends ConsumerState<WebHome> {
         reloadAfterBackground: const Duration(seconds: 60),
         dshWeb: true,
         phoneLayout: phoneLayout,
+        pluginMobileEnabled: ref.watch(settingsProvider.select((s) => s.mobileAdapterEnabled)),
+        pluginMobileModes: ref.watch(settingsProvider.select((s) => s.pluginMobileModes)),
         leading: _handle,
         root: true,
         link: _link,

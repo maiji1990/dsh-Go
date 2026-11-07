@@ -84,6 +84,12 @@ class InterfacePage extends ConsumerWidget {
                   : Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const LocalWebScreen())),
             ),
             SettingsSwitchTile(
+              spot: Spots.pluginMobileLayout,
+              subtitle: l10n.pluginsMobileLayoutHint,
+              value: settings.mobileAdapterEnabled,
+              onChanged: (v) => unawaited(ref.read(settingsProvider.notifier).setMobileAdapterEnabled(v)),
+            ),
+            SettingsSwitchTile(
               spot: Spots.webPhoneLayout,
               subtitle: l10n.hubSettingsWebPhoneLayoutHint,
               value: settings.webPhoneLayout,

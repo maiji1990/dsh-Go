@@ -25,7 +25,10 @@ class IslandAssets {
 
   Future<String> get openBridge => _open ??= _text('web/dsh_web_open.js');
 
-  Future<String> get runtime => _runtime ??= _text('islands/island.js');
+  Future<String> get runtime => _runtime ??= () async {
+    final mobile = await _text('islands/mobile_layout.js');
+    return '$mobile\n${await _text('islands/island.js')}';
+  }();
 
   /// island.css plus JetBrains Mono: DSH's code font stack finds nothing on
   /// Android before `Courier` (same as the 网页版's phone layout).

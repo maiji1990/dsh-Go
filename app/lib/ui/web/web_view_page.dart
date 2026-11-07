@@ -42,6 +42,8 @@ class WebViewPage extends StatefulWidget {
     this.darkBackground = const Color(0xFF151517),
     this.dshWeb = false,
     this.phoneLayout = true,
+    this.pluginMobileEnabled = true,
+    this.pluginMobileModes = const {},
     this.openTarget,
     this.leading,
     this.root = false,
@@ -79,6 +81,8 @@ class WebViewPage extends StatefulWidget {
   /// the seat moves past it ([WebChrome.seat]); wider windows show the app's
   /// bar ([WebChrome.bar]).
   final bool phoneLayout;
+  final bool pluginMobileEnabled;
+  final Map<String, String> pluginMobileModes;
 
   /// With [dshWeb]: the page to land on after the first load
   /// (`assets/web/dsh_web_open.js`); null opens the home page.
@@ -912,7 +916,10 @@ class _WebViewPageState extends State<WebViewPage> {
         '@font-face{font-family:"JetBrains Mono";font-weight:400;'
         'font-style:normal;font-display:swap;'
         'src:url(data:font/ttf;base64,${base64Encode(font.buffer.asUint8List(font.offsetInBytes, font.lengthInBytes))}) format("truetype")}\n';
-    final css = fontFace + await rootBundle.loadString('assets/web/dsh_web_phone.css', cache: false);
+    final css =
+        fontFace +
+        await rootBundle.loadString('assets/web/dsh_web_phone.css', cache: false) +
+        await rootBundle.loadString('assets/islands/island_mobile_components.css', cache: false);
     final js = await rootBundle.loadString('assets/web/dsh_web_phone.js', cache: false);
     return [
       '(function () {',
@@ -921,14 +928,38 @@ class _WebViewPageState extends State<WebViewPage> {
       '  s.textContent = ${jsonEncode(css)};',
       '})();',
       js,
+      await rootBundle.loadString('assets/islands/mobile_layout.js', cache: false),
+      await rootBundle.loadString('assets/web/plugin_mobile.js', cache: false),
     ].join('\n');
   });
 
   Future<void> _injectPhoneLayout() async {
     try {
       await _controller.runJavaScript(await _phoneLayout());
+      await _configurePluginMobile();
     } catch (_) {
       // A page without a DOM yet (error page): the next load injects again.
+    }
+  }
+
+  Future<void> _configurePluginMobile() async {
+    if (!widget.dshWeb) return;
+    final config = jsonEncode({
+      'enabled': widget.pluginMobileEnabled && widget.phoneLayout,
+      'modes': widget.pluginMobileModes,
+    });
+    await _controller
+        .runJavaScript('window.__dshGoPluginMobile && window.__dshGoPluginMobile.configure($config);')
+        .catchError((_) {});
+  }
+
+  @override
+  void didUpdateWidget(WebViewPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pluginMobileEnabled != widget.pluginMobileEnabled ||
+        oldWidget.pluginMobileModes != widget.pluginMobileModes ||
+        oldWidget.phoneLayout != widget.phoneLayout) {
+      unawaited(_configurePluginMobile());
     }
   }
 
