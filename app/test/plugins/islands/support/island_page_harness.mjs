@@ -136,7 +136,18 @@ class El {
     this.ownText = text;
     this.box = null; // {width, height}
     this.onclick = null;
-    this.style = { props: {}, setProperty(k, v) { this.props[k] = v; }, removeProperty(k) { delete this.props[k]; } };
+    // Style writes are what the page model reports: both `setProperty` and a
+    // plain `el.style.flexWrap = 'wrap'` land in the same bag, so a rule that
+    // styles a node can be observed and undone.
+    const props = {};
+    this._styleProps = props;
+    this.style = new Proxy(
+      { props, setProperty(k, v) { props[k] = v; }, removeProperty(k) { delete props[k]; } },
+      {
+        get: (t, k) => (k in t ? (typeof t[k] === 'function' ? t[k].bind(t) : t[k]) : props[k]),
+        set: (t, k, v) => { if (k === 'props') return true; if (k in t && typeof t[k] !== 'function') t[k] = v; else props[k] = v; return true; },
+      },
+    );
   }
   get children() { return this.kids.slice(); }
   get firstElementChild() { return this.kids[0] || null; }
@@ -205,6 +216,13 @@ class El {
     return { left: 0, top: 0, width: b.width, height: b.height, right: b.width, bottom: b.height };
   }
   getClientRects() { return this.isConnected ? [this.getBoundingClientRect()] : []; }
+  // Layout numbers a plugin page's DOM would report. `box` is what the box
+  // model draws; `scroll` is what it would overflow to (defaults to the box,
+  // i.e. nothing overflows).
+  get clientWidth() { return this.box ? this.box.width : 0; }
+  get clientHeight() { return this.box ? this.box.height : 0; }
+  get scrollWidth() { return this.scroll ? this.scroll.width : this.clientWidth; }
+  get scrollHeight() { return this.scroll ? this.scroll.height : this.clientHeight; }
   // A click runs the handlers on the way up, as a bubbling click does.
   click() {
     if (this.clickName) out.clicks.push(this.clickName);
@@ -240,6 +258,26 @@ function draw(slotEl, model) {
   box.box = { width: 360, height: 640 };
   slotEl.append(box);
   return box;
+}
+
+/**
+ * A plugin page as JSON (the `plugin` target), mirroring one of
+ * `test/plugins/islands/fixtures/mobile_*.html`:
+ *
+ *   {name, tag?, attrs?, text?, display?, style?, box?, scroll?, kids?}
+ *
+ * `style` is what getComputedStyle reports for that node, `box` its layout
+ * size, `scroll` what it would overflow to. `name` is what the run reports.
+ */
+function buildDom(spec) {
+  const el = new El(spec.tag || 'div', spec.attrs || {}, spec.text || '');
+  el.reportName = spec.name || spec.tag || 'div';
+  if (spec.display) el.display = spec.display;
+  if (spec.style) el.computed = spec.style;
+  if (spec.box) el.box = spec.box;
+  if (spec.scroll) el.scroll = spec.scroll;
+  for (const kid of spec.kids || []) el.append(buildDom(kid));
+  return el;
 }
 
 // ---- storage ------------------------------------------------------------------
@@ -378,8 +416,11 @@ if (target === 'panel') {
   model.shown = () => drawn;
 }
 
-if (target === 'settings') {
-  const sections = s.sections || [];
+if (target === 'settings' || target === 'plugin') {
+  // `plugin`: the same settings modal, but the section draws a plugin's own
+  // page (`pluginDom`) instead of a few buttons, so the rules island.js and
+  // island_mobile.css apply to arbitrary plugin content can be observed.
+  const sections = s.sections || (target === 'plugin' ? [{ id: 'plugin', label: s.sectionLabel || '插件设置' }] : []);
   let activeId = null;
   let dialog = null;
   let slot = null;
@@ -392,6 +433,12 @@ if (target === 'settings') {
     const id = sections.find((x) => x.id === activeId)?.id ?? sections[0]?.id;
     if (slot.firstElementChild?.model === id) return;
     const box = draw(slot, id);
+    if (s.pluginDom) {
+      // The section now hosts a plugin page: the box it draws in is as wide as
+      // the section, and taller than the frame so content can overflow.
+      box.box = { width: s.width || 344, height: s.height || 900 };
+      box.append(buildDom(s.pluginDom));
+    }
     // Controls inside the section drawn (a general item's own buttons).
     for (const text of s.sectionButtons || []) box.append(button({}, text, 'in section:' + text, () => {}));
   }
@@ -417,6 +464,8 @@ if (target === 'settings') {
       }
       const content = new El('div', { class: 'content' });
       const options = new El('div', { class: 'options' });
+      // The scrolling section frame the island measures (frameFor → boxParent).
+      options.box = { width: (s.width || 344) + 16, height: s.frameHeight || 640 };
       slot = outlet('settings.section');
       options.append(slot);
       content.append(button({}, '关闭', 'close', () => {}, true), options);
@@ -575,6 +624,9 @@ if (s.occupants || windowExtra.openTab) {
   };
 }
 const style = (el) => ({
+  // A plugin node carries the computed style its fixture declares; the page
+  // model's own nodes keep the defaults below.
+  ...(el.computed || {}),
   display: el.display || 'block',
   visibility: 'visible',
   pointerEvents: 'auto',
@@ -609,6 +661,7 @@ const configs = {
   view: { slot: 'conversation.view', stretch: 'child', target: { session, then: { view: { id: s.cell, names: s.names } } } },
   panel: { slot: 'main', stretch: 'child', target: { then: { panel: s.names } } },
   settings: { slot: 'settings.section', stretch: 'scroller', target: { web: { settings: 'general' }, then: { settings: s.names } } },
+  plugin: { slot: 'settings.section', stretch: 'scroller', target: { web: { settings: 'plugin' }, then: { settings: s.names } } },
   rightbar: { slot: 'sidebar.right.pane.tab', stretch: 'child', target: { session, then: { rightbar: s.names } } },
 };
 window.__dshGoIsland.init({
@@ -635,5 +688,18 @@ out.island = marked && marked.firstElementChild ? marked.firstElementChild.model
 if (model.stored) out.stored = model.stored();
 if (model.layout) out.layout = model.layout();
 out.trace = window.__dshGoIsland.inspect ? window.__dshGoIsland.inspect().trace : [];
+if (target === 'plugin') {
+  // What the island did to the plugin's own page: inline style it wrote,
+  // permanent markers it left, and the width it measured.
+  const nodes = html.descendants().filter((e) => e.reportName);
+  out.changed = nodes
+    .filter((e) => Object.keys(e._styleProps).length)
+    .map((e) => ({ node: e.reportName, props: { ...e._styleProps } }));
+  out.cards = nodes.filter((e) => e.hasAttribute('data-dsh-go-card')).map((e) => e.reportName);
+  out.wide = nodes.filter((e) => e.hasAttribute('data-dsh-go-mobile-wide')).map((e) => e.reportName);
+  out.residual = nodes
+    .filter((e) => Object.keys(e._styleProps).length || e.hasAttribute('data-dsh-go-card') || e.hasAttribute('data-dsh-go-mobile-wide'))
+    .map((e) => e.reportName);
+}
 process.stdout.write(JSON.stringify(out));
 process.exit(0);
