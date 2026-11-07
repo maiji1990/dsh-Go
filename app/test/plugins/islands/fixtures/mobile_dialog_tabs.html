@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>fixture: 弹窗 + Tab</title>
+<!--
+  PR-1 fixture: overlays, which the current boundary-only layer does not
+  handle at all inside an island.
+
+  - `.dialog` is a fixed-size (560×620) modal centred with `position: fixed`.
+    On a 640×360 landscape phone it is taller than the frame, so the 确认/取消
+    row falls outside the viewport and cannot be tapped.
+  - `.tabs` is a 6-item tab strip wider than the frame; the current CSS has no
+    rule for `[role=tablist]`, so the last tabs are unreachable.
+  - `.body` holds a long scrollable region: the dialog must keep its title and
+    actions fixed while only this part scrolls.
+-->
+<style>
+  body { margin: 0; font: 14px/1.5 system-ui, sans-serif; }
+  .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); }
+  .dialog { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%);
+            width: 560px; height: 620px; background: #fff; border-radius: 12px;
+            display: flex; flex-direction: column; }
+  .dialog header { padding: 14px 16px; font-weight: 600; border-bottom: 1px solid #eee; }
+  .tabs { display: flex; gap: 4px; padding: 8px 12px; border-bottom: 1px solid #eee; white-space: nowrap; }
+  .tabs button { padding: 6px 12px; }
+  .body { flex: 1 1 auto; overflow: auto; padding: 12px 16px; }
+  .dialog footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; border-top: 1px solid #eee; }
+</style>
+</head>
+<body>
+<div class="backdrop"></div>
+<div class="dialog" role="dialog" aria-modal="true" aria-label="任务详情">
+  <header>任务详情</header>
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true">概览</button>
+    <button role="tab">运行记录</button>
+    <button role="tab">输入</button>
+    <button role="tab">输出</button>
+    <button role="tab">错误</button>
+    <button role="tab">配置</button>
+  </div>
+  <div class="body" role="tabpanel">
+    <p>一段较长的运行说明，用来确认只有这一块滚动，标题和底部按钮不动。</p>
+    <p>第二段。</p><p>第三段。</p><p>第四段。</p><p>第五段。</p>
+    <p>第六段。</p><p>第七段。</p><p>第八段。</p><p>第九段。</p>
+  </div>
+  <footer><button>取消</button><button>确认</button></footer>
+</div>
+</body>
+</html>

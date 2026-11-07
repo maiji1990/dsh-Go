@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>fixture: 宽表格 + 卡片网格</title>
+<!--
+  PR-1 fixture: the two shapes a naive "collapse every grid, wrap every flex"
+  rule gets wrong.
+
+  - `.data` is a real table with 8 columns and `min-width: 900px`. It must
+    scroll horizontally with the first column readable, not be re-laid out as
+    cards (the rows are a record set, not a card list).
+  - `.cards` is a genuine card grid (3 columns of short, independent items).
+    It is the one shape that should collapse to 1 column on a phone.
+  - `.filters` is a toolbar of chips whose order carries meaning; wrapping is
+    acceptable, reordering is not.
+-->
+<style>
+  body { margin: 0; font: 14px/1.5 system-ui, sans-serif; }
+  .page { padding: 16px; }
+  .filters { display: flex; gap: 8px; margin-bottom: 16px; }
+  .filters button { padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+  table.data { border-collapse: collapse; min-width: 900px; }
+  table.data th, table.data td { border: 1px solid #ddd; padding: 6px 10px; white-space: nowrap; }
+  .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+  .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="filters"><button>全部</button><button>运行中</button><button>已暂停</button><button>失败</button></div>
+  <table class="data">
+    <thead><tr><th>名称</th><th>状态</th><th>模型</th><th>创建时间</th><th>最后运行</th><th>耗时</th><th>Token</th><th>操作</th></tr></thead>
+    <tbody>
+      <tr><td>日报生成</td><td>运行中</td><td>deepseek-chat</td><td>2026-11-01 09:12</td><td>2026-11-07 08:00</td><td>42s</td><td>18234</td><td>停止 / 日志</td></tr>
+      <tr><td>仓库巡检</td><td>已暂停</td><td>deepseek-reasoner</td><td>2026-10-28 14:03</td><td>2026-11-06 23:10</td><td>1m08s</td><td>40122</td><td>启动 / 日志</td></tr>
+    </tbody>
+  </table>
+  <div class="cards">
+    <div class="card"><h4>今日对话</h4><p>128</p></div>
+    <div class="card"><h4>今日 Token</h4><p>1.2M</p></div>
+    <div class="card"><h4>失败任务</h4><p>2</p></div>
+  </div>
+</div>
+</body>
+</html>

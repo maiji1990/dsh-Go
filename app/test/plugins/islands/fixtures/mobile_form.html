@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>fixture: 复杂表单（桌面两列）</title>
+<!--
+  PR-1 fixture: a plugin's own settings page as it is typically written for a
+  desktop DSH Web. Every problem it encodes is deliberate:
+
+  - `.row` is a flex row of label + control, sized for a 640px card. On a
+    phone the control shrinks to a sliver instead of moving under its label.
+  - `.toolbar` holds five buttons in one flex row, so the last two fall off
+    the frame and the frame grows a horizontal scrollbar.
+  - `.actions` is a fixed bar pinned to the bottom of the page; with the
+    keyboard open it lands under the IME.
+  - One control is a wide `<select>` and one a 4-row `<textarea>`, so a rule
+    that only touches `input` shows up immediately.
+-->
+<style>
+  body { margin: 0; font: 14px/1.5 system-ui, sans-serif; }
+  .page { width: 640px; margin: 24px auto; }
+  .row { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
+  .row > label { width: 140px; flex: none; text-align: right; }
+  .row > input, .row > select { flex: 1 1 auto; min-width: 220px; padding: 6px 8px; }
+  .row > textarea { flex: 1 1 auto; min-width: 220px; height: 96px; }
+  .toolbar { display: flex; gap: 8px; margin: 18px 0; }
+  .toolbar button { padding: 6px 14px; white-space: nowrap; }
+  .actions { position: sticky; bottom: 0; display: flex; gap: 8px; padding: 12px 0; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h2>插件设置</h2>
+  <div class="toolbar">
+    <button>导入</button><button>导出</button><button>校验</button>
+    <button>重置默认</button><button>查看日志</button>
+  </div>
+  <div class="row"><label>接口地址</label><input type="text" value="https://api.example.com/v1/very/long/endpoint"></div>
+  <div class="row"><label>每页条数</label><input type="number" value="50"></div>
+  <div class="row"><label>模型</label><select><option>默认</option><option>快速</option></select></div>
+  <div class="row"><label>备注</label><textarea>一段说明文字</textarea></div>
+  <div class="actions"><button>取消</button><button>保存</button></div>
+</div>
+</body>
+</html>
