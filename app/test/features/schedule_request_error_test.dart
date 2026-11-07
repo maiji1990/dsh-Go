@@ -9,14 +9,16 @@ import '../plugins/support/fake_plugin_host.dart';
 Future<List<Object>> _zoneErrors(Future<void> Function() action) async {
   final finished = Completer<void>();
   final errors = <Object>[];
-  runZonedGuarded(() async {
-    try {
-      await action();
-      finished.complete();
-    } catch (error, stack) {
-      finished.completeError(error, stack);
-    }
-  }, (error, _) => errors.add(error));
+  unawaited(
+    runZonedGuarded(() async {
+      try {
+        await action();
+        finished.complete();
+      } catch (error, stack) {
+        finished.completeError(error, stack);
+      }
+    }, (error, _) => errors.add(error)),
+  );
   await finished.future;
   return errors;
 }

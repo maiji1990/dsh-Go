@@ -280,28 +280,30 @@ void main() {
         if (!firstFailure.isCompleted) firstFailure.complete();
       }
 
-      runZonedGuarded(
-        () => IOOverrides.runZoned(
-          () async {
-            try {
-              finished.complete(await rig.files.materialize('s1', _artifact));
-            } catch (error) {
-              finished.complete(error);
-            } finally {
-              signal();
-            }
-          },
-          createFile: (path) {
-            final file = realFile(path);
-            return path.split('/').any((part) => part.startsWith('.part-'))
-                ? _FaultFile(file, openFailure: openFailure, makeFile: realFile)
-                : file;
+      unawaited(
+        runZonedGuarded(
+          () => IOOverrides.runZoned(
+            () async {
+              try {
+                finished.complete(await rig.files.materialize('s1', _artifact));
+              } catch (error) {
+                finished.complete(error);
+              } finally {
+                signal();
+              }
+            },
+            createFile: (path) {
+              final file = realFile(path);
+              return path.split('/').any((part) => part.startsWith('.part-'))
+                  ? _FaultFile(file, openFailure: openFailure, makeFile: realFile)
+                  : file;
+            },
+          ),
+          (error, _) {
+            zoneErrors.add(error);
+            signal();
           },
         ),
-        (error, _) {
-          zoneErrors.add(error);
-          signal();
-        },
       );
       if (!openFailure) {
         await rig.carrier.entered[1].future;
