@@ -59,8 +59,9 @@ harness 的页面模型已按 r17 的 `dsh-prefix` 校准到 0.2.2-rc.1（§1 �
 
 **A 层 · 原生 Seat**
 
-- `plugin_seat_page.dart:59-61`：`Column(children: [for (c in children) Expanded(child: c)])` 平分高度；`:70` 另有一条滚动分支，两者并存 → 走平分分支的内容型页面无法滚动。
-- `seat_island.dart:33-35`：只给 `IslandForm.page` 加 `padding.bottom`，顶部、横屏、键盘 inset 都没处理（也不能简单相加，会与 Flutter `SafeArea` 重复）。
+- `plugin_seat_page.dart:59-61`：`Column(children: [for (c in children) Expanded(child: c)])` 平分高度；`:70` 另有一条滚动分支，两者并存。原生表单走的是 `AppPage.list`（可滚动），平分只发生在「一个页面里放多个岛」的情形。
+- `seat_island.dart:33-35`：改造前只给 `IslandForm.page` 加 `padding.bottom`，**横屏的左右刘海留白没有**（顶部由 `AppPage` 的 bar 负责，不重复加）。已补：`pageInsetsFor()` 在横屏时同时让出 `MediaQuery.padding` 的左右，单测直接覆盖两种朝向。
+- **实测（PR-2 新增 `test/plugins/mobile/plugin_narrow_test.dart`，9 个用例）**：320 / 360 / 393 px × 2.0 字号下，插件岛页面、只有「在网页版打开」的页面、设置页插件行、超长分节标题**都没有溢出**，行与入口可达。也就是说 A 层的窄屏问题是「没人验证过」，不是「已知坏掉」；现在是有人守着。
 
 ### 2.3 三个 fixture 的判定
 
@@ -77,7 +78,7 @@ fixture 在 `app/test/plugins/islands/fixtures/`。`island_page_harness.mjs` 新
 | 优先级 | 缺口 | 归入 |
 |---|---|---|
 | P0 | 弹窗限高 + 内部滚动；tab 横滑；label/控件纵排；样式可撤销 | PR-3 |
-| P1 | Grid 误伤（数据网格被压缩）；动态节点；原生 Seat 滚动与键盘 | PR-2 / PR-3 |
+| P1 | Grid 误伤（数据网格被压缩）；动态节点 | PR-3 |
 | P2 | 工具栏折叠策略、44px 触控目标、横屏重排 | PR-4 |
 
 ## 3. 共享文件边界（上游同步的硬约束）
@@ -138,7 +139,7 @@ enum MobileAdaptMode { pluginResponsive, automatic, compatibility, desktop }
 | PR | 内容 | 验收 |
 |---|---|---|
 | **PR-1 基座与可测性** | ✅ 已完成：`plugin` target + 三个 fixture + 页面模型校准到 0.2.2-rc.1 + `diagnostics`（slot / mode / width / rules / cards / wide / inertShell / shellStillInert）+ 幂等断言（同一 fixture 跑两次 `changed` 与 `diagnostics` 必须一致） | `flutter test test/plugins/islands/` 83 个用例全绿 |
-| **PR-2 原生 Seat** | `plugin_seat_page` 按 form 分流（内容型滚动、实时面板才等分）；`seat_island` 补顶部/横屏/键盘 inset 且不与 `SafeArea` 叠加；`SettingsTile` 窄屏长文本 | 320/360/393px + 200% 字号可操作；键盘不遮保存条 |
+| **PR-2 原生 Seat** | ✅ 已完成：`seat_island` 补横屏左右留白（`pageInsetsFor()`，单测覆盖竖/横屏）；新增 320/360/393 × 2.0 字号的 9 个用例（岛页面、网页兜底、设置行、超长标题）。实测没有溢出，`SettingsTile` 与 `AppPage.list` 无需改动 | `flutter test test/plugins/mobile/` 9 个用例全绿 |
 | **PR-3 Web 适配核心** | `fitToWidth()` → `MobileLayoutController`（ResizeObserver + MutationObserver + `requestAnimationFrame` 批处理 + 节点/时间预算 + `changed` 表可撤销）；新增 `island_mobile_components.css`；实现 §5 六条规则 | 三个 fixture 达到 L1；变宽/卸载后 `residual` 为空；单帧 ≤8ms |
 | **PR-4 双宿主收尾** | 同一套规则接进 `dsh_web_phone.css` 的插件 slot 段（只碰那 86 行）；与「网页版手机布局」开关联动；弹窗/触控/旋转专项；真机记录 | 关掉开关后 DOM 无残留标记；Android 真机截图 + 步骤 |
 

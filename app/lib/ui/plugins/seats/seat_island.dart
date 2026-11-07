@@ -28,11 +28,10 @@ class SeatIslandView extends ConsumerWidget {
       spec: spec,
       fallback: fallback,
       labels: seatIslandLabels(items, bridge),
-      // A page island runs down to the screen's bottom edge: its last line
-      // stays above the gesture bar.
-      insets: spec.form == IslandForm.page
-          ? EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom)
-          : EdgeInsets.zero,
+      // A page island runs down to the screen's edges: its last line stays above
+      // the gesture bar, and in landscape it also stays out of the notch
+      // cutouts, since the page's slivers get no SafeArea of their own.
+      insets: spec.form == IslandForm.page ? _pageInsets(context) : EdgeInsets.zero,
       onOpenSession: (id) async {
         final known = ref.read(sessionsProvider).value?.any((s) => s.sessionId == id) ?? false;
         if (!known || !context.mounted) return false;
@@ -42,6 +41,21 @@ class SeatIslandView extends ConsumerWidget {
     );
   }
 }
+
+/// The room a page island leaves for the system: the gesture bar at the bottom,
+/// and the notch cutouts on the sides in landscape (where they are the ones
+/// that actually have a width).
+@visibleForTesting
+EdgeInsets pageInsetsFor(MediaQueryData mq) {
+  final landscape = mq.orientation == Orientation.landscape;
+  return EdgeInsets.only(
+    left: landscape ? mq.padding.left : 0,
+    right: landscape ? mq.padding.right : 0,
+    bottom: mq.padding.bottom,
+  );
+}
+
+EdgeInsets _pageInsets(BuildContext context) => pageInsetsFor(MediaQuery.of(context));
 
 /// Every name the occupants of [items] go by in DSH Web: their own labels,
 /// in each language the bridge reported, and for a panel or a tab the label
