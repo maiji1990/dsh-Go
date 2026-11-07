@@ -62,7 +62,7 @@ harness 的页面模型已按 r17 的 `dsh-prefix` 校准到 0.2.2-rc.1（§1 �
 - 动态：MutationObserver 与 ResizeObserver 都接到 `scheduleAdapt()`，一帧一次；`pagehide` 调 `dropMobileRoles()`，只删自己写的属性。
 - 不再改任何颜色、圆角、字号；内联样式写入为 **0**（测试断言 `changed` 为空）。
 
-**C 层 · `dsh_web_phone.css` 插件 slot 段（末尾 86 行）** 只在 `[data-slot="settings.section"]`、`[data-slot="settings.general.item"]`、`[data-slot^="plugins."]` 上做 `max-width` / `overflow-wrap` / `pre,code` 换行，没有组件语义。
+**C 层 · `dsh_web_phone.css` 插件 slot 段（末尾 86 行）** 只在 `[data-slot="settings.section"]`、`[data-slot="settings.general.item"]`、`[data-slot^="plugins."]` 上做 `max-width` / `overflow-wrap` / `pre,code` 换行，没有组件语义。**PR-4 已在段末追加「structure only」小节**：三条规则（form 行纵排、工具栏换行、tab 横滚）用 `:has()` 按结构命中，包在一个 `@supports` 里（老 WebView 退化为纯边界层）；`table` 横滚沿用段内原有的无守卫规则。官方页面没有我们的 runtime，所以这里的规则**不带 `data-dsh-mobile-role`**，也**碰不到 portal 到 `<body>` 的弹窗**（分不清插件弹窗与官方 modal，索性都不碰）。`test/web/plugin_slot_mobile_test.dart` 用结构断言守着这些承诺。
 
 **B 层 · 已修的自相矛盾**：`island_mobile.css:17-20` 的注释写明「Never restyle a component's look (colours, type, spacing inside cards)」，而旧 `island.js` 会改卡片 `backgroundColor` / `borderColor` / `borderRadius` 并留下 `data-dsh-go-card`，还会把 11–13px 的字号抬到 12–15px。两处**都已删除**（PR-3）：适配只保留布局与可操作性；插件自己的视觉完整保留。
 
@@ -150,7 +150,7 @@ enum MobileAdaptMode { pluginResponsive, automatic, compatibility, desktop }
 | **PR-1 基座与可测性** | ✅ 已完成：`plugin` target + 三个 fixture + 页面模型校准到 0.2.2-rc.1 + `diagnostics`（slot / mode / width / rules / cards / wide / inertShell / shellStillInert）+ 幂等断言（同一 fixture 跑两次 `changed` 与 `diagnostics` 必须一致） | `flutter test test/plugins/islands/` 83 个用例全绿 |
 | **PR-2 原生 Seat** | ✅ 已完成：`seat_island` 补横屏左右留白（`pageInsetsFor()`，单测覆盖竖/横屏）；新增 320/360/393 × 2.0 字号的 9 个用例（岛页面、网页兜底、设置行、超长标题）。实测没有溢出，`SettingsTile` 与 `AppPage.list` 无需改动 | `flutter test test/plugins/mobile/` 9 个用例全绿 |
 | **PR-3 Web 适配核心** | ✅ 已完成：`fitToWidth()` → `adaptPluginContent()`（角色分类 + `scheduleAdapt()` 一帧一次 + `dropMobileRoles()`）；新增 `island_mobile_components.css`；六条规则全部由「数据属性 + CSS」实现；删掉卡片重绘与字号抬升 | 三个 fixture 的角色与规则命中已断言；`pagehide` 后 `residual` 为空；`changed`（内联样式写入）为空 |
-| **PR-4 双宿主收尾** | 同一套规则接进 `dsh_web_phone.css` 的插件 slot 段（只碰那 86 行）；与「网页版手机布局」开关联动；弹窗/触控/旋转专项；真机记录 | 关掉开关后 DOM 无残留标记；Android 真机截图 + 步骤 |
+| **PR-4 双宿主收尾** | ◐ 代码完成：插件 slot 段追加 structure-only 规则（`@supports :has` 守卫，5 个结构断言测试）；开关天然联动（关闭即移除 `data-dsh-app-layout`，规则全部失效）。**待真机**：dialog 在 portal 下的表现、`table { display:block }` 的观感、`scrollIntoView` 与外层滚动的手势冲突、旋转后 compact 重算 | 关掉开关后 DOM 无残留标记（结构测试已断言）；Android 真机截图 + 步骤**未做** |
 
 ## 7. 测试
 
