@@ -1,0 +1,64 @@
+{
+  "target": "plugin",
+  "cell": "plugin-cell",
+  "names": ["插件设置"],
+  "sectionLabel": "插件设置",
+  "width": 344,
+  "frameHeight": 360,
+  "run": 8000,
+  "pluginDom": {
+    "name": "page",
+    "box": {"width": 344, "height": 360},
+    "kids": [
+      {
+        "name": "backdrop",
+        "box": {"width": 344, "height": 360},
+        "style": {"position": "fixed"}
+      },
+      {
+        "name": "dialog",
+        "attrs": {"role": "dialog", "aria-modal": "true", "aria-label": "任务详情"},
+        "style": {"position": "fixed"},
+        "box": {"width": 560, "height": 620},
+        "scroll": {"width": 560, "height": 620},
+        "kids": [
+          {"name": "dialog-header", "tag": "header", "text": "任务详情", "box": {"width": 560, "height": 44}},
+          {
+            "name": "tabs",
+            "attrs": {"role": "tablist"},
+            "display": "flex",
+            "style": {"display": "flex", "flexDirection": "row"},
+            "box": {"width": 560, "height": 44},
+            "scroll": {"width": 560, "height": 44},
+            "kids": [
+              {"name": "tab-overview", "tag": "button", "attrs": {"role": "tab", "aria-selected": "true"}, "text": "概览", "box": {"width": 88, "height": 32}},
+              {"name": "tab-runs", "tag": "button", "attrs": {"role": "tab"}, "text": "运行记录", "box": {"width": 104, "height": 32}},
+              {"name": "tab-input", "tag": "button", "attrs": {"role": "tab"}, "text": "输入", "box": {"width": 88, "height": 32}},
+              {"name": "tab-output", "tag": "button", "attrs": {"role": "tab"}, "text": "输出", "box": {"width": 88, "height": 32}},
+              {"name": "tab-errors", "tag": "button", "attrs": {"role": "tab"}, "text": "错误", "box": {"width": 88, "height": 32}},
+              {"name": "tab-config", "tag": "button", "attrs": {"role": "tab"}, "text": "配置", "box": {"width": 88, "height": 32}}
+            ]
+          },
+          {
+            "name": "dialog-body",
+            "attrs": {"role": "tabpanel"},
+            "style": {"overflowY": "auto"},
+            "box": {"width": 560, "height": 480},
+            "scroll": {"width": 560, "height": 900}
+          },
+          {
+            "name": "dialog-footer",
+            "tag": "footer",
+            "display": "flex",
+            "style": {"display": "flex", "flexDirection": "row"},
+            "box": {"width": 560, "height": 56},
+            "kids": [
+              {"name": "btn-cancel", "tag": "button", "text": "取消", "box": {"width": 88, "height": 36}},
+              {"name": "btn-confirm", "tag": "button", "text": "确认", "box": {"width": 88, "height": 36}}
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

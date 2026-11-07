@@ -25,7 +25,7 @@
 | 现有 JS 测试基座 | `app/test/plugins/islands/support/island_page_harness.mjs`（node，无 DOM 库，虚拟时钟） | 由 `island_view_target_test.dart`、`island_names_test.dart` 调用 |
 | 该基座的模型版本 | **DSH 0.2.1-rc.4**（`island_page_harness.mjs:6-29` 注释） | 比基线旧两个版本 |
 
-**PR-1 的第一件事就是把 harness 的页面模型校准到 0.2.2-rc.1**，否则后面所有结论都建立在旧假设上。§2.3 里 `mobile_form` 已经是实测（`plugin_page_harness_test.dart`），但页面模型仍是 0.2.1-rc.4；表格与弹窗两个 fixture 还没有接。
+**PR-1 的第一件事就是把 harness 的页面模型校准到 0.2.2-rc.1**，否则后面所有结论都建立在旧假设上。§2.3 的三条判定都已经是实测（`plugin_page_harness_test.dart`），但页面模型仍是 0.2.1-rc.4。
 
 ## 2. 现状审计
 
@@ -64,13 +64,13 @@
 
 ### 2.3 三个 fixture 的判定
 
-fixture 在 `app/test/plugins/islands/fixtures/`。`island_page_harness.mjs` 新增了 `plugin` target：把插件的页面画进官方设置 section，跑真实的 `island.js`，输出它改了哪些节点的哪些内联样式、留了哪些标记（`changed` / `cards` / `wide` / `residual`）。`mobile_form` 已经接上（`plugin_page_harness_test.dart`），表格与弹窗待补。
+fixture 在 `app/test/plugins/islands/fixtures/`。`island_page_harness.mjs` 新增了 `plugin` target：把插件的页面画进官方设置 section，跑真实的 `island.js`，输出它改了哪些节点的哪些内联样式、留了哪些标记（`changed` / `cards` / `wide` / `residual`）。三个 fixture 都已接上（`plugin_page_harness_test.dart`，5 个用例）。
 
 | fixture | 应达到 | 会出现什么 |
 |---|---|---|
 | `mobile_form.html` | L1 | **实测**：`toolbar`、`row-api`、`row-model` 三个 flex 行都被写 `flexWrap: wrap`——工具栏碰巧对了，两个 label+控件行换行后 label 仍是 `width:140px; text-align:right`，控件仍被挤出 frame，**不到 L1**；`card-summary` 被改 `backgroundColor` / `borderColor` / `borderRadius` 并留下 `data-dsh-go-card`；`residual` 列出所有被碰过的节点，**没有一处被撤销**。`.actions` 吸底条在键盘下的问题没有规则覆盖 |
-| `mobile_table.html` | L1，卡片网格到 L2 | `<table>` 不被任何规则处理，只剩 CSS `max-width`；`min-width:900px` 会让 frame 出现横向滚动（可访问，算 L1）；`.cards` 3 列 → 被压成 1 列（正确）；`.filters` 会被 wrap（可接受） |
-| `mobile_dialog_tabs.html` | L1 | `.dialog` 是 `position:fixed` 560×620，横屏可用高约 360 时底部「取消 / 确认」在视口外，**无任何规则覆盖（L0 不达标）**；`.tabs` 6 项 `nowrap` 超宽，最后两个 tab 不可达，**无规则** |
+| `mobile_table.html` | L1，卡片网格到 L2 | **实测**：`cards` 的 `gridTemplateColumns` 被改成 `minmax(0, 1fr)`（卡片网格压成 1 列，正确）；`filters` 被 wrap（可接受）；`data-table` **没有任何规则**，只被标成 wide，靠 `island_mobile.css` 的横向滚动兜住（可访问，算 L1）。注意 3-up 卡片宽度 180 < frame 的 55%，所以没有触发卡片重绘——重绘只在近满宽的卡片上发生 |
+| `mobile_dialog_tabs.html` | L1 | **实测**：`dialog` 与 `dialog-body` **完全没有规则**——620px 高的固定弹窗在 360px 高的 frame 里，底部「取消 / 确认」落在视口外（L0 不达标）；`tabs` 只拿到通用的 `flexWrap: wrap`，不是横向滚动，选中项也不会被 `scrollIntoView`；`dialog-footer` 被 wrap（无害） |
 
 ### 2.4 审计结论
 
@@ -137,7 +137,7 @@ enum MobileAdaptMode { pluginResponsive, automatic, compatibility, desktop }
 
 | PR | 内容 | 验收 |
 |---|---|---|
-| **PR-1 基座与可测性** | ~~给 `island_page_harness.mjs` 加 `plugin` target~~（已做，`mobile_form` 跑通）；**剩余**：把页面模型校准到 0.2.2-rc.1、接 `mobile_table` / `mobile_dialog_tabs` 两个 fixture、`Diagnostics` 只读输出（包名、slot、模式、宽度、命中的规则、降级原因） | 三个 fixture 都能输出 `changed` / `residual`；同一 fixture 跑两次结果一致（幂等） |
+| **PR-1 基座与可测性** | ~~`plugin` target + 三个 fixture~~（已做，5 个用例）；**剩余**：把页面模型校准到 0.2.2-rc.1、`Diagnostics` 只读输出（包名、slot、模式、宽度、命中的规则、降级原因）、幂等断言 | 三个 fixture 都能输出 `changed` / `residual`；同一 fixture 跑两次结果一致 |
 | **PR-2 原生 Seat** | `plugin_seat_page` 按 form 分流（内容型滚动、实时面板才等分）；`seat_island` 补顶部/横屏/键盘 inset 且不与 `SafeArea` 叠加；`SettingsTile` 窄屏长文本 | 320/360/393px + 200% 字号可操作；键盘不遮保存条 |
 | **PR-3 Web 适配核心** | `fitToWidth()` → `MobileLayoutController`（ResizeObserver + MutationObserver + `requestAnimationFrame` 批处理 + 节点/时间预算 + `changed` 表可撤销）；新增 `island_mobile_components.css`；实现 §5 六条规则 | 三个 fixture 达到 L1；变宽/卸载后 `residual` 为空；单帧 ≤8ms |
 | **PR-4 双宿主收尾** | 同一套规则接进 `dsh_web_phone.css` 的插件 slot 段（只碰那 86 行）；与「网页版手机布局」开关联动；弹窗/触控/旋转专项；真机记录 | 关掉开关后 DOM 无残留标记；Android 真机截图 + 步骤 |

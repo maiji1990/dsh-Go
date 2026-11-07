@@ -42,9 +42,11 @@ void main() {
     return out;
   }
 
-  Map<String, Object?> formScenario() =>
-      jsonDecode(File('test/plugins/islands/fixtures/mobile_form.scenario.json').readAsStringSync())
+  Map<String, Object?> scenario(String name) =>
+      jsonDecode(File('test/plugins/islands/fixtures/$name.scenario.json').readAsStringSync())
           as Map<String, Object?>;
+
+  Map<String, Object?> formScenario() => scenario('mobile_form');
 
   test('a plugin form page is reached through the settings section', () async {
     final out = await run(formScenario());
@@ -76,5 +78,39 @@ void main() {
     expect((card['props'] as Map<String, Object?>).keys, containsAll(['backgroundColor', 'borderRadius']));
     // No undo path at all: everything the island touched stays touched.
     expect((out['residual'] as List), isNotEmpty);
+  }, skip: skip);
+
+  test('a card grid collapses, but an eight-column table is only scrolled', () async {
+    final out = await run(scenario('mobile_table'));
+    final byNode = {
+      for (final c in (out['changed'] as List).cast<Map<String, Object?>>())
+        c['node'] as String: c['props'] as Map<String, Object?>,
+    };
+
+    // The 3-up card grid is the shape the collapse rule is for.
+    expect(byNode['cards'], containsPair('gridTemplateColumns', 'minmax(0, 1fr)'));
+    // The filter chips wrap instead of being squeezed.
+    expect(byNode['filters'], containsPair('flexWrap', 'wrap'));
+    // The 8-column table is a record set: no rule touches it, it is only
+    // marked as wide (island_mobile.css gives that a horizontal scroller).
+    expect(byNode['data-table'], isNull);
+    expect((out['wide'] as List), contains('data-table'));
+  }, skip: skip);
+
+  test('a fixed-size dialog keeps its height and loses its footer', () async {
+    final out = await run(scenario('mobile_dialog_tabs'));
+    final byNode = {
+      for (final c in (out['changed'] as List).cast<Map<String, Object?>>())
+        c['node'] as String: c['props'] as Map<String, Object?>,
+    };
+
+    // Nothing clamps a 620px dialog to the 360px frame: the footer sits below
+    // the viewport. A `dialog.fit` rule is what PR-3 adds.
+    expect(byNode['dialog'], isNull);
+    expect(byNode['dialog-body'], isNull);
+    // The tab strip only gets the generic flex wrap — it is not a horizontal
+    // scroller and the selected tab is not brought into view.
+    expect(byNode['tabs'], containsPair('flexWrap', 'wrap'));
+    expect((byNode['tabs'] as Map).keys, isNot(contains('overflowX')));
   }, skip: skip);
 }
