@@ -22,10 +22,10 @@
 | Flutter / Dart | 3.47.7 / 3.13.5 | `.github/workflows/ci.yml` 的 `FLUTTER_VERSION` |
 | DSH | `0.2.2-rc.1` | `runtime/build-runtime.sh` 的 `DSH_VERSION` |
 | 运行时 | `r17-dsh0.2.2-rc.1-node24.22.1-ubuntu24.04.5-3c4c919cd37a` | 已发布的 runtime Release |
-| 现有 JS 测试基座 | `app/test/plugins/islands/support/island_page_harness.mjs`（node，无 DOM 库，虚拟时钟） | 由 `island_view_target_test.dart`、`island_names_test.dart` 调用 |
-| 该基座的模型版本 | **DSH 0.2.1-rc.4**（`island_page_harness.mjs:6-29` 注释） | 比基线旧两个版本 |
+| 现有 JS 测试基座 | `app/test/plugins/islands/support/island_page_harness.mjs`（node，无 DOM 库，虚拟时钟；`view` / `panel` / `settings` / `rightbar` / `plugin` 五个 target） | 由 `island_view_target_test.dart`、`island_names_test.dart`、`plugin_page_harness_test.dart` 调用 |
+| 该基座的模型版本 | **DSH 0.2.2-rc.1**（已按 r17 的 `dsh-prefix` 校准） | 核对过的钩子：`[data-conversation-tabs]`、各 `[data-slot=…]`、`[data-shortcut-modal]`、`[data-sidebar-right-tab]`、`[data-ds-dark-theme]`、`更多会话视图`；0.2.2 的 phone 壳（drawer + `inert`）用 `inertShell` 建模 |
 
-**PR-1 的第一件事就是把 harness 的页面模型校准到 0.2.2-rc.1**，否则后面所有结论都建立在旧假设上。§2.3 的三条判定都已经是实测（`plugin_page_harness_test.dart`），但页面模型仍是 0.2.1-rc.4。
+harness 的页面模型已按 r17 的 `dsh-prefix` 校准到 0.2.2-rc.1（§1 最后一行列出核对过的钩子）。**上游每次同步 DSH 版本后要重跑这次核对**：钩子被改名时，harness 会先坏，比 App 坏得早，这是它的价值。
 
 ## 2. 现状审计
 
@@ -137,7 +137,7 @@ enum MobileAdaptMode { pluginResponsive, automatic, compatibility, desktop }
 
 | PR | 内容 | 验收 |
 |---|---|---|
-| **PR-1 基座与可测性** | ~~`plugin` target + 三个 fixture~~（已做，5 个用例）；**剩余**：把页面模型校准到 0.2.2-rc.1、`Diagnostics` 只读输出（包名、slot、模式、宽度、命中的规则、降级原因）、幂等断言 | 三个 fixture 都能输出 `changed` / `residual`；同一 fixture 跑两次结果一致 |
+| **PR-1 基座与可测性** | ✅ 已完成：`plugin` target + 三个 fixture + 页面模型校准到 0.2.2-rc.1 + `diagnostics`（slot / mode / width / rules / cards / wide / inertShell / shellStillInert）+ 幂等断言（同一 fixture 跑两次 `changed` 与 `diagnostics` 必须一致） | `flutter test test/plugins/islands/` 83 个用例全绿 |
 | **PR-2 原生 Seat** | `plugin_seat_page` 按 form 分流（内容型滚动、实时面板才等分）；`seat_island` 补顶部/横屏/键盘 inset 且不与 `SafeArea` 叠加；`SettingsTile` 窄屏长文本 | 320/360/393px + 200% 字号可操作；键盘不遮保存条 |
 | **PR-3 Web 适配核心** | `fitToWidth()` → `MobileLayoutController`（ResizeObserver + MutationObserver + `requestAnimationFrame` 批处理 + 节点/时间预算 + `changed` 表可撤销）；新增 `island_mobile_components.css`；实现 §5 六条规则 | 三个 fixture 达到 L1；变宽/卸载后 `residual` 为空；单帧 ≤8ms |
 | **PR-4 双宿主收尾** | 同一套规则接进 `dsh_web_phone.css` 的插件 slot 段（只碰那 86 行）；与「网页版手机布局」开关联动；弹窗/触控/旋转专项；真机记录 | 关掉开关后 DOM 无残留标记；Android 真机截图 + 步骤 |
@@ -145,7 +145,8 @@ enum MobileAdaptMode { pluginResponsive, automatic, compatibility, desktop }
 ## 7. 测试
 
 - **复用现有基座**：`island_page_harness.mjs` 的虚拟时钟 + 手写 DOM 模型（node，无第三方 DOM 库）。不要引入 jsdom/jest——仓库没有这些依赖，CI 也没装。
-- **`island_page_harness.mjs` 的 `plugin` target**（已实现）：`target: "plugin"` + `pluginDom`（fixture 的 JSON 模型，`{name, tag, attrs, style, box, scroll, kids}`）+ `width`，输出 `{changed: [{node, props}], cards, wide, residual}`。fixture 的 HTML 是给人看的参照，JSON 场景是给 harness 跑的同一页面，两者改一处要一起改。
+- **`island_page_harness.mjs` 的 `plugin` target**（已实现）：`target: "plugin"` + `pluginDom`（fixture 的 JSON 模型，`{name, tag, attrs, style, box, scroll, kids}`）+ `width` / `frameHeight` / `inertShell`，输出 `{changed, cards, wide, residual, diagnostics}`。fixture 的 HTML 是给人看的参照，JSON 场景是给 harness 跑的同一页面，两者改一处要一起改。
+- **已自动化的两条**：`diagnostics`（哪个 slot、什么模式、多宽、命中了哪些规则、清没清 inert）与**幂等**（同一 fixture 跑两次，`changed` 与 `diagnostics` 必须逐字节一致）。`residual` 为空是可撤销性的判据，由 PR-3 的测试来收紧。
 - **判据**：幂等（两次运行 `changed` 相同）、可逆（变宽后 `residual` 为空）、预算（单帧 ≤8ms / ≤200 节点）、作用域（`data-slot` 之外的节点零改动）。
 - **Flutter**：`app/test/plugins/mobile/` 下 widget/golden（320/360/393/480/600），字号 1.0/1.3/2.0。
 - **真机**：Android 11 与 Android 15 各一台，记录截图、系统版本、步骤。

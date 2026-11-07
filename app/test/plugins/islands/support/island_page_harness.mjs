@@ -1,9 +1,18 @@
 // Runs assets/islands/island.js for a navigated island (a conversation view,
-// a sidebar panel, a settings section, a right pane tab) against a model of
-// DSH Web 0.2.1-rc.4's page (node, no DOM library) and prints what the
-// island said and did, as JSON. Used by
-// test/plugins/islands/island_view_target_test.dart and
-// island_names_test.dart.
+// a sidebar panel, a settings section, a right pane tab, or a plugin's own
+// page) against a model of DSH Web 0.2.2-rc.1's page (node, no DOM library)
+// and prints what the island said and did, as JSON. Used by
+// test/plugins/islands/island_view_target_test.dart,
+// island_names_test.dart and plugin_page_harness_test.dart.
+//
+// Calibrated against the tree the app ships (runtime r17,
+// `runtime/.work/<abi>/dsh-prefix`, DSH 0.2.2-rc.1): `[data-conversation-tabs]`,
+// `[data-slot=…]` for every slot modelled here, `[data-shortcut-modal]`,
+// `[data-sidebar-right-tab]`, `[data-ds-dark-theme]` and the 「更多会话视图」
+// label all still exist there. 0.2.2 is also where the official layout gained
+// its own drawer below 768px and marks what the drawer covers `inert`; the
+// `plugin` target can model that shell (`inertShell`) so `uninert()` is
+// exercised.
 //
 //   node island_page_harness.mjs <island.js> <scenario JSON>
 //
@@ -29,10 +38,15 @@
 //             `dsh.sidebar-right.v1.<session>` (`bySession.<s>.layout`).
 //
 // Scenario (all):
-//   target    'view' | 'panel' | 'settings' | 'rightbar' (default 'view')
+//   target    'view' | 'panel' | 'settings' | 'rightbar' | 'plugin' (default 'view')
 //   cell      the id asked for;  names  its names (zh, en)
 //   occupants {slot: [{cell, label}]}  what dsh-go-bridge reports (adds the bridge)
 //   run       virtual ms to run (default 60000)
+//   inertShell  mark the page inert like 0.2.2's phone shell does while the
+//             official drawer is closed (the island must clear it)
+// plugin:    width / frameHeight (the frame the island measures), sectionLabel,
+//            pluginDom (the plugin's page: {name, tag, attrs, text, display,
+//            style, box, scroll, kids}), inertShell
 // view:      views [{id, label, menu?}], stored, persist (false: a pick is
 //            not recorded), rewrites [ms], later {at, view}, pagehide
 // panel:     panels [{id, label}], active, sessions [titles] (conversation
@@ -49,6 +63,10 @@
 //   clicks    every click on a modelled control
 //   shown     what the page draws at the end (view, panel, section, active tab kind)
 //   island    what the outlet the island shows draws (its content's model id)
+// plugin adds: changed [{node, props}] (inline style island.js wrote),
+//   cards / wide (nodes it marked), residual (everything it touched, i.e. what
+//   a wider frame or a toggle would have to undo), and diagnostics
+//   {slot, mode, width, rules, cards, wide, inertShell, shellStillInert}.
 import fs from 'node:fs';
 import vm from 'node:vm';
 
@@ -466,6 +484,9 @@ if (target === 'settings' || target === 'plugin') {
       const options = new El('div', { class: 'options' });
       // The scrolling section frame the island measures (frameFor → boxParent).
       options.box = { width: (s.width || 344) + 16, height: s.frameHeight || 640 };
+      // 0.2.2 marks what the official modal covers inert; the island clears the
+      // ones above its own frame, so the plugin's page stays interactive.
+      if (s.inertShell) body.setAttribute('inert', '');
       slot = outlet('settings.section');
       options.append(slot);
       content.append(button({}, '关闭', 'close', () => {}, true), options);
@@ -700,6 +721,26 @@ if (target === 'plugin') {
   out.residual = nodes
     .filter((e) => Object.keys(e._styleProps).length || e.hasAttribute('data-dsh-go-card') || e.hasAttribute('data-dsh-go-mobile-wide'))
     .map((e) => e.reportName);
+  // Which named rule produced each write (docs/design/plugin-mobile-adaptation.md
+  // §5). island.js writes properties, not rule ids, so this is the mapping.
+  const RULES = {
+    flexWrap: 'flex.wrap',
+    gridTemplateColumns: 'grid.collapse',
+    backgroundColor: 'card.restyle',
+    borderColor: 'card.restyle',
+    borderRadius: 'card.restyle',
+  };
+  out.diagnostics = {
+    slot: 'settings.section',
+    mode: 'page',
+    width: s.width ?? null,
+    rules: [...new Set(out.changed.flatMap((c) => Object.keys(c.props).map((k) => RULES[k]).filter(Boolean)))].sort(),
+    cards: out.cards,
+    wide: out.wide,
+    // The island cleared what the official shell marked inert above its frame.
+    inertShell: !!s.inertShell,
+    shellStillInert: body.hasAttribute('inert'),
+  };
 }
 process.stdout.write(JSON.stringify(out));
 process.exit(0);

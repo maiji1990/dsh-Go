@@ -1,56 +1,177 @@
 {
   "target": "plugin",
   "cell": "plugin-cell",
-  "names": ["插件设置"],
+  "names": [
+    "插件设置"
+  ],
   "sectionLabel": "插件设置",
   "width": 344,
   "frameHeight": 640,
   "run": 8000,
+  "inertShell": true,
   "pluginDom": {
     "name": "page",
-    "box": {"width": 344, "height": 900},
+    "box": {
+      "width": 344,
+      "height": 900
+    },
     "kids": [
       {
         "name": "toolbar",
         "display": "flex",
-        "style": {"display": "flex", "flexDirection": "row"},
-        "box": {"width": 560, "height": 36},
-        "scroll": {"width": 560, "height": 36},
+        "style": {
+          "display": "flex",
+          "flexDirection": "row"
+        },
+        "box": {
+          "width": 560,
+          "height": 36
+        },
+        "scroll": {
+          "width": 560,
+          "height": 36
+        },
         "kids": [
-          {"name": "tb-import", "tag": "button", "text": "导入", "box": {"width": 60, "height": 30}},
-          {"name": "tb-export", "tag": "button", "text": "导出", "box": {"width": 60, "height": 30}},
-          {"name": "tb-check", "tag": "button", "text": "校验", "box": {"width": 60, "height": 30}},
-          {"name": "tb-reset", "tag": "button", "text": "重置默认", "box": {"width": 88, "height": 30}},
-          {"name": "tb-log", "tag": "button", "text": "查看日志", "box": {"width": 88, "height": 30}}
+          {
+            "name": "tb-import",
+            "tag": "button",
+            "text": "导入",
+            "box": {
+              "width": 60,
+              "height": 30
+            }
+          },
+          {
+            "name": "tb-export",
+            "tag": "button",
+            "text": "导出",
+            "box": {
+              "width": 60,
+              "height": 30
+            }
+          },
+          {
+            "name": "tb-check",
+            "tag": "button",
+            "text": "校验",
+            "box": {
+              "width": 60,
+              "height": 30
+            }
+          },
+          {
+            "name": "tb-reset",
+            "tag": "button",
+            "text": "重置默认",
+            "box": {
+              "width": 88,
+              "height": 30
+            }
+          },
+          {
+            "name": "tb-log",
+            "tag": "button",
+            "text": "查看日志",
+            "box": {
+              "width": 88,
+              "height": 30
+            }
+          }
         ]
       },
       {
         "name": "row-api",
         "display": "flex",
-        "style": {"display": "flex", "flexDirection": "row", "borderTopLeftRadius": "0px", "backgroundColor": "transparent"},
-        "box": {"width": 560, "height": 32},
-        "scroll": {"width": 560, "height": 32},
+        "style": {
+          "display": "flex",
+          "flexDirection": "row",
+          "borderTopLeftRadius": "0px",
+          "backgroundColor": "transparent"
+        },
+        "box": {
+          "width": 560,
+          "height": 32
+        },
+        "scroll": {
+          "width": 560,
+          "height": 32
+        },
         "kids": [
-          {"name": "label-api", "tag": "label", "text": "接口地址", "box": {"width": 140, "height": 20}},
-          {"name": "input-api", "tag": "input", "box": {"width": 400, "height": 30}}
+          {
+            "name": "label-api",
+            "tag": "label",
+            "text": "接口地址",
+            "box": {
+              "width": 140,
+              "height": 20
+            }
+          },
+          {
+            "name": "input-api",
+            "tag": "input",
+            "box": {
+              "width": 400,
+              "height": 30
+            }
+          }
         ]
       },
       {
         "name": "row-model",
         "display": "flex",
-        "style": {"display": "flex", "flexDirection": "row"},
-        "box": {"width": 560, "height": 32},
-        "scroll": {"width": 560, "height": 32},
+        "style": {
+          "display": "flex",
+          "flexDirection": "row"
+        },
+        "box": {
+          "width": 560,
+          "height": 32
+        },
+        "scroll": {
+          "width": 560,
+          "height": 32
+        },
         "kids": [
-          {"name": "label-model", "tag": "label", "text": "模型", "box": {"width": 140, "height": 20}},
-          {"name": "select-model", "tag": "select", "box": {"width": 400, "height": 30}}
+          {
+            "name": "label-model",
+            "tag": "label",
+            "text": "模型",
+            "box": {
+              "width": 140,
+              "height": 20
+            }
+          },
+          {
+            "name": "select-model",
+            "tag": "select",
+            "box": {
+              "width": 400,
+              "height": 30
+            }
+          }
         ]
       },
       {
         "name": "card-summary",
-        "style": {"borderTopLeftRadius": "12px", "backgroundColor": "rgba(0, 0, 0, 0.04)"},
-        "box": {"width": 560, "height": 120},
-        "kids": [{"name": "card-title", "tag": "h4", "text": "今日用量", "box": {"width": 120, "height": 24}}]
+        "style": {
+          "borderTopLeftRadius": "12px",
+          "backgroundColor": "rgba(0, 0, 0, 0.04)"
+        },
+        "box": {
+          "width": 560,
+          "height": 120
+        },
+        "kids": [
+          {
+            "name": "card-title",
+            "tag": "h4",
+            "text": "今日用量",
+            "box": {
+              "width": 120,
+              "height": 24
+            }
+          }
+        ]
       }
     ]
   }

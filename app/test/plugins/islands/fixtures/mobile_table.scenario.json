@@ -1,64 +1,223 @@
 {
   "target": "plugin",
   "cell": "plugin-cell",
-  "names": ["插件设置"],
+  "names": [
+    "插件设置"
+  ],
   "sectionLabel": "插件设置",
   "width": 344,
   "frameHeight": 640,
   "run": 8000,
+  "inertShell": true,
   "pluginDom": {
     "name": "page",
-    "box": {"width": 344, "height": 900},
+    "box": {
+      "width": 344,
+      "height": 900
+    },
     "kids": [
       {
         "name": "filters",
         "display": "flex",
-        "style": {"display": "flex", "flexDirection": "row"},
-        "box": {"width": 560, "height": 32},
-        "scroll": {"width": 560, "height": 32},
+        "style": {
+          "display": "flex",
+          "flexDirection": "row"
+        },
+        "box": {
+          "width": 560,
+          "height": 32
+        },
+        "scroll": {
+          "width": 560,
+          "height": 32
+        },
         "kids": [
-          {"name": "chip-all", "tag": "button", "text": "全部", "box": {"width": 56, "height": 28}},
-          {"name": "chip-running", "tag": "button", "text": "运行中", "box": {"width": 72, "height": 28}},
-          {"name": "chip-paused", "tag": "button", "text": "已暂停", "box": {"width": 72, "height": 28}},
-          {"name": "chip-failed", "tag": "button", "text": "失败", "box": {"width": 56, "height": 28}}
+          {
+            "name": "chip-all",
+            "tag": "button",
+            "text": "全部",
+            "box": {
+              "width": 56,
+              "height": 28
+            }
+          },
+          {
+            "name": "chip-running",
+            "tag": "button",
+            "text": "运行中",
+            "box": {
+              "width": 72,
+              "height": 28
+            }
+          },
+          {
+            "name": "chip-paused",
+            "tag": "button",
+            "text": "已暂停",
+            "box": {
+              "width": 72,
+              "height": 28
+            }
+          },
+          {
+            "name": "chip-failed",
+            "tag": "button",
+            "text": "失败",
+            "box": {
+              "width": 56,
+              "height": 28
+            }
+          }
         ]
       },
       {
         "name": "data-table",
         "tag": "table",
-        "style": {"display": "table"},
-        "box": {"width": 900, "height": 120},
-        "scroll": {"width": 900, "height": 120},
+        "style": {
+          "display": "table"
+        },
+        "box": {
+          "width": 900,
+          "height": 120
+        },
+        "scroll": {
+          "width": 900,
+          "height": 120
+        },
         "kids": [
           {
             "name": "data-head",
             "tag": "thead",
-            "style": {"display": "table-header-group"},
+            "style": {
+              "display": "table-header-group"
+            },
             "kids": [
-              {"name": "head-row", "tag": "tr", "style": {"display": "table-row"},
-               "kids": [
-                 {"name": "th-name", "tag": "th", "text": "名称", "box": {"width": 120, "height": 32}},
-                 {"name": "th-state", "tag": "th", "text": "状态", "box": {"width": 90, "height": 32}},
-                 {"name": "th-model", "tag": "th", "text": "模型", "box": {"width": 140, "height": 32}},
-                 {"name": "th-created", "tag": "th", "text": "创建时间", "box": {"width": 150, "height": 32}},
-                 {"name": "th-last", "tag": "th", "text": "最后运行", "box": {"width": 150, "height": 32}},
-                 {"name": "th-cost", "tag": "th", "text": "耗时", "box": {"width": 80, "height": 32}},
-                 {"name": "th-token", "tag": "th", "text": "Token", "box": {"width": 90, "height": 32}},
-                 {"name": "th-actions", "tag": "th", "text": "操作", "box": {"width": 110, "height": 32}}
-               ]}
+              {
+                "name": "head-row",
+                "tag": "tr",
+                "style": {
+                  "display": "table-row"
+                },
+                "kids": [
+                  {
+                    "name": "th-name",
+                    "tag": "th",
+                    "text": "名称",
+                    "box": {
+                      "width": 120,
+                      "height": 32
+                    }
+                  },
+                  {
+                    "name": "th-state",
+                    "tag": "th",
+                    "text": "状态",
+                    "box": {
+                      "width": 90,
+                      "height": 32
+                    }
+                  },
+                  {
+                    "name": "th-model",
+                    "tag": "th",
+                    "text": "模型",
+                    "box": {
+                      "width": 140,
+                      "height": 32
+                    }
+                  },
+                  {
+                    "name": "th-created",
+                    "tag": "th",
+                    "text": "创建时间",
+                    "box": {
+                      "width": 150,
+                      "height": 32
+                    }
+                  },
+                  {
+                    "name": "th-last",
+                    "tag": "th",
+                    "text": "最后运行",
+                    "box": {
+                      "width": 150,
+                      "height": 32
+                    }
+                  },
+                  {
+                    "name": "th-cost",
+                    "tag": "th",
+                    "text": "耗时",
+                    "box": {
+                      "width": 80,
+                      "height": 32
+                    }
+                  },
+                  {
+                    "name": "th-token",
+                    "tag": "th",
+                    "text": "Token",
+                    "box": {
+                      "width": 90,
+                      "height": 32
+                    }
+                  },
+                  {
+                    "name": "th-actions",
+                    "tag": "th",
+                    "text": "操作",
+                    "box": {
+                      "width": 110,
+                      "height": 32
+                    }
+                  }
+                ]
+              }
             ]
           },
           {
             "name": "data-body",
             "tag": "tbody",
-            "style": {"display": "table-row-group"},
+            "style": {
+              "display": "table-row-group"
+            },
             "kids": [
-              {"name": "body-row", "tag": "tr", "style": {"display": "table-row"},
-               "kids": [
-                 {"name": "td-name", "tag": "td", "text": "日报生成", "box": {"width": 120, "height": 40}},
-                 {"name": "td-state", "tag": "td", "text": "运行中", "box": {"width": 90, "height": 40}},
-                 {"name": "td-model", "tag": "td", "text": "deepseek-chat", "box": {"width": 140, "height": 40}}
-               ]}
+              {
+                "name": "body-row",
+                "tag": "tr",
+                "style": {
+                  "display": "table-row"
+                },
+                "kids": [
+                  {
+                    "name": "td-name",
+                    "tag": "td",
+                    "text": "日报生成",
+                    "box": {
+                      "width": 120,
+                      "height": 40
+                    }
+                  },
+                  {
+                    "name": "td-state",
+                    "tag": "td",
+                    "text": "运行中",
+                    "box": {
+                      "width": 90,
+                      "height": 40
+                    }
+                  },
+                  {
+                    "name": "td-model",
+                    "tag": "td",
+                    "text": "deepseek-chat",
+                    "box": {
+                      "width": 140,
+                      "height": 40
+                    }
+                  }
+                ]
+              }
             ]
           }
         ]
@@ -66,16 +225,85 @@
       {
         "name": "cards",
         "display": "grid",
-        "style": {"display": "grid", "gridTemplateColumns": "minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)"},
-        "box": {"width": 560, "height": 140},
-        "scroll": {"width": 560, "height": 140},
+        "style": {
+          "display": "grid",
+          "gridTemplateColumns": "minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)"
+        },
+        "box": {
+          "width": 560,
+          "height": 140
+        },
+        "scroll": {
+          "width": 560,
+          "height": 140
+        },
         "kids": [
-          {"name": "card-1", "box": {"width": 180, "height": 120}, "style": {"borderTopLeftRadius": "8px", "backgroundColor": "rgba(0, 0, 0, 0.04)"},
-           "kids": [{"name": "card-1-title", "tag": "h4", "text": "今日对话", "box": {"width": 90, "height": 24}}]},
-          {"name": "card-2", "box": {"width": 180, "height": 120}, "style": {"borderTopLeftRadius": "8px", "backgroundColor": "rgba(0, 0, 0, 0.04)"},
-           "kids": [{"name": "card-2-title", "tag": "h4", "text": "今日 Token", "box": {"width": 120, "height": 24}}]},
-          {"name": "card-3", "box": {"width": 180, "height": 120}, "style": {"borderTopLeftRadius": "8px", "backgroundColor": "rgba(0, 0, 0, 0.04)"},
-           "kids": [{"name": "card-3-title", "tag": "h4", "text": "失败任务", "box": {"width": 90, "height": 24}}]}
+          {
+            "name": "card-1",
+            "box": {
+              "width": 180,
+              "height": 120
+            },
+            "style": {
+              "borderTopLeftRadius": "8px",
+              "backgroundColor": "rgba(0, 0, 0, 0.04)"
+            },
+            "kids": [
+              {
+                "name": "card-1-title",
+                "tag": "h4",
+                "text": "今日对话",
+                "box": {
+                  "width": 90,
+                  "height": 24
+                }
+              }
+            ]
+          },
+          {
+            "name": "card-2",
+            "box": {
+              "width": 180,
+              "height": 120
+            },
+            "style": {
+              "borderTopLeftRadius": "8px",
+              "backgroundColor": "rgba(0, 0, 0, 0.04)"
+            },
+            "kids": [
+              {
+                "name": "card-2-title",
+                "tag": "h4",
+                "text": "今日 Token",
+                "box": {
+                  "width": 120,
+                  "height": 24
+                }
+              }
+            ]
+          },
+          {
+            "name": "card-3",
+            "box": {
+              "width": 180,
+              "height": 120
+            },
+            "style": {
+              "borderTopLeftRadius": "8px",
+              "backgroundColor": "rgba(0, 0, 0, 0.04)"
+            },
+            "kids": [
+              {
+                "name": "card-3-title",
+                "tag": "h4",
+                "text": "失败任务",
+                "box": {
+                  "width": 90,
+                  "height": 24
+                }
+              }
+            ]
+          }
         ]
       }
     ]

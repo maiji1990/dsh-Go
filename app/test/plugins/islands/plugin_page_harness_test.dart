@@ -54,6 +54,28 @@ void main() {
     expect((out['messages'] as List).first, containsPair('t', 'ready'));
   }, skip: skip);
 
+  test('diagnostics name the rules and the shell the island had to clear', () async {
+    final out = await run(formScenario());
+    final d = out['diagnostics'] as Map<String, Object?>;
+    expect(d['slot'], 'settings.section');
+    expect(d['mode'], 'page');
+    expect(d['width'], 344);
+    expect(d['rules'], ['card.restyle', 'flex.wrap']);
+    // 0.2.2 marks what the official drawer covers inert; the plugin page only
+    // works if the island clears the ancestors above its frame.
+    expect(d['inertShell'], isTrue);
+    expect(d['shellStillInert'], isFalse);
+  }, skip: skip);
+
+  test('two runs of one fixture report the same writes', () async {
+    for (final name in ['mobile_form', 'mobile_table', 'mobile_dialog_tabs']) {
+      final first = await run(scenario(name));
+      final second = await run(scenario(name));
+      expect(jsonEncode(second['changed']), jsonEncode(first['changed']), reason: name);
+      expect(jsonEncode(second['diagnostics']), jsonEncode(first['diagnostics']), reason: name);
+    }
+  }, skip: skip);
+
   test('today\'s rules wrap the rows instead of stacking them', () async {
     final out = await run(formScenario());
     final changed = (out['changed'] as List).cast<Map<String, Object?>>();
