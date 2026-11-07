@@ -62,10 +62,19 @@ export ANDROID_HOME="$SDK_DIR" ANDROID_SDK_ROOT="$SDK_DIR"
 export PATH="$JDK_DIR/bin:$FLUTTER_DIR/bin:$SDK_DIR/cmdline-tools/latest/bin:$SDK_DIR/platform-tools:$SDK_DIR/emulator:$PATH"
 export PUB_HOSTED_URL="https://pub.flutter-io.cn" FLUTTER_STORAGE_BASE_URL="https://storage.flutter-io.cn"
 
-# Versions Flutter's Gradle plugin defaults to (compileSdk / NDK).
-GRADLE_EXT=$(grep -rlE 'ndkVersion' "$FLUTTER_DIR/packages/flutter_tools/gradle/src/main" | head -1)
-NDK_VERSION=$(grep -oE 'ndkVersion[^"]*"[0-9.]+"' "$GRADLE_EXT" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-COMPILE_SDK=$(grep -oE 'compileSdkVersion[^0-9]*[0-9]+' "$GRADLE_EXT" | grep -oE '[0-9]+$' | head -1)
+# Versions Flutter's Gradle plugin defaults to (compileSdk / NDK). They are
+# Kotlin properties (`val ndkVersion: String = "…"`), so match the assignment
+# rather than a Groovy-style `ndkVersion "…"`; fall back to 3.47's values when
+# the file moves again, so the script never dies on a moved constant.
+GRADLE_EXT=$(grep -rlE 'ndkVersion' "$FLUTTER_DIR/packages/flutter_tools/gradle/src/main" | head -1 || true)
+NDK_VERSION=""
+COMPILE_SDK=""
+if [ -n "$GRADLE_EXT" ]; then
+  NDK_VERSION=$(grep -oE 'ndkVersion:?[[:space:]]*(String)?[[:space:]]*=[[:space:]]*"[0-9.]+"' "$GRADLE_EXT" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+  COMPILE_SDK=$(grep -oE 'compileSdkVersion:?[[:space:]]*(Int)?[[:space:]]*=[[:space:]]*[0-9]+' "$GRADLE_EXT" | grep -oE '[0-9]+$' | head -1 || true)
+fi
+COMPILE_SDK="${COMPILE_SDK:-36}"
+NDK_VERSION="${NDK_VERSION:-28.2.13676358}"
 log "Flutter defaults: compileSdk=$COMPILE_SDK ndk=$NDK_VERSION"
 
 # Building the app requires accepting the Android SDK licenses.
@@ -84,7 +93,9 @@ cat > "$(dirname "$0")/env.sh" <<EOF
 export JAVA_HOME="$JDK_DIR"
 export ANDROID_HOME="$SDK_DIR"
 export ANDROID_SDK_ROOT="$SDK_DIR"
-export PUB_HOSTED_URL="https://pub.flutter-io.cn"
+# The pub mirror lags behind for a few packages (image_picker_ios, …), so
+# `flutter pub get` fails there: keep pub.dev, mirror only the engine artifacts.
+# export PUB_HOSTED_URL="https://pub.flutter-io.cn"
 export FLUTTER_STORAGE_BASE_URL="https://storage.flutter-io.cn"
 export PATH="$JDK_DIR/bin:$FLUTTER_DIR/bin:$SDK_DIR/cmdline-tools/latest/bin:$SDK_DIR/platform-tools:$SDK_DIR/emulator:\$PATH"
 EOF
