@@ -1,13 +1,14 @@
 # dsh-Go 优化清单
 
 > 审查对象：`maiji1990/dsh-Go`（`ccch1mneyyy/dsh-Go` 的 fork）
-> 基线 commit：`3276e9a`（2026-11-02，「merge: 重放本地改动到上游 e685259」）
-> 上游对照：`e685259`（2026-11-02，「Merge pull request #319 from ccch1mneyyy/feat/attachment-streaming-upload」）；上游曾重写历史（旧的 `1207c11` 不在其祖先链里），本地以 e685259 为基线重放，`git rev-list --left-right --count origin/main...HEAD` = `1 0`（只多本次重放提交），**未落后**
+> 基线 commit：`01fa6128`（2026-11-07，「merge: 同步上游 1.0.12」）
+> 上游对照：`d5ad25c5`（1.0.12，2026-11-07 合并，`git rev-list --left-right --count HEAD...upstream/main` = `34 0`，上游已全部并入）
 > 实测 APK：2026-11-02 构建的 1.0.8 arm64 普通包 `versionCode=11021341`，32.5 MB，APK 内无 rootfs，`native-code` 只剩 `arm64-v8a`；离线包 `versionCode=11021351`，148.9 MB，内置 rootfs。两者都是 `compileSdk=36`、`targetSdk=28`
-> 运行时版本：`r14-dsh0.2.1-rc.4-node24.22.1-ubuntu24.04.5-8502f4e42f76`（重放上游补丁后的 arm64 构建；已发布的 `…-53b4fe78516f` 对应重放前的版本，重建后需重新上传）
-> 审查日期：2026-10-31（初版）、2026-11-01（基线刷新：1.0.4 → 1.0.8）、2026-11-02（OPT-02 首启下载）
-> 状态：**进行中**（OPT-01/03/05/06/07/09 已完成，OPT-02 已发布待真机验证，OPT-04 决定保留）
-> 当前进度：第 1 批（OPT-01/09）、第 2 批（OPT-05/06/07）、第 3 批（OPT-02 发布、OPT-03）已完成，OPT-04 决定保留；OPT-02 只剩真机验收；剩余第 4 批。
+> 运行时版本：本地为 `r17-dsh0.2.2-rc.1`（`runtime/build-runtime.sh`）；已发布归档仍是 `r14-dsh0.2.1-rc.4-…`，升级后需重建并重新上传（见 `docs/release.md`）
+> 审查日期：2026-10-31（初版）、2026-11-01（基线刷新：1.0.4 → 1.0.8）、2026-11-02（OPT-02 首启下载）、2026-11-07（同步上游 1.0.12 并复核哪些项被上游接管）
+> 状态：**进行中**（OPT-01 已由上游修复并移除本地实现、OPT-03/06/07/09 保留本地实现、OPT-05 拆分为「上游 CI + 本地两处增量」，OPT-02 已发布待真机验证，OPT-04 决定保留）
+> 当前进度：第 1 批（OPT-01/09）、第 2 批（OPT-05/06/07）、第 3 批（OPT-02 发布、OPT-03）已完成，OPT-04 决定保留；OPT-02 只剩真机验收；第 4 批（OPT-08/10/11/12/13）仍待处理。
+> **上游接管情况（2026-11-07 复核）**：OPT-01（ABI 混入）与 OPT-05（根目录 CI）上游在 1.0.12 里已自行解决，本地对应实现已删除，详见两条目下的「上游已接管」小节。
 > **仓库策略（2026-11-02 确认）**：所有改动只保留在 `maiji1990/dsh-Go`；上游 `ccch1mneyyy/dsh-go` 只作为只读同步来源，**不向上游提交 PR、不推送分支**。发布（Release / runtime 归档）也落在 `maiji1990/dsh-Go`。
 
 ---
@@ -18,12 +19,12 @@
 
 | 编号 | 事项 | 优先级 | 预估收益 | 工作量 |
 |---|---|---|---|---|
-| OPT-01 | arm64/x64 包混入其他 ABI（已修复） | P0 ✅ | −12.8 MB（实测） | 已完成 |
+| OPT-01 | arm64/x64 包混入其他 ABI（上游 `673b1e6` 已修，本地重复实现已删） | P0 ✅ | −13.3 MB（上游实测） | 已完成 |
 | OPT-02 | 158 MB rootfs 跟随每个版本分发（普通包改首启下载） | P0 ◐ | 普通包 34.1 MB；离线包 192.3 MB | 代码完成，发布/真机待验证 |
 | OPT-03 | node_modules 里约 250 MB 可选功能常驻（inspector + Office 转换已移除） | P1 ✅ | rootfs −168.8 MiB（实测） | 已完成 |
 | OPT-04 | WebRTC 原生库常驻（决定保留） | P1（保留） | 不裁剪（P2P 是卖点） | — |
-| OPT-05 | 根目录 CI（analyze / test / 按需 build） | P1 ✅ | 回归前置 | 已完成 |
-| OPT-06 | 985 张 golden 占 304 MB（已无损压缩到 164 MB） | P1 ◐ | 工作区 −140 MB；clone 需历史重写 | 部分完成 |
+| OPT-05 | 根目录 CI（上游已有；本地只保留 build 与 goldens 两个增量） | P1 ✅ | 回归前置 | 已完成 |
+| OPT-06 | 985 张 golden 占 304 MB（曾压到 164 MB；1.0.12 合并后 1005 张 211 MB，待重压） | P1 ◐ | 工作区 −140 MB；clone 需历史重写 | 部分完成 |
 | OPT-07 | analyzer 严格项（strict-casts + 分目录规则） | P2 ✅ | 缺陷前置 | 已完成 |
 | OPT-08 | Gradle 未开缓存/并行 | P2 | 构建时间 | 0.5 天 |
 | OPT-09 | `stop_daemon` 会杀掉同机所有 Gradle daemon | P2 ✅ | 避免互相干扰 | 已完成 |
@@ -138,7 +139,7 @@ EOF
 
 ### OPT-01 arm64 包混入 x86_64 / armeabi-v7a 原生库
 
-- **优先级**：P0　**状态**：**已完成**（2026-11-01，`6e617f9`）　**收益**：−12.8 MB（实测 205.2 → 192.3 MB）
+- **优先级**：P0　**状态**：**已完成（上游 1.0.12 已接管）**（本地 `6e617f9` 先修；2026-11-07 改为依赖上游方案）　**收益**：−13.3 MB（上游实测 206,084,141 → 192,737,999 B）
 - **证据**
 
   ```text
@@ -191,11 +192,14 @@ EOF
      ```
 
 - **验收**：`aapt2 dump badging app-arm64-release.apk | grep native-code` 只输出 `'arm64-v8a'`；APK 至少小 12 MB。
-- **修复（2026-11-01，`6e617f9`）**
-  - `app/android/app/build.gradle.kts` 新增 `androidComponents`：arm64 variant 排除 `lib/x86_64/**`、`lib/armeabi-v7a/**`；x64 variant 排除 `lib/arm64-v8a/**`、`lib/armeabi-v7a/**`。
-  - `tooling/build-apk.sh` 用 `aapt2` 回读 `native-code`，flavor 与 ABI 不匹配时直接构建失败。
-  - 实测 arm64 1.0.8 APK：205,159,980 → **192,315,655 B（192.3 MB）**，`native-code: 'arm64-v8a' 'fonts'`；x64 APK 35.4 MB，`native-code: 'fonts' 'x86_64'`。
-  - 未再逐项打印 `defaultConfig.ndk.abiFilters` 追根因；以 variant 级 `packaging.jniLibs.excludes` 为准，两个 flavor 均已实测生效。
+- **上游已接管（2026-11-07，随 1.0.12 合并）**
+  - 上游提交 `673b1e6 fix(build): each flavor's APK carries only its own ABI` 的诊断与本节一致：Flutter Gradle 插件把 3 个 ABI 写进 `defaultConfig.abiFilters`，flavor 的 `ndk.abiFilters +=` 只是追加。
+  - 上游的修法是 **`app/android/gradle.properties` 里的 `disable-abi-filtering=true`**（让 flavor 过滤器说了算），并在 `tooling/release_assets.py` 增加 `check_abis()`：arm64 / x64 的 APK 只要含别的 ABI 就拒绝发版。
+  - 上游实测：arm64 206,084,141 → **192,737,999 B（−13.3 MB）**，`lib/` 只剩 `arm64-v8a`，`aapt2` 报 `native-code: 'arm64-v8a'`。
+- **本地改动（2026-11-07 调整）**
+  - **已删除**：`app/android/app/build.gradle.kts` 里的 `androidComponents { onVariants { packaging.jniLibs.excludes } }` 四个变体块——与上游根因修法重复。
+  - **保留**：`tooling/build-apk.sh` 用 `aapt2` 回读 `native-code`，flavor 与 ABI 不匹配时构建失败。理由：上游 `check_abis()` 只覆盖 `arm64` / `x64` 两个普通 flavor 的发布路径，`arm64-offline` / `x64-offline` 没有别的拦截。
+- **历史记录（2026-11-01，`6e617f9`）**：本地先用 variant 级 `packaging.jniLibs.excludes` 修过同一问题，实测 205,159,980 → 192,315,655 B，`native-code: 'arm64-v8a' 'fonts'`；1.0.12 合并后改依赖上游方案。
 
 ---
 
@@ -250,13 +254,18 @@ EOF
 
 ### OPT-05 根目录没有 CI（只有 Issue 模板）
 
-- **优先级**：P1　**状态**：**已完成**（2026-11-01，`7ca81f8`）
-- **实现**：新增 `.github/workflows/ci.yml`：
-  - `analyze`：Flutter 3.47.7 + `flutter pub get` + `dart analyze --fatal-infos`；
-  - `test`：4 分片跑完整 `flutter test`；字体固定用 Noto Sans CJK **2.004**（`Sans2.004` 的 OTC 包解到 `$RUNNER_TEMP/noto-cjk`，`DSH_TEST_FONT_DIR` 指向它），避免发行版字体的字形差异让 golden 失败；
-  - `build`：仅在 main 或手动触发，缓存 `runtime/out`，构建 **arm64-offline** 并上传 APK（普通包依赖已发布 runtime URL，CI 没有），避免 PR 被 158 MB 运行时和 Android SDK/NDK 拖慢。
+- **优先级**：P1　**状态**：**已完成（上游 1.0.12 已有根 CI，本地只留增量）**（本地 `7ca81f8` 先建；2026-11-07 复核后改为上游为主）
+- **上游已接管（2026-11-07，随 1.0.12 合并）**：上游自己就有 `.github/workflows/ci.yml`（`changes` / `checks` / `flutter` / `dart` / `runtime` / `android` / `ci-ok`，`url_ok` 门禁在 `pr-gate.yml`），而且踩过同样的坑并已修好：
+  - `dart analyze --fatal-infos` 是 `flutter` job 的一步；
+  - golden 字体按 `NOTO_CJK_VERSION` / `NOTO_EMOJI_VERSION` 从发行版 deb 解出 `NotoSansCJK-{Regular,Bold,Light}.ttc` 并缓存，`DSH_TEST_FONT_DIR` 指向它；
+  - 全局 `TZ: Asia/Shanghai`（分享卡片等渲染本地时间）；
+  - 测试按 `NR % 3 == shard` 三分片，`--concurrency=4`。
+  合并后我们的 `ci.yml` 与上游**逐行相同**（除了下面两条增量），所以字体/时区/分片这些不用再自己维护。
+- **本地保留的增量**
+  - `build` job：`workflow_dispatch` 或 push 到 `main` 时缓存 `runtime/out`、构建 **arm64-offline** 并上传 APK（普通包依赖已发布的 runtime URL，CI 拿不到），避免 PR 被 158 MB 运行时和 Android SDK/NDK 拖慢；`ci-ok` 的 `needs` 里带上它。
+  - `.github/workflows/goldens.yml`（手动触发）：在 CI 环境里 `--update-goldens` 并回传 PNG，用于只有 runner 上才出现的像素差；上游没有对应工作流。
 - **验收**：PR 上 analyze / test 必过；build 在 main / workflow_dispatch 产出 artifact。`market/.github/workflows/` 保持独立。
-- **2026-11-02 让 CI 真正变绿（`0be8a3e`..`3db2655`，run `41452826984` attempt 2 全绿）**：
+- **历史记录：2026-11-02 让 CI 真正变绿（`0be8a3e`..`3db2655`，run `41452826984` attempt 2 全绿）**。第 1、2 条（字体版本、时区）上游用了同样的做法，合并后以 `ci.yml` 里的上游文本为准；第 3 条 `goldens.yml` 仍是本地增量；第 4、5 条与下面的 flaky 修复留在测试文件里。
   1. 字体：`fonts-noto-cjk` 只带 Regular/Bold，测试要 `NotoSansCJK-Light.ttc` → 改下载 `Sans2.004` 的 OTC 包并指向它（发行版字体版本不同也会让字形差 0.04%–1.4%）；
   2. 时区：计时器与分享卡片渲染本地时间，基准图在 UTC+8 生成 → test 任务固定 `TZ=Asia/Shanghai`（`TZ=UTC` 可完整复现全部像素失败）；
   3. 新增 `.github/workflows/goldens.yml`（手动触发）：在 CI 环境里 `--update-goldens` 并上传 PNG，用于只有 runner 上才出现的像素差；
@@ -275,9 +284,10 @@ EOF
   - 其中 20 张（share 卡片 14 + plugin_config 4 + engine_settings 2）先按当前代码用 `flutter test --update-goldens` 重新生成：share 的二维码跟着更新源指向 `maiji1990/dsh-Go`，plugin_config/engine_settings 是 fork 的插件适配文案。
   - 压缩后回归：Linux（WSL）上 share/plugin_config/engine_settings/access 的 golden 全部通过。
 - **未完成 / 注意**：
+  - **2026-11-07 同步 1.0.12 后需要重跑一次**：合并时 220 张 golden 冲突取了上游版本（上游未压缩），当前工作区 golden **1005 张 / 211 MB**（同步前 169 MB）。跑 `tooling/optimize-goldens.sh` 即可压回去，该脚本需要 `oxipng`；本次同步环境里没装 oxipng，**尚未重跑**。
   - Git 历史里的旧 blob 仍在，`.git` 只增不减；要真正缩小 clone，需要重写历史或迁移 LFS（破坏性/协作成本高，需单独决定）。
   - 进一步减少尺寸矩阵、删除不必要的 golden 仍可做，但会改变覆盖率；`site/home/dist`（6.5 MB）仍是构建产物入库。
-- **验收**：工作区 golden 995 张 / 167 MB；clone 目标 < 250 MB 仍需历史处理。
+- **验收**：工作区 golden 1005 张、压缩后回到 ~167 MB（先装满 oxipng 再跑脚本）；clone 目标 < 250 MB 仍需历史处理。
 ---
 
 ### OPT-07 `analysis_options.yaml` 只有 `flutter_lints`
@@ -406,7 +416,7 @@ EOF
   3. golden 仍不在补丁里：本次沿用上游的 PNG，`tooling/optimize-goldens.sh` 需要时可再跑；
   4. 上游新增了 `runtime/patches/zzzzzzz-input-recovery.diff` 并改了 `zzzzzz-session-deletion.diff`、`zzz-title-cache-refresh.diff`、`pins.json`；重放后 runtimeVersion 变为 `…-8502f4e42f76`，已发布的 `…-53b4fe78516f` 需要重新上传。
 - **建议**：
-  1. 同步流程：`git fetch origin` → 确认 `origin/main` 是否包含本地基点 → 分叉则新建 `resync/<sha>` 重放 `git diff <上次同步点> main`（排除 golden）→ 解冲突 → 生成物重跑（l10n / guide / replay_viewer）→ analyze + 测试 → 普通 push（新分支以 origin/main 为祖先，无需 force）；
+  1. 同步流程：`git fetch upstream` → 看 `git merge-base HEAD upstream/main` 是否等于**上次同步点**——**相等说明上游没有重写历史，直接普通 merge 即可**（2026-11-07 同步 1.0.12 就是这样：`merge-base` 仍是 `b4f2d24`，冲突只有 220 张 golden + 9 个文本文件，没有 194 个冲突文件）；不等再新建 `resync/<sha>` 重放 `git diff <上次同步点> main`（排除 golden）→ 解冲突 → 生成物重跑（l10n / guide / replay_viewer）→ analyze + 测试 → 普通 push（新分支以 origin/main 为祖先，无需 force）；
   2. **不向上游提交**：上游仅作只读同步来源（2026-11-02 确认）；
   3. 生成文件（`app/lib/l10n/gen/*`、`app/lib/share_code/replay_viewer.g.dart`）冲突时用对应生成器重跑，不要手改；
   4. golden 冲突按 `docs/testing/goldens.md` 用 `--update-goldens` 重新生成并验证。
