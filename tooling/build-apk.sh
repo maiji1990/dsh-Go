@@ -165,8 +165,10 @@ for i in "${!flavors[@]}"; do
     badge=$("$aapt2" dump badging "$apk" 2>/dev/null | sed -n '/^package:/p' || true)
     [[ $badge == *"versionCode='$code'"* && $badge == *"versionName='$name'"* ]] ||
       die "$f: APK says ${badge:-nothing}; expected versionName '$name' versionCode '$code'"
-    # Flavors are split by ABI; prebuilt AAR libs for another ABI must not ship
-    # (app/android/app/build.gradle.kts excludes them via androidComponents).
+    # Flavors are split by ABI; gradle.properties' disable-abi-filtering makes the
+    # flavor's filter decide, so prebuilt AAR libs for another ABI must not ship.
+    # tooling/release_assets.py checks the same thing at release time, but only
+    # for arm64/x64: the offline flavors are covered here.
     abis=$("$aapt2" dump badging "$apk" 2>/dev/null | sed -n 's/^native-code: //p' || true)
     case "$f:$abis" in
       arm64*:*x86_64* | arm64*:*armeabi-v7a*) die "$f: APK still carries another ABI: ${abis:-nothing}" ;;
