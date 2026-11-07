@@ -11,7 +11,7 @@ const replayViewerPage = r'''<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-StZCW21rzANiD2F7sNtWn6FaAnOqGpZrXRKX2RQY5LY='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-NGzDjkcZ5YLS7k8BuJUyiBTObtSNjpBQ2cjdZbYm9Ks='; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="color-scheme" content="light dark">
 <title>__DSHGO_TITLE__</title>
 <style>/* dsh-go conversation viewer (viewer.js). Shared by the landing page and the
@@ -509,16 +509,24 @@ const replayViewerPage = r'''<!doctype html>
 
   function num(v) { return typeof v === 'number' && isFinite(v) && v >= 0 ? Math.round(v) : null; }
 
+  // Keep the UTF-16 budget without cutting a valid surrogate pair.
+  function textPrefix(v, end) {
+    var last = v.charCodeAt(end - 1);
+    var next = v.charCodeAt(end);
+    if (last >= 0xd800 && last <= 0xdbff && next >= 0xdc00 && next <= 0xdfff) end--;
+    return v.slice(0, end);
+  }
+
   function str(v, max) {
     if (typeof v !== 'string' || !v) return null;
-    return v.length <= max ? v : v.slice(0, max) + '…';
+    return v.length <= max ? v : textPrefix(v, max) + '…';
   }
 
   function line(v, max) {
     if (typeof v !== 'string') return null;
     var t = v.replace(/\s+/g, ' ').trim();
     if (!t) return null;
-    return t.length <= max ? t : t.slice(0, max - 1) + '…';
+    return t.length <= max ? t : textPrefix(t, max - 1) + '…';
   }
 
   function readEntry(e) {
@@ -1738,7 +1746,7 @@ const replayViewerPage = r'''<!doctype html>
 
 
   function fileName(title) {
-    var base = String(title || tr('chat')).replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').trim().slice(0, 40) || tr('chat');
+    var base = textPrefix(String(title || tr('chat')).replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').trim(), 40) || tr('chat');
     return base + '.dshgo';
   }
 
@@ -1883,4 +1891,4 @@ DshgoViewer.boot();
 ''';
 
 /// What the page was built from (test/share_code/replay_viewer_sync_test.dart).
-const replayViewerSourceHash = '868561b7a1b0d6058ce9aa71e870db14f035a7382f8b7065760900162795fdc9';
+const replayViewerSourceHash = '9dd8b465c2db125ce661dd3ed58478c1047ffe683a38f87addb97d4768fd35ff';

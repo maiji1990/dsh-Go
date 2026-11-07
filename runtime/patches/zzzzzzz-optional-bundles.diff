@@ -1,13 +1,14 @@
 # OPT-03: the phone rootfs does not ship the inspector bundle (26 MB of desktop
 # devtools), so it must not be offered as a switchable optional bundle: the
 # plugin manager would otherwise list a package that is not installed.
---- a/node_modules/@deepseek-ai/dsh-app-boot/lib/index.js
-+++ b/node_modules/@deepseek-ai/dsh-app-boot/lib/index.js
-@@ -586,7 +586,6 @@
+# (DSH 0.2.2-rc.1 moved this list from dsh-app-boot to dsh-official-bundles.)
+--- a/node_modules/@deepseek-ai/dsh-official-bundles/lib/index.js
++++ b/node_modules/@deepseek-ai/dsh-official-bundles/lib/index.js
+@@ -41,7 +41,6 @@
  	"@deepseek-ai/dsh-experimental-voice-input-bundle",
  	"@deepseek-ai/dsh-experimental-cot-translation-bundle",
  	"@deepseek-ai/dsh-experimental-auto-review",
 -	"@deepseek-ai/dsh-experimental-inspector-profile",
+ 	"@deepseek-ai/dsh-experimental-liveshare",
  	"@deepseek-ai/dsh-experimental-plugin-market-bundle",
- 	"@deepseek-ai/dsh-experimental-tool-worktree"
- ];
+ 	"@deepseek-ai/dsh-experimental-tool-worktree",

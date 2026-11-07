@@ -26,6 +26,7 @@ import '../../../plugins/seams/seams.dart'
 import '../../../state/engine_settings_state.dart';
 import '../../../state/plugin_config/plugin_config_state.dart';
 import '../../../state/plugins_state.dart';
+import '../../common/app_dialog.dart';
 import '../../common/discard_guard.dart';
 import '../../common/search_capsule.dart';
 import '../../engine_settings/field_row.dart';
@@ -321,7 +322,7 @@ class _PluginConfigPageState extends ConsumerState<PluginConfigPage> {
   Future<bool> _confirmDiscard() async {
     final l10n = context.l10n;
     final colors = DshColors.of(context);
-    final ok = await showDialog<bool>(
+    final ok = await showAppDialog<bool>(
       context: context,
       builder: (dialog) => AlertDialog(
         title: Text(l10n.botsDiscardTitle),
@@ -370,7 +371,7 @@ class _PluginConfigPageState extends ConsumerState<PluginConfigPage> {
   Future<void> _resetAll() async {
     final l10n = context.l10n;
     final colors = DshColors.of(context);
-    final ok = await showDialog<bool>(
+    final ok = await showAppDialog<bool>(
       context: context,
       builder: (dialog) => AlertDialog(
         title: Text(l10n.pluginConfigResetAllTitle),
