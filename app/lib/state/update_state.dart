@@ -626,7 +626,10 @@ class AppUpdateController extends Notifier<AppUpdateState> {
         sources.downloadUrls([own, githubReleaseAsset(release.tag, name)], preferredMirror: mirror);
 
     // An APK already here (built or downloaded before) is checked and kept.
-    var outcome = patch != null && base != null && !File('${dir.path}/${asset.name}').existsSync()
+    // Kept async on purpose: the startup cleanup walk interleaves with it, and
+    // app/test/update/update_startup_cleanup_test asserts that ordering.
+    // ignore: avoid_slow_async_io
+    var outcome = patch != null && base != null && !await File('${dir.path}/${asset.name}').exists()
         ? await downloader.downloadPatched(
             patch: patch,
             base: File(base),
@@ -693,7 +696,8 @@ class AppUpdateController extends Notifier<AppUpdateState> {
   /// 「重试」: install again when the APK is already here, else resume the download.
   Future<void> retry() async {
     final apk = _apk;
-    if (apk != null && apk.file.existsSync()) {
+    // ignore: avoid_slow_async_io
+    if (apk != null && await apk.file.exists()) {
       await install();
     } else {
       await startDownload();
@@ -707,7 +711,10 @@ class AppUpdateController extends Notifier<AppUpdateState> {
   /// before asking and it reads as cancelled. False when it couldn't open.
   Future<bool> installWithSystem() async {
     final apk = _apk;
-    if (!ref.mounted || apk == null || state.busy || !apk.isFor(state) || !apk.file.existsSync()) return false;
+    // ignore: avoid_slow_async_io
+    if (!ref.mounted || apk == null || state.busy || !apk.isFor(state) || !await apk.file.exists()) {
+      return false;
+    }
     return _installer.openWithSystemInstaller(apk.file.path);
   }
 

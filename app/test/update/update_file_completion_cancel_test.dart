@@ -12,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'support.dart';
 
 const _name = 'dsh-go-1.2.0-arm64.apk';
-const _url = 'https://github.com/ccch1mneyyy/dsh-go/releases/download/v1.2.0/$_name';
+final _url = 'https://github.com/$updateRepo/releases/download/v1.2.0/$_name';
 final _bytes = utf8.encode('PK a complete update awaiting its file operation');
 
 enum _Operation { close, rename }
