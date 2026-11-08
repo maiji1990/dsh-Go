@@ -27,15 +27,15 @@ class UiMcpFacadeTest {
         override fun backgroundUnavailable() = "unavailable"
         override fun zone() = ZoneId.of("UTC")
         override fun notifyFix(kind: String) {}
-        override fun beforeHandoff(screen: PhoneScreen): String? { return null }
+        override fun beforeHandoff(screen: PhoneScreen, owner: PhoneTasks.Owner): String? { return null }
         override fun sleep(ms: Long) {}
         override fun system() = object : SystemApi {
-            override fun apps() = listOf(AppEntry("Example", "example.app"))
+            override fun apps() = listOf(AppEntry("Example", PhoneAppIdentity("example.app", 10123)))
             override fun isInstalled(pkg: String) = true
-            override fun launch(app: AppEntry, dispatch: PhoneTasks.SystemDispatch): SysResult = error("unexpected launch")
-            override fun urlTarget(url: String) = error("unexpected URL")
-            override fun openUrl(url: String, target: UrlTarget, dispatch: PhoneTasks.SystemDispatch): SysResult = error("unexpected URL open")
-            override fun intent(spec: IntentSpec, shareTo: AppEntry?, dispatch: PhoneTasks.SystemDispatch): SysResult = error("unexpected intent")
+            override fun prepareLaunch(app: AppEntry): Either<String, SystemLaunch> = error("unexpected launch")
+            override fun prepareUrl(url: String): Either<String, SystemLaunch> = error("unexpected URL")
+            override fun prepareIntent(spec: IntentSpec, selectedApp: AppEntry?): Either<String, SystemLaunch> = error("unexpected intent")
+            override fun launch(plan: SystemLaunch, dispatch: PhoneTasks.SystemDispatch): SysResult = error("unexpected launch")
             override fun notify(title: String, text: String): SysResult = error("unexpected notification")
             override fun clipboardSet(text: String): SysResult = error("unexpected clipboard")
             override fun clipboardGet(): SysResult = error("unexpected clipboard")
@@ -80,7 +80,7 @@ class UiMcpFacadeTest {
         }
         override fun perform(action: PhoneAction): ActionResult { actions += action; writes++; return ActionResult(true, "done", observe(true, false)) }
         override fun collect(screenId: String, listElementId: Int, maxPages: Int, until: String?) = error("unexpected collect")
-        override fun open(packageName: String) = error("unexpected launch")
+        override fun open(target: PhoneAppIdentity) = error("unexpected launch")
     }
     @After fun close() = core.worker.shutdown()
     private fun call(name: String, vararg args: Pair<String, Any?>) = ui.call(name, mapOf("sessionId" to "agent") + args)
@@ -194,9 +194,9 @@ class UiMcpFacadeTest {
     @Test fun mcpResultPublishesStructuredContentOnlyForUnifiedSurface() {
         val request = Json.write(mapOf("jsonrpc" to "2.0", "id" to 1, "method" to "tools/call",
             "params" to mapOf("name" to "ui_snapshot", "arguments" to emptyMap<String, Any?>())))
-        val reply = Json.parse(McpServer(UiToolCatalog.tools, ui::call).handle(request)!!) as Map<*, *>
+        val reply = Json.parse(McpServer(UiToolCatalog.tools, { name, args, _ -> ui.call(name, args) }).handle(request)!!) as Map<*, *>
         assertNotNull((reply["result"] as Map<*, *>)["structuredContent"])
-        val legacy = McpServer(PhoneToolCatalog.listJson(), core::call).handle(request.replace("ui_snapshot", "screen"))!!
+        val legacy = McpServer(PhoneToolCatalog.listJson(), { name, args, _ -> core.call(name, args) }).handle(request.replace("ui_snapshot", "screen"))!!
         assertFalse(legacy.contains("structuredContent"))
     }
     @Test fun globalScrollAlwaysPassesAnElementFromSelectedWindow() {

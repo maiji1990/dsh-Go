@@ -258,7 +258,9 @@ void main() {
 
   testWidgets('手机操控', (tester) async {
     await _check(tester, SettingsPageId.phone, () async {
-      await pumpPhone(tester, const PhoneControlScreen(), size: const Size(390, 3200));
+      // 3600: the English page is taller than the other locales once the
+      // unified-UI row is in it, and an offstage row cannot show its title.
+      await pumpPhone(tester, const PhoneControlScreen(), size: const Size(390, 3600));
     });
   });
 
