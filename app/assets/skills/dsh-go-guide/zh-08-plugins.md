@@ -77,7 +77,7 @@ App 会在安装或更新前核对 npm 注册表声明的摘要；校验不可�
 
 ## 插件手机布局
 
-<!-- nav: commonSettings,hubSettingsInterface,commonWeb,pluginsMobileLayout -->
-`设置 › 界面 › 网页版 › 插件手机布局`
+<!-- nav: commonSettings,hubSettingsInterface,pluginsMobileLayout -->
+`设置 › 界面 › 插件手机布局`
 
 可以关闭插件的自动布局变换。插件独立页面或自带配置界面的右上角菜单可单独选择自动适配、兼容视图、插件响应式或桌面布局，也可恢复默认。某个插件重排后不便操作时，先选兼容视图；主机和插件的数据、设置不会被删除。关闭网页版手机布局还会停用官方网页中的插件适配。未知的 iframe、Shadow DOM 或 Canvas 内容仍由插件自己负责；无法操作时使用「在网页版打开」。

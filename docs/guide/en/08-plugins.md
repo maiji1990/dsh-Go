@@ -77,7 +77,7 @@ When the plugin is missing, this page also offers installation on the current Ho
 
 ## Plugin mobile layout
 
-<!-- nav: commonSettings,hubSettingsInterface,commonWeb,pluginsMobileLayout -->
-`Settings › Interface › Web › Plugin mobile layout`
+<!-- nav: commonSettings,hubSettingsInterface,pluginsMobileLayout -->
+`Settings › Interface › Plugin mobile layout`
 
 This turns automatic plugin layout changes off globally. The menu on a plugin page or its own configuration island lets you choose Automatic, Compatibility view, Plugin responsive or Desktop layout, or return to the default. If a plugin becomes harder to use after rearrangement, select Compatibility view first; host and plugin data and settings are kept. Turning Web phone layout off also stops plugin adaptation in the official web interface. Unknown iframe, Shadow DOM and Canvas content remains the plugin’s responsibility; use Open in DSH Web when needed.
