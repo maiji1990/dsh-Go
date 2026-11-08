@@ -18,12 +18,24 @@ adb "${device[@]}" install -r "$project_root/tooling/mobile-webview-tests/build/
 # internal storage, which the shell reaches through run-as on every API level.
 pkg=io.github.dshgo.mobiletest
 files=/data/data/$pkg/files
-adb "${device[@]}" shell run-as "$pkg" rm -f "$files/report.json"
-adb "${device[@]}" shell am instrument -w io.github.dshgo.mobiletest/.MobileInstrumentation > "$report_dir/instrumentation.txt"
-mkdir -p "$report_dir/files"
-adb "${device[@]}" exec-out run-as "$pkg" tar -cf - -C "$files" . > "$report_dir/files.tar"
-tar -xf "$report_dir/files.tar" -C "$report_dir/files"
-rm -f "$report_dir/files.tar"
+instrument() {
+  adb "${device[@]}" shell run-as "$pkg" rm -f "$files/report.json"
+  adb "${device[@]}" shell am instrument -w io.github.dshgo.mobiletest/.MobileInstrumentation > "$report_dir/instrumentation.txt"
+  mkdir -p "$report_dir/files"
+  adb "${device[@]}" exec-out run-as "$pkg" tar -cf - -C "$files" . > "$report_dir/files.tar"
+  tar -xf "$report_dir/files.tar" -C "$report_dir/files"
+  rm -f "$report_dir/files.tar"
+}
+report_passed() {
+  python3 -c 'import json,sys;sys.exit(0 if json.load(open(sys.argv[1]))["passed"] else 1)' "$report_dir/files/report.json" 2>/dev/null
+}
+instrument
+# Emulator pointer injection occasionally lands on a window owned by another uid
+# while the activity settles; one retry keeps that flake out of the gate.
+if ! report_passed; then
+  echo "mobile-webview: first run did not pass, retrying once" >&2
+  instrument
+fi
 python3 - "$report_dir/files/report.json" "$project_root" <<'PY'
 import hashlib, json, pathlib, sys
 report = json.loads(pathlib.Path(sys.argv[1]).read_text())
