@@ -1,0 +1,255 @@
+{
+  "date": "2026-11-08",
+  "apk": {
+    "version": "1.0.12+11081037",
+    "abi": "arm64-v8a",
+    "sha256": "c9d3c837f19169d004eae80a32d72344753a1bd1ae39298094bc0522ce8977fc"
+  },
+  "device": {
+    "model": "PTP_AN10",
+    "androidVersion": 17
+  },
+  "scope": "Fixed synthetic app only, through the DSH app UID guest relay; no model calls, credential export or automatic approval.",
+  "protocolAndInputRun": {
+    "version": "1.0.12+11081037",
+    "checks": [
+      {
+        "name": "MCP-initialize",
+        "pass": true
+      },
+      {
+        "name": "UI-catalog-exactly-12",
+        "pass": true
+      },
+      {
+        "name": "legacy-surface-refused-in-ui-mode",
+        "pass": true
+      },
+      {
+        "name": "online-device",
+        "pass": true
+      },
+      {
+        "name": "snapshot-target-4",
+        "pass": true
+      },
+      {
+        "name": "editable-metadata",
+        "pass": true
+      },
+      {
+        "name": "disabled-has-no-actions",
+        "pass": true
+      },
+      {
+        "name": "wrong-package-rejected",
+        "pass": true
+      },
+      {
+        "name": "snapshot-target-8",
+        "pass": true
+      },
+      {
+        "name": "button-input-rejected",
+        "pass": true
+      },
+      {
+        "name": "snapshot-target-10",
+        "pass": true
+      },
+      {
+        "name": "cross-session-ref-rejected",
+        "pass": true
+      },
+      {
+        "name": "wrong-window-rejected",
+        "pass": true
+      },
+      {
+        "name": "wait-for-visible",
+        "pass": true
+      },
+      {
+        "name": "safe-screenshot",
+        "pass": true
+      },
+      {
+        "name": "snapshot-target-15",
+        "pass": true
+      },
+      {
+        "name": "native-set-text",
+        "pass": true,
+        "details": {
+          "phase": "observed",
+          "error": null
+        }
+      },
+      {
+        "name": "write-consumes-old-ref",
+        "pass": true
+      }
+    ],
+    "phase": "failed",
+    "started": "2026-11-08T07:18:17.857Z",
+    "harnessRevision": 3,
+    "tools": [
+      "ui_list_devices",
+      "ui_list_targets",
+      "ui_get_capabilities",
+      "ui_snapshot",
+      "ui_find",
+      "ui_get_element",
+      "ui_click",
+      "ui_set_text",
+      "ui_press_key",
+      "ui_scroll",
+      "ui_wait_for",
+      "ui_screenshot"
+    ],
+    "passed": false,
+    "error": "snapshot refused: POLICY_DENIED"
+  },
+  "followupRun": {
+    "version": "1.0.12+11081037",
+    "checks": [
+      {
+        "name": "MCP-initialize",
+        "pass": true
+      },
+      {
+        "name": "snapshot-target-1",
+        "pass": true
+      },
+      {
+        "name": "snapshot-target-2",
+        "pass": true
+      },
+      {
+        "name": "button-zero-before-click",
+        "pass": true
+      },
+      {
+        "name": "native-click",
+        "pass": true,
+        "details": {
+          "success": true,
+          "code": null
+        }
+      },
+      {
+        "name": "snapshot-target-5",
+        "pass": true
+      },
+      {
+        "name": "click-observed",
+        "pass": true
+      },
+      {
+        "name": "snapshot-target-7",
+        "pass": true
+      },
+      {
+        "name": "native-scroll",
+        "pass": true,
+        "details": {
+          "success": true,
+          "code": null
+        }
+      },
+      {
+        "name": "snapshot-target-9",
+        "pass": true
+      },
+      {
+        "name": "scroll-observed",
+        "pass": true,
+        "details": {
+          "firstRowBefore": 1,
+          "firstRowAfter": 18
+        }
+      },
+      {
+        "name": "secret-value-never-exported",
+        "pass": true
+      },
+      {
+        "name": "sensitive-field-redacted",
+        "pass": true
+      },
+      {
+        "name": "secret-input-rejected",
+        "pass": true
+      },
+      {
+        "name": "sensitive-screenshot-refused",
+        "pass": true,
+        "details": {
+          "success": false,
+          "code": "SECURE_CONTENT",
+          "message": "Screenshot contains a sensitive field in a source window"
+        }
+      }
+    ],
+    "phase": "completed",
+    "started": "2026-11-08T07:23:28.645Z",
+    "harnessRevision": 4,
+    "stageResults": {
+      "probe": {
+        "passed": true
+      },
+      "click": {
+        "passed": true
+      },
+      "scroll": {
+        "passed": true
+      },
+      "secret": {
+        "passed": true
+      }
+    },
+    "failures": [],
+    "probe": {
+      "devices": {
+        "success": true,
+        "code": null
+      },
+      "targets": {
+        "success": true,
+        "code": null,
+        "target": [
+          {
+            "applicationId": "io.github.dshgo.uitest",
+            "windowId": "652",
+            "isForeground": true
+          }
+        ]
+      },
+      "expectedTarget": {
+        "applicationId": "io.github.dshgo.uitest",
+        "windowId": "652",
+        "deviceId": "android-local"
+      },
+      "truncated": false,
+      "buttonVisible": true
+    },
+    "completed": true
+  },
+  "manualVerification": {
+    "inputVisible": "ui-mcp-verified",
+    "inputAndClickApproval": "User selected allow once on the phone",
+    "update": "Same signer, installed with data retained"
+  },
+  "limitations": [
+    "The protocol/input run ended on a POLICY_DENIED read before clicking; the user reported remaining on the fixture page. A later read-only probe and separate click/scroll/secret stages passed. The original transient refusal cause was not established; no write was automatically retried.",
+    "ADB screencap failed, while the native UI screenshot returned image content successfully.",
+    "System accessibility was disabled after a long testing gap; user manually enabled it again. Disabled service correctly prevented the availability check from passing.",
+    "Windows hardware, PC-to-phone secure transport, phone stop/lock/explicit-deny paths, bridge-restart old refs, and physical legacy-mode rollback were not validated in this device run."
+  ],
+  "cleanup": {
+    "testRelayClosed": true,
+    "syntheticAppUninstalled": true,
+    "deviceTestFilesRemoved": true,
+    "dshAppAndUserDataRetained": true
+  }
+}

@@ -19526,6 +19526,18 @@ abstract class L10n {
   /// **'在系统「无线调试」首页查看「IP 地址和端口」，填写冒号后的端口。请不要使用配对码页面的端口。'**
   String get phoneDndConnectPortHint;
 
+  /// No description provided for @phoneUnifiedUi.
+  ///
+  /// In zh, this message translates to:
+  /// **'统一 UI 工具'**
+  String get phoneUnifiedUi;
+
+  /// No description provided for @phoneUnifiedUiHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'下次启动引擎生效；切换后先重新观察界面'**
+  String get phoneUnifiedUiHint;
+
   /// No description provided for @phoneTaskResultReady.
   ///
   /// In zh, this message translates to:

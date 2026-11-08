@@ -706,6 +706,8 @@ enum PhoneConfirmMode {
 class PhonePolicies {
   const PhonePolicies({
     this.denyPackages = const [],
+    this.unifiedUi = false,
+    this.uiAllowedPackages = const [],
     this.confirmEveryWritePackages = const [],
     this.labels = const {},
     this.defaultDeny = const [],
@@ -719,6 +721,8 @@ class PhonePolicies {
     final unlocks = _map(m['unlocks']);
     return PhonePolicies(
       denyPackages: _strings(m['denyPackages']),
+      unifiedUi: m['unifiedUi'] == true,
+      uiAllowedPackages: _strings(m['uiAllowedPackages']),
       confirmEveryWritePackages: _strings(m['confirmEveryWritePackages']),
       labels: {
         for (final e in _map(m['labels']).entries)
@@ -735,6 +739,8 @@ class PhonePolicies {
     );
   }
 
+  final bool unifiedUi;
+  final List<String> uiAllowedPackages;
   final List<String> denyPackages;
   final List<String> confirmEveryWritePackages;
 
@@ -752,12 +758,16 @@ class PhonePolicies {
 
   Map<String, Object?> toWire() => {
     'denyPackages': denyPackages,
+    'unifiedUi': unifiedUi,
+    'uiAllowedPackages': uiAllowedPackages,
     'confirmEveryWritePackages': confirmEveryWritePackages,
     'confirmMode': confirmMode.name,
   };
 
   PhonePolicies withConfirmMode(PhoneConfirmMode mode) => PhonePolicies(
     denyPackages: denyPackages,
+    unifiedUi: unifiedUi,
+    uiAllowedPackages: uiAllowedPackages,
     confirmEveryWritePackages: confirmEveryWritePackages,
     labels: labels,
     defaultDeny: defaultDeny,
@@ -768,12 +778,26 @@ class PhonePolicies {
 
   PhonePolicies withUnlock(PhoneUnlock unlock, bool on) => PhonePolicies(
     denyPackages: denyPackages,
+    unifiedUi: unifiedUi,
+    uiAllowedPackages: uiAllowedPackages,
     confirmEveryWritePackages: confirmEveryWritePackages,
     labels: labels,
     defaultDeny: defaultDeny,
     defaultConfirm: defaultConfirm,
     confirmMode: confirmMode,
     unlocks: on ? {...unlocks, unlock} : ({...unlocks}..remove(unlock)),
+  );
+
+  PhonePolicies withUnifiedUi(bool on) => PhonePolicies(
+    denyPackages: denyPackages,
+    confirmEveryWritePackages: confirmEveryWritePackages,
+    labels: labels,
+    defaultDeny: defaultDeny,
+    defaultConfirm: defaultConfirm,
+    confirmMode: confirmMode,
+    unlocks: unlocks,
+    unifiedUi: on,
+    uiAllowedPackages: uiAllowedPackages,
   );
 
   AppRule ruleFor(String package) {
@@ -807,6 +831,8 @@ class PhonePolicies {
     }
     return PhonePolicies(
       denyPackages: deny,
+      unifiedUi: unifiedUi,
+      uiAllowedPackages: uiAllowedPackages,
       confirmEveryWritePackages: confirm,
       labels: labels,
       defaultDeny: defaultDeny,

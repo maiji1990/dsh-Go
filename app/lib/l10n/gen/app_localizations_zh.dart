@@ -10554,6 +10554,12 @@ class L10nZh extends L10n {
   String get phoneDndConnectPortHint => '在系统「无线调试」首页查看「IP 地址和端口」，填写冒号后的端口。请不要使用配对码页面的端口。';
 
   @override
+  String get phoneUnifiedUi => '统一 UI 工具';
+
+  @override
+  String get phoneUnifiedUiHint => '下次启动引擎生效；切换后先重新观察界面';
+
+  @override
   String get phoneTaskResultReady => '任务完成 · 查看结果';
 
   @override

@@ -6,6 +6,10 @@ class ToolOutput(
     val isError: Boolean = false,
     val image: ByteArray? = null,
     val imageMime: String? = null,
+    val structuredContent: Map<String, Any?>? = null,
+    /** Native-only values, never serialized by McpServer. */
+    val snapshot: ScreenSnapshot? = null,
+    val errorCode: String? = null,
 )
 
 /**
@@ -114,7 +118,9 @@ class McpServer(
                     "mimeType" to out.imageMime,
                 )
             }
-            return linkedMapOf("content" to content, "isError" to out.isError)
+            val result = linkedMapOf<String, Any?>("content" to content, "isError" to out.isError)
+            out.structuredContent?.let { result["structuredContent"] = it }
+            return result
         }
 
         fun result(id: Any?, result: Any?): String = Json.write(linkedMapOf("jsonrpc" to "2.0", "id" to id, "result" to result))

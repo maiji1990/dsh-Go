@@ -11099,6 +11099,12 @@ class L10nEn extends L10n {
       'On the main Wireless debugging settings page, find “IP address & port” and enter the port after the colon. Do not use the pairing-code dialog’s port.';
 
   @override
+  String get phoneUnifiedUi => 'Unified UI tools';
+
+  @override
+  String get phoneUnifiedUiHint => 'Applies on the next engine start; observe again after switching';
+
+  @override
   String get phoneTaskResultReady => 'Task complete · View result';
 
   @override

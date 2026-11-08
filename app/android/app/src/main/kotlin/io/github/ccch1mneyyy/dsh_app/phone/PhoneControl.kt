@@ -126,7 +126,10 @@ class PhoneControl private constructor(private val app: Context) : PhoneEnv, Con
     val notificationGate = NotificationGate(app) { setStatusLine(it) }
     val prompts = PhonePrompts(app, tasks, ::isEnabled, ::isLocked, notificationGate, ::reopen)
     private val server = McpServer(PhoneToolCatalog.listJson(), core::call, SERVER_VERSION)
-    private val bridge = PhoneBridge(server) { line -> logger(line) }
+    private val uiFacade = UiMcpFacade(core)
+    private val uiServer = McpServer(UiToolCatalog.tools, uiFacade::call, SERVER_VERSION)
+    @Volatile private var unifiedSurface = false
+    private val bridge = PhoneBridge(server, uiServer, { unifiedSurface }) { line -> logger(line) }
 
     @Volatile private var logger: (String) -> Unit = {}
     @Volatile private var rootfs: File? = null
@@ -228,7 +231,9 @@ class PhoneControl private constructor(private val app: Context) : PhoneEnv, Con
             return false
         }
         return try {
-            PhoneGuest.writeFiles(rootfs)
+            unifiedSurface = policies().unifiedUi
+            uiFacade.reset()
+            PhoneGuest.writeFiles(rootfs, unifiedSurface)
             val ep = bridge.start(withTcp = prefs.getBoolean(K_TCP_FALLBACK, false))
             PhoneGuest.writeConfig(rootfs, ep)
             registerScreenOff()

@@ -45,6 +45,8 @@ data class ScreenSnapshot(
     /** Optional numbered screenshot (same element ids drawn on it), PNG or JPEG bytes. */
     val image: ByteArray? = null,
     val imageMime: String? = null,
+    /** Safe, typed UI observation; filtered together with text and image. */
+    val ui: UiObservation? = null,
 )
 
 /** What an element looks like to the safety rules, resolved from a snapshot id + element id. */
@@ -101,6 +103,7 @@ data class ActionResult(
     val message: String,
     /** The screen after the action settled (new lines marked `+`), when it could be read. */
     val screen: ScreenSnapshot? = null,
+    val errorCode: String? = null,
 )
 
 data class CollectResult(
@@ -143,6 +146,11 @@ interface PhoneDriver {
 
     /** Package of the app in front on this screen, if known (for per-app approval and deny lists). */
     fun foregroundPackage(): String?
+
+    /** Does not publish a snapshot or replace native element refs. Unsupported drivers fail closed. */
+    fun inspectUiTarget(): UiTargetState? = null
+    fun performChecked(action: PhoneAction, guard: UiActionGuard): ActionResult =
+        ActionResult(false, "Checked UI actions are unavailable", errorCode = "ACTION_UNSUPPORTED")
 }
 
 data class ConfirmRequest(

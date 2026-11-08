@@ -3239,6 +3239,8 @@
   "phoneDndManualConnect": "Connect by port",
   "phoneDndConnectPortLabel": "Connection port",
   "phoneDndConnectPortHint": "On the main Wireless debugging settings page, find “IP address & port” and enter the port after the colon. Do not use the pairing-code dialog’s port.",
+  "phoneUnifiedUi": "Unified UI tools",
+  "phoneUnifiedUiHint": "Applies on the next engine start; observe again after switching",
   "phoneTaskResultReady": "Task complete · View result",
   "phoneTaskEndedResult": "Task ended · View result",
   "phoneBackgroundGuideTitle": "Confirmations and return",

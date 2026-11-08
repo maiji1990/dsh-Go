@@ -64,6 +64,7 @@ class PhoneCore(
         val app: String? = null,
         val summary: String? = null,
         val decision: String? = null,
+        val errorCode: String? = null,
     )
 
     fun call(name: String, args: Map<String, Any?>): ToolOutput {
@@ -76,7 +77,28 @@ class PhoneCore(
         }
     }
 
-    private fun runCall(name: String, args: Map<String, Any?>): ToolOutput {
+    fun callUi(name: String, args: Map<String, Any?>, guard: UiActionGuard? = null): ToolOutput {
+        tasks.callStarted()
+        try { return runCall(name, args, guard, unified = true) }
+        finally { tasks.callEnded() }
+    }
+
+    fun uiAvailable(): Boolean = env.enabled() && !env.isLocked() &&
+        env.driver(PhoneScreen.MAIN)?.availability()?.ok == true
+
+    fun uiInspect(): UiTargetState? {
+        if (!uiAvailable()) return null
+        val result = worker.run(5_000, 10_000) { env.driver(PhoneScreen.MAIN)?.inspectUiTarget() }
+        val state = (result as? SerialWorker.Outcome.Done)?.value ?: return null
+        return state.takeIf { safety.checkRead(it.packageName, null) == null }
+    }
+
+    fun uiCanRead(packageName: String): Boolean = packageName.isNotBlank() &&
+        (env.policies().uiAllowedPackages.isEmpty() || packageName in env.policies().uiAllowedPackages) &&
+        safety.checkRead(packageName, null) == null
+
+    private fun runCall(name: String, args: Map<String, Any?>,
+                        guard: UiActionGuard? = null, unified: Boolean = false): ToolOutput {
         if (name !in PhoneToolCatalog.names) {
             // l10n:keep agent tool result
             return ToolOutput("没有这个手机工具：$name。可用：${PhoneToolCatalog.names.joinToString("、")}", isError = true)
@@ -85,7 +107,16 @@ class PhoneCore(
             // l10n:keep agent tool result
             return ToolOutput("手机操控已在 DSH 设置里关闭。请用户在 设置 → 手机操控 里打开后重启引擎。", isError = true)
         }
-        val outcome = worker.run(budgetMs(name), MAX_TOTAL_MS) { scope -> execute(name, Args(args), scope) }
+        val outcome = worker.run(budgetMs(name), MAX_TOTAL_MS) { scope ->
+            if (guard != null) {
+                val current = env.driver(PhoneScreen.MAIN)?.inspectUiTarget()
+                if (current == null || !guard.matches(current))
+                    return@run Out("UI target or snapshot changed", error = true, decision = "stale", errorCode = "STALE_ELEMENT")
+                if (!uiCanRead(current.packageName))
+                    return@run Out("UI target denied", error = true, decision = "refused:read", errorCode = "POLICY_DENIED")
+            }
+            execute(name, Args(args), scope, guard)
+        }
         tasks.touch()
         val out = when (outcome) {
             is SerialWorker.Outcome.Done -> outcome.value
@@ -118,7 +149,15 @@ class PhoneCore(
             out.screen?.let { if (out.text.isNotEmpty()) append("\n\n"); append(it.text) }
         }
         val image = out.screen?.image
-        return ToolOutput(text, out.error, image, if (image != null) out.screen.imageMime else null)
+        return ToolOutput(text, out.error, image, if (image != null) out.screen.imageMime else null,
+            snapshot = if (unified) out.screen else null,
+            errorCode = if (unified && out.error) out.errorCode ?: when (out.decision) {
+                "stale" -> "STALE_ELEMENT"
+                "timeout" -> "OPERATION_TIMEOUT"
+                "stopped", "paused" -> "POLICY_DENIED"
+                "unavailable" -> "PROVIDER_UNAVAILABLE"
+                else -> if (out.decision?.startsWith("refused:") == true) "POLICY_DENIED" else "OBSERVATION_INCOMPLETE"
+            } else null)
     }
 
     private fun noteRefusal(tool: String, decision: String?) {
@@ -131,7 +170,7 @@ class PhoneCore(
         }
     }
 
-    private fun execute(name: String, a: Args, scope: SerialWorker.Scope): Out {
+    private fun execute(name: String, a: Args, scope: SerialWorker.Scope, guard: UiActionGuard? = null): Out {
         when (val b = tasks.begin()) {
             is PhoneTasks.Begin.Refused -> return Out(b.message + "。", error = true, summary = name, decision = "stopped")
             is PhoneTasks.Begin.Go -> Unit
@@ -156,8 +195,8 @@ class PhoneCore(
             PhoneToolCatalog.CLIPBOARD -> clipboard(a)
             PhoneToolCatalog.SCREEN -> screen(a)
             PhoneToolCatalog.COLLECT -> collect(a)
-            PhoneToolCatalog.TAP, PhoneToolCatalog.TYPE, PhoneToolCatalog.SCROLL, PhoneToolCatalog.TAP_XY -> act(name, a, scope)
-            PhoneToolCatalog.KEY -> key(a)
+            PhoneToolCatalog.TAP, PhoneToolCatalog.TYPE, PhoneToolCatalog.SCROLL, PhoneToolCatalog.TAP_XY -> act(name, a, scope, guard)
+            PhoneToolCatalog.KEY -> key(a, guard, scope)
             PhoneToolCatalog.HANDOFF -> handoff(a, scope)
             // l10n:keep agent tool result
             else -> Out("没有这个手机工具：$name", error = true)
@@ -426,7 +465,7 @@ class PhoneCore(
     }
 
     /** tap / type / scroll / tap_xy: route, resolve, gate, perform. */
-    private fun act(name: String, a: Args, scope: SerialWorker.Scope): Out {
+    private fun act(name: String, a: Args, scope: SerialWorker.Scope, guard: UiActionGuard? = null): Out {
         val screenParameter = if (name == PhoneToolCatalog.TAP_XY) "observation" else "screen"
         val sid = a.str(screenParameter)
         val which = when (val r = routeScreenId(sid, screenParameter)) {
@@ -512,14 +551,18 @@ class PhoneCore(
         if (!tasks.isCurrent(owner) || Thread.currentThread().isInterrupted) return stoppedOut(summary)
         tasks.setApp(appLabel ?: pkg)
         say(ui.get("phone_acting", "DSH 正在操作 · %1\$s", statusLine(kind, target, if (secret) SafetyRules.MASK else typed))) // l10n:keep test default
-        val res = driver.perform(action)
+        val res = if (guard == null) driver.perform(action) else {
+            if (!uiCanRead(guard.target.packageName))
+                return Out("UI target denied", error = true, decision = "refused:read", errorCode = "POLICY_DENIED")
+            driver.performChecked(action, guard)
+        }
         return Out(
             res.message,
             error = !res.ok,
             screen = res.screen?.let { safety.filterScreen(it) },
             app = app,
             summary = summary,
-            decision = if (res.ok) decision else "failed",
+            decision = if (res.ok) decision else "failed", errorCode = res.errorCode,
         )
     }
 
@@ -558,7 +601,7 @@ class PhoneCore(
         )
     }
 
-    private fun key(a: Args): Out {
+    private fun key(a: Args, guard: UiActionGuard? = null, scope: SerialWorker.Scope): Out {
         val key = when (a.str("key")?.lowercase()) {
             "back" -> PhoneAction.GlobalKey.BACK
             "home" -> PhoneAction.GlobalKey.HOME
@@ -589,9 +632,24 @@ class PhoneCore(
             PhoneAction.GlobalKey.RECENTS -> ui.get("phone_key_recents", "最近任务") // l10n:keep test default
             PhoneAction.GlobalKey.NOTIFICATIONS -> ui.get("phone_key_notifications", "通知栏") // l10n:keep test default
         }))
-        val res = driver.perform(PhoneAction.Key(sid ?: "${which.prefix}0", key))
+        val action = PhoneAction.Key(sid ?: "${which.prefix}0", key)
+        val res = if (guard == null) driver.perform(action) else {
+            // Legacy key remains compatible; unified keys additionally obey app policy and approval.
+            val pkg = guard.target.packageName
+            val owner = tasks.activeOwner() ?: return stoppedOut(summary)
+            val verdict = safety.confirmation(summary, pkg, null, "ui-key")
+            when (val decision = safety.resolve(verdict, scope)) {
+                is SafetyGate.Result.No -> return Out(decision.message, error = true, decision = decision.decision)
+                is SafetyGate.Result.Go -> {
+                    if (!tasks.isCurrent(owner) || Thread.currentThread().isInterrupted) return stoppedOut(summary)
+                    if (!uiCanRead(pkg))
+                        return Out("UI target denied or task stopped", error = true, decision = "refused:read", errorCode = "POLICY_DENIED")
+                    driver.performChecked(action, guard)
+                }
+            }
+        }
         return Out(res.message, error = !res.ok, screen = res.screen?.let { safety.filterScreen(it) }, summary = summary,
-            decision = if (res.ok) "ok" else "failed")
+            decision = if (res.ok) "ok" else "failed", errorCode = res.errorCode)
     }
 
     private fun handoff(a: Args, scope: SerialWorker.Scope): Out {

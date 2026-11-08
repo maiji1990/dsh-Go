@@ -10,12 +10,16 @@ data class PhonePolicies(
     val confirmEveryWritePackages: List<String> = SafetyRules.DEFAULT_CONFIRM_EVERY_WRITE,
     val confirmMode: ConfirmMode = ConfirmMode.ASK,
     val unlocks: PhoneUnlocks = PhoneUnlocks(),
+    val unifiedUi: Boolean = false,
+    val uiAllowedPackages: List<String> = emptyList(),
 ) {
     fun toMap(): Map<String, Any?> = linkedMapOf(
         "denyPackages" to denyPackages,
         "confirmEveryWritePackages" to confirmEveryWritePackages,
         "confirmMode" to confirmMode.wire,
         "unlocks" to unlocks.toMap(),
+        "unifiedUi" to unifiedUi,
+        "uiAllowedPackages" to uiAllowedPackages,
     )
 
     companion object {
@@ -30,6 +34,12 @@ data class PhonePolicies(
                 list("confirmEveryWritePackages", base.confirmEveryWritePackages),
                 ConfirmMode.fromWire(map?.get("confirmMode") as? String) ?: base.confirmMode,
                 PhoneUnlocks.fromMap(map?.get("unlocks") as? Map<*, *>, base.unlocks),
+                map?.get("unifiedUi") as? Boolean ?: base.unifiedUi,
+                if (map?.containsKey("uiAllowedPackages") != true) base.uiAllowedPackages else {
+                    val raw = map["uiAllowedPackages"] as? List<*>
+                    if (raw == null || raw.any { it !is String || !PACKAGE.matches(it) }) listOf("__invalid_policy__")
+                    else raw.filterIsInstance<String>().distinct()
+                },
             )
         }
 
@@ -339,7 +349,7 @@ class SafetyGate(
         }
         val app = s.appLabel?.let { " · $it" } ?: ""
         // l10n:keep agent safety result
-        return s.copy(text = "屏幕 ${s.id}$app\n$refusal", image = null, imageMime = null)
+        return s.copy(text = "屏幕 ${s.id}$app\n$refusal", image = null, imageMime = null, ui = null)
     }
 
     private fun describe(kind: WriteKind, t: TargetInfo?, app: String, typed: String?, submit: Boolean, point: Pair<Int, Int>?): String {

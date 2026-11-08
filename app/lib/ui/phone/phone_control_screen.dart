@@ -521,6 +521,19 @@ class _PhoneControlScreenState extends ConsumerState<PhoneControlScreen> {
             subtitle: apps,
             onTap: () => _push(const PhoneAppRulesPage()),
           ),
+          MergeSemantics(
+            child: ListPageRow(
+              icon: AppIcons.appRules,
+              title: context.l10n.phoneUnifiedUi,
+              subtitle: context.l10n.phoneUnifiedUiHint,
+              trailing: Switch(
+                value: policies?.unifiedUi ?? false,
+                onChanged: policies == null
+                    ? null
+                    : (on) => unawaited(ref.read(phoneProvider.notifier).setUnifiedUi(on)),
+              ),
+            ),
+          ),
           ListPageRow(
             icon: policies?.confirmMode.icon ?? AppIcons.askFirst,
             spot: Spots.phoneConfirm,

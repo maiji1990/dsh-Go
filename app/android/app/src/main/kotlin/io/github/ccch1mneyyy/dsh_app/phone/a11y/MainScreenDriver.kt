@@ -28,6 +28,10 @@ import io.github.ccch1mneyyy.dsh_app.phone.PhoneScreen
 import io.github.ccch1mneyyy.dsh_app.phone.SafetyRules
 import io.github.ccch1mneyyy.dsh_app.phone.ScreenSnapshot
 import io.github.ccch1mneyyy.dsh_app.phone.TargetInfo
+import io.github.ccch1mneyyy.dsh_app.phone.UiActionGuard
+import io.github.ccch1mneyyy.dsh_app.phone.UiTargetState
+import io.github.ccch1mneyyy.dsh_app.phone.UiObservedElement
+import io.github.ccch1mneyyy.dsh_app.phone.UiObservation
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -76,6 +80,7 @@ internal class MainScreenDriver(private val service: PhoneA11yService, private v
         val observation: ScreenObservation,
         /** Notes already shown on this app's previous screen (not repeated). */
         val noteKeys: Set<String>,
+        val ui: UiObservation?,
     ) {
         @Volatile var image: ImageGeometry? = null
     }
@@ -101,6 +106,24 @@ internal class MainScreenDriver(private val service: PhoneA11yService, private v
     }
 
     override fun foregroundPackage(): String? = TreeCapture.foregroundPackage(service, screenBox())
+
+    override fun inspectUiTarget(): UiTargetState? = synchronized(lock) {
+        if (!availability().ok) return null
+        val cap = capture()
+        try {
+            val pkg = cap.packageName ?: return null
+            val window = cap.windows.firstOrNull() ?: return null
+            UiTargetState(pkg, window.id.toString(), latest?.id,
+                cap.hiddenWindowTitle != null || cap.unreadableWindowTitle != null || cap.partial)
+        } finally { cap.recycle() }
+    }
+
+    override fun performChecked(action: PhoneAction, guard: UiActionGuard): ActionResult = synchronized(lock) {
+        val actual = inspectUiTarget()
+        if (actual == null || !guard.matches(actual) || action.screenId != guard.screenId)
+            return ActionResult(false, "UI target or snapshot changed", errorCode = "STALE_ELEMENT")
+        perform(action)
+    }
 
     override fun observe(detail: Boolean, image: Boolean): ScreenSnapshot = synchronized(lock) {
         val start = SystemClock.uptimeMillis()
@@ -141,7 +164,7 @@ internal class MainScreenDriver(private val service: PhoneA11yService, private v
                     }
                 }
             }
-            ScreenSnapshot(snap.id, text.toString(), snap.appLabel, snap.packageName, secure || snap.hidden, snap.screen.poorTree, bytes, mime)
+            ScreenSnapshot(snap.id, text.toString(), snap.appLabel, snap.packageName, secure || snap.hidden, snap.screen.poorTree, bytes, mime, snap.ui)
         } finally { cap.recycle() }
     }
 
@@ -640,14 +663,37 @@ internal class MainScreenDriver(private val service: PhoneA11yService, private v
         }
         val snap = Snapshot(
             id, formatted, pkg, appLabel, protectedPage, cap.ownAppInFront,
-            cap.hiddenWindowTitle != null, cap.unreadableWindowTitle != null, observation(cap), noteKeys,
+            cap.hiddenWindowTitle != null, cap.unreadableWindowTitle != null, observation(cap), noteKeys, uiObservation(cap, formatted, id),
         )
         latest = snap
         return snap
     }
 
     private fun toSnapshot(s: Snapshot, text: String = s.screen.text) =
-        ScreenSnapshot(s.id, text, s.appLabel, s.packageName, secure = s.hidden, poorTree = s.screen.poorTree)
+        ScreenSnapshot(s.id, text, s.appLabel, s.packageName, secure = s.hidden, poorTree = s.screen.poorTree, ui = s.ui)
+
+    private fun uiObservation(cap: Capture, formatted: FormattedScreen, id: String): UiObservation? {
+        val pkg = cap.packageName ?: return null
+        val window = cap.windows.firstOrNull() ?: return null
+        val state = UiTargetState(pkg, window.id.toString(), id,
+            cap.hiddenWindowTitle != null || cap.unreadableWindowTitle != null)
+        val elements = formatted.elements.map { el ->
+            val node = cap.native(el.ref)
+            val role = when (el.role) {
+                "输入框" -> "textbox"; "按钮" -> "button"; "列表" -> "list"
+                "开关" -> "switch"; "勾选框" -> "checkbox"; "单选" -> "radiobutton"
+                "标签" -> "tab"; "链接" -> "link"; "图片" -> "image"; "文本" -> "text"
+                else -> "unknown"
+            }
+            UiObservedElement(el.id, el.windowId.toString(), el.packageName, role, el.label, el.viewId,
+                el.bounds.left, el.bounds.top, el.bounds.width, el.bounds.height,
+                node?.isEnabled == true, node?.isVisibleToUser == true,
+                el.editable && node?.isEditable == true, el.password || el.secret,
+                el.clickable, el.scroll != 0, el.sensitiveWord != null)
+        }
+        return UiObservation(state, elements, cap.truncated || cap.partial || formatted.hidden > 0,
+            cap.windows.mapNotNull { it.packageName }.toSet())
+    }
 
     /** A fresh text snapshot for an action result; null when the screen can't be read now. */
     private fun observeQuiet(): ScreenSnapshot? {

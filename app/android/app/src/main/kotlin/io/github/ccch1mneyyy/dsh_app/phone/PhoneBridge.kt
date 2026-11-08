@@ -39,6 +39,8 @@ import kotlin.concurrent.thread
  */
 class PhoneBridge(
     private val server: McpServer,
+    private val uiServer: McpServer? = null,
+    private val uiOnly: () -> Boolean = { false },
     private val log: (String) -> Unit,
 ) {
     @Volatile private var running = false
@@ -185,6 +187,9 @@ class PhoneBridge(
                     log("[dsh-app] phone bridge: bad token, connection closed")
                     return@thread
                 }
+                val surface = (Json.parse(hello) as? Map<*, *>)?.get("surface") ?: "phone"
+                if (!surfaceAllowed(surface, uiOnly())) return@thread
+                val selected = if (surface == "ui") uiServer ?: return@thread else server
                 authed.incrementAndGet()
                 timeout(0)
                 val lock = Object()
@@ -196,7 +201,7 @@ class PhoneBridge(
                 }
                 while (running) {
                     val line = readLine(input, MAX_LINE) ?: break
-                    when (val d = server.dispatch(line)) {
+                    when (val d = selected.dispatch(line)) {
                         McpServer.Dispatch.None -> Unit
                         is McpServer.Dispatch.Reply -> send(d.line)
                         is McpServer.Dispatch.Call -> calls.execute {
@@ -215,6 +220,10 @@ class PhoneBridge(
     }
 
     companion object {
+        /** A launch exposes one surface; unknown surfaces never fall back to raw phone tools. */
+        fun surfaceAllowed(surface: Any?, unified: Boolean): Boolean =
+            if (unified) surface == "ui" else surface == "phone"
+
         const val MAX_CONNECTIONS = 8
         const val HELLO_TIMEOUT_MS = 10_000
         const val MAX_HELLO = 4096

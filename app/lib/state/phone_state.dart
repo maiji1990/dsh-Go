@@ -252,6 +252,16 @@ class PhoneController extends Notifier<PhoneState> {
     return true;
   }
 
+  /// Select the native tool surface for the next engine launch.
+  Future<bool> setUnifiedUi(bool on) async {
+    final current = state.policies;
+    if (current == null) return false;
+    final next = current.withUnifiedUi(on);
+    final ok = await _channel.setPolicies(next);
+    if (ok && ref.mounted) state = state.copyWith(policies: next);
+    return ok;
+  }
+
   /// 每次都询问 / 本任务免确认 / 始终免确认; false when the native side refused
   /// (nothing changes). Written, it also settles a first-run choice still
   /// pending: the latest word wins.
