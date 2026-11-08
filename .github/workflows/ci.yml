@@ -279,11 +279,20 @@ jobs:
       - name: Android emulator
         run: |
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH"
+          # avdmanager and the emulator must agree on where AVDs live: on the runner
+          # the defaults differ, the emulator finds no `mobile-test` and exits, and
+          # the old unbounded `adb wait-for-device` then burned the whole job timeout.
+          export ANDROID_AVD_HOME="$RUNNER_TEMP/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
           sdkmanager "platforms;android-36" "build-tools;36.0.0" "system-images;android-${{ matrix.api }};google_apis;x86_64"
-          printf 'no\n' | avdmanager create avd -n mobile-test -k "system-images;android-${{ matrix.api }};google_apis;x86_64"
+          printf 'no\n' | avdmanager create avd -n mobile-test -k "system-images;android-${{ matrix.api }};google_apis;x86_64" --force
+          if ! emulator -list-avds | grep -qx mobile-test; then
+            avdmanager list avd || true
+            exit 1
+          fi
           sudo chmod a+rw /dev/kvm
           emulator -avd mobile-test -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > "$RUNNER_TEMP/mobile-emulator.log" 2>&1 &
-          adb wait-for-device
+          timeout 300 adb wait-for-device
           for attempt in $(seq 1 120); do
             if [[ $(adb shell getprop sys.boot_completed | tr -d '\r') == 1 ]]; then break; fi
             sleep 2
