@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n.dart';
 import '../../../state/settings_state.dart';
+import '../../theme/app_icons.dart';
 import 'plugin_mobile_policy.dart';
 
 /// Available on both seat pages and plugins' own configuration islands.
@@ -13,7 +14,7 @@ class PluginMobileMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) => PopupMenuButton<String>(
     tooltip: context.l10n.pluginsMobileLayout,
-    icon: const Icon(Icons.tune),
+    icon: const Icon(AppIcons.configure),
     initialValue: ref.watch(settingsProvider.select((s) => s.pluginMobileModes[package])) ?? 'default',
     onSelected: (mode) =>
         ref.read(settingsProvider.notifier).setPluginMobileMode(package, mode == 'default' ? null : mode),
