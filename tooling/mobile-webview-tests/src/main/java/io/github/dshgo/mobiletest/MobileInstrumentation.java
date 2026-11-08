@@ -85,7 +85,7 @@ public class MobileInstrumentation extends Instrumentation {
             rendered.set(bitmap);
         });
         Bitmap bitmap=rendered.get();
-        File file = new File(getTargetContext().getExternalFilesDir(null), name+".png");
+        File file = new File(getTargetContext().getFilesDir(), name+".png");
         try (FileOutputStream out = new FileOutputStream(file)) { bitmap.compress(Bitmap.CompressFormat.PNG,100,out); }
         bitmap.recycle();
     }
@@ -244,7 +244,7 @@ public class MobileInstrumentation extends Instrumentation {
                 StringBuilder hex=new StringBuilder();for(byte b:hash)hex.append(String.format("%02x",b));hashes.put(name,hex.toString());
             }
             report.put("assets",hashes);
-            File reportFile=new File(getTargetContext().getExternalFilesDir(null),"report.json");
+            File reportFile=new File(getTargetContext().getFilesDir(),"report.json");
             try(FileOutputStream out=new FileOutputStream(reportFile)){out.write(report.toString(2).getBytes(StandardCharsets.UTF_8));}
             result.putString("report",reportFile.getAbsolutePath());
             result.putInt("checks",checks.length());

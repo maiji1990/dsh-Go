@@ -13,9 +13,17 @@ else
 fi
 "${gradle_cmd[@]}" -p "$project_root/tooling/mobile-webview-tests" assembleDebug --console=plain
 adb "${device[@]}" install -r "$project_root/tooling/mobile-webview-tests/build/outputs/apk/debug/MobileWebViewTests-debug.apk"
-adb "${device[@]}" shell rm -f /sdcard/Android/data/io.github.dshgo.mobiletest/files/report.json
+# Android 11+ blocks the shell user from Android/data (API 30 failed the pull), and
+# run-as cannot reach it either. The test app writes its report and screenshots to
+# internal storage, which the shell reaches through run-as on every API level.
+pkg=io.github.dshgo.mobiletest
+files=/data/data/$pkg/files
+adb "${device[@]}" shell run-as "$pkg" rm -f "$files/report.json"
 adb "${device[@]}" shell am instrument -w io.github.dshgo.mobiletest/.MobileInstrumentation > "$report_dir/instrumentation.txt"
-adb "${device[@]}" pull /sdcard/Android/data/io.github.dshgo.mobiletest/files/ "$report_dir/" >/dev/null
+mkdir -p "$report_dir/files"
+adb "${device[@]}" exec-out run-as "$pkg" tar -cf - -C "$files" . > "$report_dir/files.tar"
+tar -xf "$report_dir/files.tar" -C "$report_dir/files"
+rm -f "$report_dir/files.tar"
 python3 - "$report_dir/files/report.json" "$project_root" <<'PY'
 import hashlib, json, pathlib, sys
 report = json.loads(pathlib.Path(sys.argv[1]).read_text())
