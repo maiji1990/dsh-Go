@@ -12,6 +12,7 @@ import 'redact.dart';
 const diagnosticsEngineLines = 80;
 const diagnosticsFailureLines = 60;
 const diagnosticsErrorLines = 10;
+const diagnosticsSystemImeEvents = 12;
 
 /// Hard cap: a diagnostics file that costs more context than this is no
 /// longer worth reading. The zip export stays available for everything else.
@@ -25,6 +26,7 @@ String diagnosticsMarkdown(DiagnosticsSnapshot s, {int maxBytes = diagnosticsMar
     ..writeln()
     ..writeln('> App 写在引擎里的环境快照，给排查问题用；已脱敏。生成时间：${_time(s.at)}。')
     ..writeln();
+  _systemIme(b, s);
   _environment(b, s);
   _connection(b, s);
   _phone(b, s);
@@ -50,6 +52,27 @@ String _utf8Prefix(List<int> bytes, int budget) {
     end--;
   }
   return utf8.decode(bytes.sublist(0, end));
+}
+
+void _systemIme(StringBuffer b, DiagnosticsSnapshot s) {
+  final evidence = s.systemIme;
+  if (evidence == null) return;
+  final at = DateTime.fromMillisecondsSinceEpoch(evidence.capturedAt, isUtc: true);
+  b
+    ..writeln('## System IME evidence (manual, privilegedIme)')
+    ..writeln('- capturedAt: ${at.toIso8601String()} · code: ${evidence.code} · events: ${evidence.events.length}')
+    ..writeln('- Fixed events only; preceding 120 seconds, maximum 64. Retained capture, not live monitoring.')
+    ..writeln('- Requests do not prove keyboard visibility. fromUser=null means unknown, not false.');
+  if (evidence.events.isEmpty) {
+    b.writeln('- No usable events: empty/failed capture is NOT evidence that the system behaved normally.');
+  } else {
+    final recent = evidence.events.reversed.take(diagnosticsSystemImeEvents).toList().reversed;
+    b.writeln('- Most recent ${recent.length} events (ZIP contains the full bounded capture):');
+    for (final event in recent) {
+      b.writeln('  - ${event.timestamp} ${event.event} fromUser=${event.fromUser} reason=${event.reason} origin=${event.origin}');
+    }
+  }
+  b.writeln();
 }
 
 void _environment(StringBuffer b, DiagnosticsSnapshot s) {
@@ -109,12 +132,34 @@ void _environment(StringBuffer b, DiagnosticsSnapshot s) {
 
 void _connection(StringBuffer b, DiagnosticsSnapshot s) {
   b.writeln('## 连接');
-  final entries = s.connection.entries.where((e) => e.value != null && '${e.value}'.isNotEmpty).toList();
+  final entries = s.connection.entries
+      .where((e) => e.key != 'history' && e.value != null && '${e.value}'.isNotEmpty)
+      .toList();
   if (entries.isEmpty) {
     b.writeln('- 没有正在观察的连接');
   } else {
     for (final e in entries) {
       b.writeln('- ${e.key}：${e.value}');
+    }
+  }
+  final history = s.connection['history'];
+  if (history is Map && history['events'] is List) {
+    b.writeln('- 已观察的连接历史（已丢弃 ${history['dropped']} 条；不代表观察间隙的完整时序）：');
+    for (final event in (history['events'] as List).whereType<Map>()) {
+      final fields = [
+        '#${event['sequence']}',
+        'at=${event['observedAtEpochMs']}',
+        '+${event['elapsedMs']}ms',
+        '${event['phase']}',
+        if (event['step'] != null) '${event['step']}',
+        'attempt=${event['attempt']}',
+        if (event['transport'] != null) 'transport=${event['transport']}',
+        if (event['fallbackReason'] != null) 'fallback=${event['fallbackReason']}',
+        if (event['errorKind'] != null) 'error=${event['errorKind']}',
+        if (event['retryable'] != null) 'retryable=${event['retryable']}',
+        if (event['reasonCode'] != null) 'reason=${event['reasonCode']}',
+      ];
+      b.writeln('- ${fields.join(' · ')}');
     }
   }
   b.writeln();

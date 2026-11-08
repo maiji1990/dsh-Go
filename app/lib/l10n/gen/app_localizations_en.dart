@@ -5458,6 +5458,76 @@ class L10nEn extends L10n {
       'Light mode uses it from her next reply; full mode tells her with your next message.';
 
   @override
+  String get systemImeTitle => 'System input-method diagnostics';
+
+  @override
+  String get systemImeCollect => 'Capture recent events';
+
+  @override
+  String get systemImePrivacy =>
+      'Reproduce first. Each attempt needs native confirmation: fixed events from the last 120 seconds, up to 64; no input contents or raw logs. Permissions are never requested automatically.';
+
+  @override
+  String get systemImeEvidenceLimits =>
+      'Show/hide requests do not prove keyboard visibility. Empty or failed capture does not mean the system behaved normally.';
+
+  @override
+  String get systemImeNotCollected => 'Not collected';
+
+  @override
+  String get systemImeCollecting => 'Awaiting this attempt’s consent or result';
+
+  @override
+  String get systemImeRetained => 'Evidence retained';
+
+  @override
+  String get systemImeNoEvents => 'No matching events found';
+
+  @override
+  String get systemImeUnavailable => 'No selected, live privileged channel';
+
+  @override
+  String get systemImeUnsupported => 'This version or channel does not support capture';
+
+  @override
+  String get systemImeDenied => 'This attempt was not approved';
+
+  @override
+  String get systemImeCancelled => 'This attempt was cancelled';
+
+  @override
+  String get systemImeBusy => 'Channel busy; try again later';
+
+  @override
+  String get systemImeTimeout => 'Capture timed out; try again';
+
+  @override
+  String get systemImeLimitExceeded => 'Capture limit exceeded; no events retained';
+
+  @override
+  String get systemImeFailed => 'Capture failed or response was invalid';
+
+  @override
+  String get systemImeEventCount => 'Retained events';
+
+  @override
+  String get systemImeCapturedAt => 'Captured at';
+
+  @override
+  String get systemImePermissions => 'Phone-control permissions (optional)';
+
+  @override
+  String get systemImePermissionsHint =>
+      'Configure a privileged channel only if you wish; it is not required for diagnostics. Existing phone permissions are not consent for this capture.';
+
+  @override
+  String get systemImeClear => 'Clear evidence and cancel capture';
+
+  @override
+  String get systemImeMemory =>
+      'Memory only; cleared on restart. A new capture replaces old evidence. Included only in manual AI diagnostics or ZIP exports. Clearing does not retract snapshots or files already exported.';
+
+  @override
   String get engineNewChatDefaultsLast => 'New chat defaults (last choice)';
 
   @override
@@ -9509,6 +9579,109 @@ class L10nEn extends L10n {
   String get mediaSettingsEnabledHint => 'Turns this service off for generation';
 
   @override
+  String get mediaConfigKeySaved => 'Saved · not verified';
+
+  @override
+  String get mediaConfigKeyUnknown => 'Status unavailable';
+
+  @override
+  String get mediaConfigKeyNote =>
+      'Key presence is reported by the host. Saving a key does not verify authentication or model access.';
+
+  @override
+  String mediaConfigConsumers(String services) {
+    return 'Media services using this key: $services. Changing or removing it affects all of them; other host integrations may also use it.';
+  }
+
+  @override
+  String get mediaConfigCheck => 'Check saved configuration';
+
+  @override
+  String get mediaConfigCheckNote =>
+      'Local snapshot only; no provider request or generation charge. Does not verify the key, connectivity, balance, model access, or region. The host remains the authority on accepted settings.';
+
+  @override
+  String get mediaConfigCheckReady => 'No local configuration issues found';
+
+  @override
+  String get mediaConfigCheckMissingKey => 'The host has not reported a saved key.';
+
+  @override
+  String get mediaConfigCheckModels =>
+      'No selected models, or some selected models are missing or use a different protocol.';
+
+  @override
+  String get mediaConfigCheckDisabled => 'This service is switched off.';
+
+  @override
+  String get mediaConfigUrlInvalid =>
+      'Enter an HTTPS API root with a host, without credentials, query, fragment, or whitespace.';
+
+  @override
+  String get mediaConfigUrlEndpoint =>
+      'This looks like a request endpoint. Enter the API root instead; the host appends the request path.';
+
+  @override
+  String get mediaConfigUrlRoot => 'This protocol needs the origin only (https://host), without an API path.';
+
+  @override
+  String get mediaConfigUrlHint =>
+      'Enter the API root, not a generation endpoint. OpenAI-compatible roots keep their prefix (for example /v1).';
+
+  @override
+  String get mediaConfigPreview => 'Create request preview';
+
+  @override
+  String get mediaConfigPreviewNote =>
+      'Generation/create request only; edits and status requests may use different paths. Preview is not proof of connectivity or host acceptance.';
+
+  @override
+  String get mediaConfigPreviewUnavailable => 'Request path unavailable in this host catalogue.';
+
+  @override
+  String get mediaConfigTargetTitle => 'Reuse key at a different target?';
+
+  @override
+  String mediaConfigTargetBody(String before, String after) {
+    return 'Target changes from $before to $after. Future requests may send the referenced key to the new target. Only continue if you trust it. The host still validates the change.';
+  }
+
+  @override
+  String get mediaConfigTargetConfirm => 'Trust target and continue';
+
+  @override
+  String get mediaVideoLoading => 'Loading video…';
+
+  @override
+  String get mediaVideoCannotPlay => 'This video could not be played here. Retry or open it in another app.';
+
+  @override
+  String get mediaVideoPlay => 'Play';
+
+  @override
+  String get mediaVideoPause => 'Pause';
+
+  @override
+  String get mediaVideoSaveFailed => 'Couldn’t save the video. Try again.';
+
+  @override
+  String get mediaImageLoading => 'Loading image';
+
+  @override
+  String get mediaImageReload => 'Reload image';
+
+  @override
+  String get mediaImageReloadHint => 'Reads the file again; does not generate again or incur generation charges';
+
+  @override
+  String get mediaVideoNoPoster => 'Tap to play video';
+
+  @override
+  String mediaSavedFilesCount(int count) {
+    return 'Saved $count files to gallery';
+  }
+
+  @override
   String get nearbyThisChat => 'This chat';
 
   @override
@@ -10667,6 +10840,14 @@ class L10nEn extends L10n {
 
   @override
   String get phoneSafeRestoreFailed => 'Couldn’t restore';
+
+  @override
+  String get phoneSafeStopIncomplete =>
+      'Could not confirm that the engine has stopped. Configuration was not changed. Check the engine logs before trying again.';
+
+  @override
+  String get phoneSafeRestartIncomplete =>
+      'The configuration operation finished, but the engine has not stopped or restarted. Wait for it to stop before starting it again.';
 
   @override
   String get phoneSafeRestoreIntro => 'DSH will restore the last working configuration:';
@@ -15368,6 +15549,9 @@ class L10nEn extends L10n {
   String get searchKwEngineUninstall => 'uninstall,remove,free space';
 
   @override
+  String get searchKwWorkspaceRecovery => 'workspace,index,recovery,rescue,missing chats,chats won\'t open';
+
+  @override
   String get searchKwAddProvider => 'add model,new provider,custom model,base url';
 
   @override
@@ -16614,6 +16798,22 @@ class L10nEn extends L10n {
   String get starSettingsTitle => 'Star DSH Go on GitHub';
 
   @override
+  String get phoneStartupFailureStopping => 'Startup failed; stopping';
+
+  @override
+  String phoneStartupFailureStoppingDetail(String reason) {
+    return 'Startup failed; stopping. $reason';
+  }
+
+  @override
+  String get phoneStartupTokenTimeout =>
+      'Startup timed out: no startup token arrived within 180 seconds. Check the logs.';
+
+  @override
+  String get phoneStartupPortNotReady =>
+      'The startup token arrived, but the local service port did not become ready. Check the logs.';
+
+  @override
   String get stateDiagnosticsSubject => 'DSH Go diagnostics bundle';
 
   @override
@@ -17124,6 +17324,14 @@ class L10nEn extends L10n {
 
   @override
   String get stateEngineUnsupported => 'Not supported by this engine version';
+
+  @override
+  String get stateEngineServiceUnavailable =>
+      'The required engine service is not ready. Check the engine logs or export diagnostics.';
+
+  @override
+  String get stateEngineOperationUnavailable =>
+      'The engine cannot run this operation right now. Check the engine logs.';
 
   @override
   String get stateSettingsRefreshed => 'Changed elsewhere. Refreshed.';
@@ -18823,25 +19031,159 @@ class L10nEn extends L10n {
       'Check what files and projects are in the workspace and give me a brief overview.';
 
   @override
-  String get viewSuggestWordCount => 'Count words';
+  String get viewSuggestWordCount => 'Write a script';
 
   @override
   String get viewSuggestWordCountPrompt =>
       'Write a Python script that finds the 20 most frequent words in a text file, then run it and show me the results.';
 
   @override
-  String get viewSuggestNode => 'Start Node.js';
+  String get viewSuggestNode => 'New project';
 
   @override
   String get viewSuggestNodePrompt =>
       'Create a Node.js project in the workspace with TypeScript and a minimal unit test.';
 
   @override
-  String get viewSuggestGit => 'Rebase or merge';
+  String get viewSuggestGit => 'Explain Git';
 
   @override
   String get viewSuggestGitPrompt =>
       'Use a concrete example to explain the difference between git rebase and git merge, and when to use each.';
+
+  @override
+  String get viewSuggestWorkspaceHint => 'List files and projects';
+
+  @override
+  String get viewSuggestWordCountHint => 'Count words, then run it';
+
+  @override
+  String get viewSuggestNodeHint => 'Node.js with tests';
+
+  @override
+  String get viewSuggestGitHint => 'Rebase or merge?';
+
+  @override
+  String get viewTipNext => 'Next tip';
+
+  @override
+  String viewTipLabel(String value) {
+    return 'Tip: $value';
+  }
+
+  @override
+  String get viewTipSteer => 'While it works, long-press Send to steer, queue or interrupt';
+
+  @override
+  String get viewTipMidRun => 'You can message mid-run — it reads it at the next step';
+
+  @override
+  String get viewTipSlash => 'Type / for commands: compact the context, switch models and more';
+
+  @override
+  String get viewTipMention => 'Type @ to reference a workspace file or another chat';
+
+  @override
+  String get viewTipReplyMenu => 'Long-press a reply to copy, quote or regenerate it';
+
+  @override
+  String get viewTipEditResend => 'Long-press your own message to edit and resend — the original stays';
+
+  @override
+  String get viewTipQuote => 'Select part of a reply and tap Quote to ask about just that';
+
+  @override
+  String get viewTipTitleDetails => 'Tap the chat title for changes, files and a terminal';
+
+  @override
+  String get viewTipContextRing => 'The ring by Send shows context use — tap it for details';
+
+  @override
+  String get viewTipDrawerMenu => 'Long-press a chat in the sidebar to pin, rename or archive it';
+
+  @override
+  String get viewTipSearch => 'Where the host supports it, chat search matches message content, not just titles';
+
+  @override
+  String get viewTipSettingsSearch => 'Long-press Settings in the sidebar to search settings';
+
+  @override
+  String get viewTipQuickPanel => 'Swipe left on a chat to open the quick panel';
+
+  @override
+  String get viewTipFolderNewChat => 'Long-press a folder in the sidebar to start a chat inside it';
+
+  @override
+  String get viewTipSwitchHost => 'Tap the host name at the sidebar\'s foot to switch to DSH on your computer';
+
+  @override
+  String get viewTipPasteImage => 'Screenshots and stickers from your keyboard can go straight into the composer';
+
+  @override
+  String get viewTipLauncher => 'Long-press the app icon to ask by voice or start a new chat';
+
+  @override
+  String get viewTipPetBubble => 'When the pet pops a bubble, tap it to jump to the chat that\'s waiting';
+
+  @override
+  String get viewTipPetPlay => 'Tap the pet three times to tickle it; long-press to swap it';
+
+  @override
+  String get viewTipActivityStrip => 'While it works, tap the status strip to see this turn\'s full trace';
+
+  @override
+  String get viewTipImageZoom => 'In the image viewer, double-tap or pinch to zoom; long-press to save';
+
+  @override
+  String get viewTipQueuedRecall => 'A queued message can be pulled back into the composer to edit';
+
+  @override
+  String get viewTipKeyboard => 'With a keyboard: Ctrl+Enter sends, Esc twice stops';
+
+  @override
+  String get viewTipShareIn => 'Share text or images to DSH Go from another app to start a new chat with them';
+
+  @override
+  String get viewTipShareSelect => 'When sharing a chat, long-press and slide to pick several messages at once';
+
+  @override
+  String get viewTipChartDrag => 'Drag across a chart in a reply to read each point';
+
+  @override
+  String get viewTipCopyPath => 'Long-press a file in a changes card to copy its path';
+
+  @override
+  String get viewTipCompanion => 'The Companion Room lives in the Switch Host sheet';
+
+  @override
+  String get viewTipAnswerInline => 'When the AI asks you something, just type the answer in the composer';
+
+  @override
+  String get viewTipWallpaper => 'Wallpapers can be dragged, zoomed, blurred and dimmed';
+
+  @override
+  String get viewTipModelHere => 'Pick the model, preset and permissions right here — for this chat only';
+
+  @override
+  String get viewNewChatFolder => 'Folder';
+
+  @override
+  String get viewNewChatPresetTitle => 'Preset for this chat';
+
+  @override
+  String get viewNewChatPermissionTitle => 'Permissions for this chat';
+
+  @override
+  String get viewNewChatDefault => 'Default';
+
+  @override
+  String get viewNewChatUnavailable => 'Unavailable';
+
+  @override
+  String get viewNewChatChange => 'Change';
+
+  @override
+  String get viewNewChatModesFailed => 'Couldn’t set the preset or permissions. The message wasn’t sent.';
 
   @override
   String get viewGreetingMorning => 'Good morning';
@@ -20061,4 +20403,54 @@ class L10nEn extends L10n {
   String webConnectHostFirst(String name) {
     return 'Connect to “$name” to open DSH Web';
   }
+
+  @override
+  String get workspaceRecoveryTitle => 'Workspace index recovery';
+
+  @override
+  String get workspaceRecoveryEnable => 'Use a recovery workspace index';
+
+  @override
+  String get workspaceRecoveryDisable => 'Use the original index again';
+
+  @override
+  String get workspaceRecoveryHint =>
+      'This phone only: use a separate index to access readable conversations when the original workspace index fails.';
+
+  @override
+  String get workspaceRecoveryActive =>
+      'The separate recovery index is selected. Both the original and recovery indexes are retained.';
+
+  @override
+  String get workspaceRecoveryWorking => 'Working…';
+
+  @override
+  String get workspaceRecoveryEnableBody =>
+      'The local engine will stop, switch to a separate recovery index, and start again. The original workspace index stays untouched. Conversation files, plugins, and credentials are not deleted.\n\nOn first use, the new index is built from readable conversations whose folders still exist. Old workspace names, order, defaults, archived state, and pins are not inherited automatically. Empty workspaces and conversations with missing folders may not appear. Original local grouping and pin preferences are retained.\n\nThe recovery index is retained and reused the next time you enable it. This bypasses the original index failure; it does not repair the original index.';
+
+  @override
+  String get workspaceRecoveryDisableBody =>
+      'The local engine will stop, switch back to the original workspace index, and start again. The original failure may return.\n\nConversation files created during recovery and the recovery index are both retained. Workspace membership and order do not sync between the two indexes. Some conversations created during recovery may not appear with the original index. Enable the recovery index again to continue using it.';
+
+  @override
+  String get workspaceRecoveryEnableStart => 'Enable and restart';
+
+  @override
+  String get workspaceRecoveryDisableStart => 'Use original and restart';
+
+  @override
+  String get workspaceRecoveryUnavailable =>
+      'This version does not support workspace index recovery. Check the local engine status and update the app.';
+
+  @override
+  String get workspaceRecoveryRestartIncomplete =>
+      'The index mode changed, but the engine has not been confirmed stopped or restarted. Wait for it to stop before starting it again.';
+
+  @override
+  String get workspaceRecoverySaveFailed =>
+      'The index mode could not be saved. No new start was requested. Check the local engine status and logs.';
+
+  @override
+  String get workspaceRecoveryFailed =>
+      'The operation did not finish. Check the local engine status and logs. This page shows whether the index mode changed.';
 }

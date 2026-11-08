@@ -32,13 +32,13 @@ class UiMcpFacadeTest {
         override fun system() = object : SystemApi {
             override fun apps() = listOf(AppEntry("Example", "example.app"))
             override fun isInstalled(pkg: String) = true
-            override fun launch(app: AppEntry) = error("unexpected launch")
+            override fun launch(app: AppEntry, dispatch: PhoneTasks.SystemDispatch): SysResult = error("unexpected launch")
             override fun urlTarget(url: String) = error("unexpected URL")
-            override fun openUrl(url: String, target: UrlTarget) = error("unexpected URL open")
-            override fun intent(spec: IntentSpec, shareTo: AppEntry?) = error("unexpected intent")
-            override fun notify(title: String, text: String) = error("unexpected notification")
-            override fun clipboardSet(text: String) = error("unexpected clipboard")
-            override fun clipboardGet() = error("unexpected clipboard")
+            override fun openUrl(url: String, target: UrlTarget, dispatch: PhoneTasks.SystemDispatch): SysResult = error("unexpected URL open")
+            override fun intent(spec: IntentSpec, shareTo: AppEntry?, dispatch: PhoneTasks.SystemDispatch): SysResult = error("unexpected intent")
+            override fun notify(title: String, text: String): SysResult = error("unexpected notification")
+            override fun clipboardSet(text: String): SysResult = error("unexpected clipboard")
+            override fun clipboardGet(): SysResult = error("unexpected clipboard")
         }
     }, tasks, ActionLog())
 

@@ -124,15 +124,17 @@ class PhoneBridge(
         }
     }
 
+    private fun current(token: String): Boolean = running && endpoint?.token == token
+
     private fun acceptLocal(s: LocalServerSocket, token: String) {
-        while (running) {
+        while (current(token)) {
             val sock: LocalSocket = try {
                 s.accept()
             } catch (e: Exception) {
-                if (running) log("[dsh-app] phone bridge: accept failed: ${e.message}")
+                if (current(token)) log("[dsh-app] phone bridge: accept failed: ${e.message}")
                 return
             }
-            if (!running) {
+            if (!current(token)) {
                 runCatching { sock.close() }
                 return
             }
@@ -151,14 +153,14 @@ class PhoneBridge(
     }
 
     private fun acceptTcp(s: ServerSocket, token: String) {
-        while (running) {
+        while (current(token)) {
             val sock: Socket = try {
                 s.accept()
             } catch (e: Exception) {
-                if (running) log("[dsh-app] phone bridge: tcp accept failed: ${e.message}")
+                if (current(token)) log("[dsh-app] phone bridge: tcp accept failed: ${e.message}")
                 return
             }
-            if (!running) {
+            if (!current(token)) {
                 runCatching { sock.close() }
                 return
             }
@@ -174,11 +176,15 @@ class PhoneBridge(
 
     private fun serve(sock: Closeable, raw: InputStream, output: OutputStream, token: String, timeout: (Int) -> Unit) {
         val input = java.io.BufferedInputStream(raw)
-        if (!slots.tryAcquire()) {
+        // Admission and stop's socket sweep share one launch boundary.
+        val admitted = synchronized(this) {
+            if (!current(token) || !slots.tryAcquire()) false
+            else { open += sock; true }
+        }
+        if (!admitted) {
             runCatching { sock.close() }
             return
         }
-        open += sock
         thread(name = "dsh-phone-conn", isDaemon = true) {
             try {
                 timeout(HELLO_TIMEOUT_MS)
@@ -190,7 +196,10 @@ class PhoneBridge(
                 val surface = (Json.parse(hello) as? Map<*, *>)?.get("surface") ?: "phone"
                 if (!surfaceAllowed(surface, uiOnly())) return@thread
                 val selected = if (surface == "ui") uiServer ?: return@thread else server
-                authed.incrementAndGet()
+                synchronized(this@PhoneBridge) {
+                    if (!current(token)) return@thread
+                    authed.incrementAndGet()
+                }
                 timeout(0)
                 val lock = Object()
                 fun send(line: String) {
@@ -199,8 +208,9 @@ class PhoneBridge(
                         output.flush()
                     }
                 }
-                while (running) {
+                while (current(token)) {
                     val line = readLine(input, MAX_LINE) ?: break
+                    if (!current(token)) break
                     when (val d = selected.dispatch(line)) {
                         McpServer.Dispatch.None -> Unit
                         is McpServer.Dispatch.Reply -> send(d.line)
