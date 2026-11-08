@@ -177,6 +177,8 @@ void main() {
     expect(ok, isTrue);
     expect(native.callsOf('setPolicies').single.arguments, {
       'denyPackages': ['com.eg.android.AlipayGphone', 'com.unionpay', 'cmb.pb', 'com.icbc'],
+      'unifiedUi': false,
+      'uiAllowedPackages': <String>[],
       'confirmEveryWritePackages': <String>[],
       'confirmMode': 'ask',
     });
