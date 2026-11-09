@@ -40,6 +40,12 @@ class PhoneTaskObservationsTest {
         override fun observe(detail: Boolean, image: Boolean) = ScreenSnapshot("s1", "screen", "App", "app")
         override fun target(screenId: String, elementId: Int) = TargetInfo(screenId, elementId, "button", "send", "app", "App", false, false, false)
         override fun perform(action: PhoneAction): ActionResult { actions++; return ActionResult(true, "done", performedScreen) }
+        var checkedAllowed: (() -> Boolean)? = null
+        override fun performChecked(action: PhoneAction, guard: UiActionGuard, allowed: (() -> Boolean)?,
+                                    actionSourcesAllowed: ((Set<String>) -> Boolean)?): ActionResult {
+            checkedAllowed = allowed
+            return if (allowed == null || allowed()) perform(action) else ActionResult(false, "stopped")
+        }
         override fun perform(action: PhoneAction, allowed: () -> Boolean,
                              coordinateAdmission: ((() -> Boolean) -> Boolean)?): ActionResult {
             capturedAdmission = coordinateAdmission
@@ -382,6 +388,28 @@ class PhoneTaskObservationsTest {
         assertEquals(1, entered)
     }
 
+    @Test fun checkedUiActionStaysInsideTheOwnersPauseAndObservationScope() {
+        val tasks = PhoneTasks(); val physical = Driver(); val ledger = PhoneTaskObservations(tasks)
+        val bound = ledger.bind(physical, owner(tasks))
+        bound.observe(false, false)
+        physical.performedScreen = ScreenSnapshot("sAfter", "after", "App", "app")
+        val guard = UiActionGuard(UiTargetState("app", "1", "s1"))
+        val result = bound.performChecked(PhoneAction.Tap("s1", 1), guard, { true }, { true })
+        assertTrue(result.ok)
+        assertEquals(1, physical.actions)
+        assertNotNull("Checked action must register its returned observation for this owner",
+            bound.target("sAfter", 1))
+        val allowed = checkNotNull(physical.checkedAllowed)
+        assertTrue(allowed())
+        tasks.setPaused(true)
+        assertFalse(allowed())
+        assertFalse(bound.performChecked(PhoneAction.Tap("s1", 1), guard, { true }, { true }).ok)
+        assertEquals(1, physical.actions)
+        tasks.setPaused(false)
+        assertFalse(bound.performChecked(PhoneAction.Tap("sOther", 1), guard, { true }, { true }).ok)
+        assertEquals(1, physical.actions)
+    }
+
     @Test fun everyDriverEntryPointHasAnExplicitOwnershipClassification() {
         // This inventories the interface, not the generated delegation class: Kotlin's
         // `by driver` emits methods even when the owner wrapper forgot an override.
@@ -407,6 +435,8 @@ class PhoneTaskObservationsTest {
             "open(PhoneAppIdentity)",
             "open(PhoneAppIdentity,Function0)",
             "foregroundPackage()",
+            "inspectUiTarget()",
+            "performChecked(PhoneAction,UiActionGuard,Function0,Function1)",
         )
         val actual = PhoneDriver::class.java.methods
             .filterNot { java.lang.reflect.Modifier.isStatic(it.modifiers) }

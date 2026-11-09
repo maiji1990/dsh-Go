@@ -147,6 +147,23 @@ class PhoneTaskObservations(private val tasks: PhoneTasks) {
         override fun perform(action: PhoneAction, allowed: () -> Boolean,
                              coordinateAdmission: ((() -> Boolean) -> Boolean)?): ActionResult =
             perform(action, allowed, coordinateAdmission) { true }
+        override fun inspectUiTarget(): UiTargetState? {
+            current()
+            return driver.inspectUiTarget()
+        }
+        override fun performChecked(action: PhoneAction, guard: UiActionGuard, allowed: (() -> Boolean)?,
+                                    actionSourcesAllowed: ((Set<String>) -> Boolean)?): ActionResult {
+            current()
+            if (action !is PhoneAction.Key && !owns(action.screenId)) {
+                // l10n:keep agent observation ownership result
+                return ActionResult(false, "这个屏幕编号不属于本任务的当前观察。请本任务重新 screen，不要使用另一对话的编号。")
+            }
+            return try {
+                result(driver.performChecked(action, guard,
+                    allowed?.let { outer -> { taskAllowed() && outer() } },
+                    actionSourcesAllowed?.let { outer -> { sources -> taskAllowed() && outer(sources) } }))
+            } finally { syncCurrentScope() }
+        }
         override fun perform(action: PhoneAction, allowed: () -> Boolean,
                              coordinateAdmission: ((() -> Boolean) -> Boolean)?,
                              actionSourcesAllowed: (Set<String>) -> Boolean): ActionResult {
