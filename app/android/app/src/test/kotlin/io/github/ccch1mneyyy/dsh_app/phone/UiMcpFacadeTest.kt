@@ -73,7 +73,8 @@ class UiMcpFacadeTest {
         }
         override fun target(screenId: String, elementId: Int) = TargetInfo(screenId, elementId,
             "输入框", "Search", pkg, "Example", sensitive, sensitive, true)
-        override fun performChecked(action: PhoneAction, guard: UiActionGuard): ActionResult {
+        override fun performChecked(action: PhoneAction, guard: UiActionGuard, allowed: (() -> Boolean)?,
+                                    actionSourcesAllowed: ((Set<String>) -> Boolean)?): ActionResult {
             if (!guard.matches(inspectUiTarget()) || action.screenId != guard.screenId)
                 return ActionResult(false, "changed", errorCode = "STALE_ELEMENT")
             return perform(action)
