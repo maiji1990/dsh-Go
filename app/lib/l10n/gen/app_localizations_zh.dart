@@ -2585,6 +2585,53 @@ class L10nZh extends L10n {
   }
 
   @override
+  String botsPetCodexTitle(String name) {
+    return '「$name」是从 Codex 宠物转过来的';
+  }
+
+  @override
+  String get botsPetCodexBody => '大部分照原样，有几处不完全一样：';
+
+  @override
+  String get botsPetCodexOk => '知道了';
+
+  @override
+  String get botsPetCodexLoops => '动作会一直循环到状态变化，不像 Codex 里跑几遍就回到待机';
+
+  @override
+  String get botsPetCodexRoamLeft => '往左走用的是往右走那一行的镜像';
+
+  @override
+  String get botsPetCodexDrag => '拖着它时一律用朝右的那一行';
+
+  @override
+  String get botsPetCodexSleep => '睡觉时用待机的第一帧';
+
+  @override
+  String get botsPetCodexLook => '看向不同方向的那些格子没用上';
+
+  @override
+  String get botsPetCodexWebp => 'WebP 图转成了 PNG';
+
+  @override
+  String get botsPetCodexCustomTracks => '自定义的动作行没接到任何状态上';
+
+  @override
+  String get botsPetCodexFps => '帧率换算成毫秒时取了整';
+
+  @override
+  String get botsPetCodexOneShot => '只播一次的动作，播完回到哪里由 DSH 决定';
+
+  @override
+  String get botsPetCodexMissingAuthor => '包里没写作者';
+
+  @override
+  String get botsPetCodexMissingLicense => '包里没写授权';
+
+  @override
+  String get botsPetCodexMissingSource => '包里没写来源';
+
+  @override
   String botsPetImportReplaced(String name) {
     return '「$name」换成了新的';
   }
@@ -4568,6 +4615,9 @@ class L10nZh extends L10n {
   String get companionLogTitle => '聊天记录';
 
   @override
+  String get companionContextUnsupported => '这台主机的伙伴还不支持上下文：她的名字、设定和刚才发生的事传不过去，只发你说的话。升级主机或换成轻量模式就好。';
+
+  @override
   String get companionLogEmpty => '还没有说过话。';
 
   @override
@@ -4894,10 +4944,34 @@ class L10nZh extends L10n {
   String get companionInviteYes2 => '那我先躺好啦，你也放松点。';
 
   @override
-  String get companionMenuInvite => '主动邀请';
+  String get companionMenuPace => '她多主动';
 
   @override
-  String get companionMenuInviteHint => '你安静陪着她时，她偶尔会邀你一起歇一会儿';
+  String get companionPaceHint => '她只在你安静陪着她时开口：邀你歇一会儿，或提一句别的对话。深夜不说，每次进门最多邀一次。';
+
+  @override
+  String get companionPaceQuiet => '安静';
+
+  @override
+  String get companionPaceQuietHint => '不主动开口，你找她时才说话';
+
+  @override
+  String get companionPaceRare => '偶尔';
+
+  @override
+  String get companionPaceRareHint => '一天最多 2 次，至少隔 6 小时';
+
+  @override
+  String get companionPaceOften => '常常';
+
+  @override
+  String get companionPaceOftenHint => '一天最多 6 次，至少隔 2 小时';
+
+  @override
+  String get companionPaceChatty => '话多';
+
+  @override
+  String get companionPaceChattyHint => '一天最多 12 次，至少隔半小时';
 
   @override
   String get companionSetupBundled => '接她回家';
@@ -4951,39 +5025,80 @@ class L10nZh extends L10n {
   String get companionHugClose => '抱紧一点也没关系哦。';
 
   @override
-  String companionTaskDone(String title) {
-    return '「$title」那边跑完啦。';
-  }
-
-  @override
   String get companionTaskDoneUntitled => '你那边的任务跑完啦。';
-
-  @override
-  String companionTaskFailed(String title) {
-    return '「$title」好像出错了，要去看看吗？';
-  }
 
   @override
   String get companionTaskFailedUntitled => '你那边的任务好像出错了，要去看看吗？';
 
   @override
-  String companionTaskApproval(String title) {
-    return '「$title」在等你批准。';
-  }
-
-  @override
-  String get companionTaskApprovalUntitled => '你那边有件事在等你批准。';
-
-  @override
-  String companionTaskQuestion(String title) {
-    return '「$title」有事想问你。';
-  }
-
-  @override
-  String get companionTaskQuestionUntitled => '你那边有个问题在等你回答。';
-
-  @override
   String get companionTaskOpen => '去看看';
+
+  @override
+  String get companionMenuSignals => '她会提起什么';
+
+  @override
+  String get companionSignalsHint => '这些只在小屋里说给你听，不会发给模型。说多说少跟着「她多主动」，和邀请共用次数，深夜不说；选「安静」她也不说。';
+
+  @override
+  String get companionSignalState => '留意别的对话';
+
+  @override
+  String get companionSignalStateHint => '这台主机上别的对话跑完或出错时，她心里有数';
+
+  @override
+  String get companionSignalSpeech => '提一句';
+
+  @override
+  String get companionSignalSpeechHint => '挑你安静的时候说一句';
+
+  @override
+  String get companionSignalVoice => '用声音说出来';
+
+  @override
+  String get companionSignalVoiceHint => '她的声音开着时，把这句读出来';
+
+  @override
+  String get companionSignalNight => '深夜提醒你休息';
+
+  @override
+  String get companionSignalNightHint => '深夜在小屋里待了一阵，她轻轻提醒一次';
+
+  @override
+  String get companionSignalLateUse => '这么晚了还陪着我……要不要早点歇一会儿？';
+
+  @override
+  String get companionRecallTitle => '完整模式里自动想起记忆';
+
+  @override
+  String get companionRecallHint => '打开时换一段新对话；改动她记得的事会自动关掉';
+
+  @override
+  String get companionRecallConfirm =>
+      '打开后，她确认过的记忆（最多 12 条）会跟着完整模式里她的每次回复一起发给模型。会开始一段新对话，现在这段留在主对话列表里。改动记忆后会自动关掉，到时可以再打开。';
+
+  @override
+  String get companionRecallTurnOn => '打开';
+
+  @override
+  String get companionRecallOn => '好，从这段新对话起，我会想着你让我记住的事。';
+
+  @override
+  String get companionRecallBusy => '另一个对话正在用自动想起记忆，先在那边关掉再来';
+
+  @override
+  String get companionRecallUnsupported => '这台主机现在开不了自动想起记忆';
+
+  @override
+  String get companionRecallFailed => '自动想起记忆没打开，再试一次吧';
+
+  @override
+  String get companionRecallOff => '自动想起记忆关了，下一句会开始一段新对话';
+
+  @override
+  String get companionRecallOffFailed => '自动想起记忆没关掉，再试一次吧';
+
+  @override
+  String get companionRecallStopped => '自动想起记忆停了（她记得的事有改动），换成了一段新对话。想要的话可以在菜单里再打开。';
 
   @override
   String get companionMenuVoice => '她的声音';
@@ -10904,6 +11019,14 @@ class L10nZh extends L10n {
   String get phonePreviewOpen => '查看后台屏';
 
   @override
+  String phonePreviewTask(String taskId) {
+    return '预览任务 $taskId';
+  }
+
+  @override
+  String get phonePreviewInUse => '正在预览另一任务';
+
+  @override
   String get phonePreviewOff => '任务已结束或预览已关闭';
 
   @override
@@ -11073,7 +11196,7 @@ class L10nZh extends L10n {
       'main_changed': '主屏采样点发生变化，也可能包含用户操作；请完成清理，不能据此判定原因。',
       'main_unchanged': '这些有限采样点未见变化，采样之间是否受扰仍未知。',
       'main_incomplete': '主屏样本不完整，不能据此证明没有受扰。',
-      'not_installed': '未安装本机 OCR 识别器，未执行 OCR 测试。',
+      'not_installed': '本自检未接入 OCR，未执行识别测试。',
       'other': '收到无法识别的结果。',
     });
     return '$_temp0';
@@ -11110,7 +11233,7 @@ class L10nZh extends L10n {
 
   @override
   String get phoneSelfCheckTargetC2Scope =>
-      '使用固定本机目标核验启动、控件树、单次按钮点按、ASCII／中文 ACTION_SET_TEXT 整框替换与回读、本地图样截图和有限受控刷新；不衡量 FPS 或流畅度。有限主屏样本不能证明采样间全程无扰。OCR 未安装；触摸接收探针、滚动和返回不在本次范围。仅清理完成也不证明曾创建展示屏。';
+      '使用固定本机目标核验启动、控件树、单次按钮点按、ASCII／中文 ACTION_SET_TEXT 整框替换与回读、本地图样截图和有限受控刷新；不衡量 FPS 或流畅度。有限主屏样本不能证明采样间全程无扰。OCR、触摸接收探针、滚动和返回不在本次范围。仅清理完成也不证明曾创建展示屏。';
 
   @override
   String phoneTaskWaiting(int taskId) {
@@ -11166,6 +11289,96 @@ class L10nZh extends L10n {
 
   @override
   String get phoneUnifiedUiHint => '下次启动引擎生效；切换后先重新观察界面';
+
+  @override
+  String get phoneLocalOcrTitle => '本机文字识别（ML Kit）';
+
+  @override
+  String get phoneLocalOcrUnknown => '暂时无法读取本机文字识别设置，请刷新后再试。';
+
+  @override
+  String get phoneLocalOcrDisclosure => '识别在本机进行，截图和文字不会发给 Google；Google 的 SDK 会收集机型、应用版本、耗时等使用统计。';
+
+  @override
+  String get phoneLocalOcrDetails =>
+      '默认开启。关闭时，识别请求不会触发 SDK 加载或初始化。截图和识别文字可能发送给你配置的模型。关闭后不再开始新的本机文字识别；已经开始的识别可能仍在收尾。关闭不会卸载 SDK，也不承诺清除或停止发送此前积累的 SDK 统计。';
+
+  @override
+  String get phoneBackgroundParallelTitle => '后台任务上限';
+
+  @override
+  String phoneBackgroundParallelStatus(int configured, int effective, int held) {
+    return '设置上限：$configured · 当前可用上限：$effective · 已占用：$held';
+  }
+
+  @override
+  String get phoneBackgroundParallelDescription => '调低上限会保留已有任务。新任务仍需等待应用和主屏资源可用。';
+
+  @override
+  String phoneBackgroundParallelChoice(int limit) {
+    return '$limit 个后台任务槽位';
+  }
+
+  @override
+  String get phoneBackgroundParallelOff => '后台通道已关闭。保存此偏好不会开启通道。';
+
+  @override
+  String get phoneBackgroundParallelUnsupported => '此设备当前无法使用后台操作。';
+
+  @override
+  String get phoneBackgroundParallelConnection => '建立连接后才能接纳新的后台任务。';
+
+  @override
+  String get phoneBackgroundParallelBusy => '后台通道正在准备或维护，暂不能接纳新任务。';
+
+  @override
+  String get phoneBackgroundParallelRecovery => '请先处理未完成的后台资源恢复，再开始新任务。';
+
+  @override
+  String get phoneBackgroundParallelPeer => '当前连接的服务不支持所需的后台能力。';
+
+  @override
+  String get phoneBackgroundParallelSerial => '此连接支持一个后台槽位，设置偏好仍会保留。';
+
+  @override
+  String get phoneSkillBundlePublishedUnverified => '文件已发布，但尚未通过完整核验。不要重复保存。';
+
+  @override
+  String get phoneSkillBundleUnknown => '保存结果尚未确认，文件可能已经写入。不要重复保存。';
+
+  @override
+  String phoneSkillBundleRevision(String revision) {
+    return '路线版本：$revision';
+  }
+
+  @override
+  String get phoneSkillReplayReview => '核对手机路线';
+
+  @override
+  String get phoneSkillReplaySourceChanged => '本机会话或连接已改变，请返回当前本机会话重新选择。';
+
+  @override
+  String get phoneSkillReplayUnavailable => '此路线尚不能在当前本机安全执行。仍可按普通技能模板使用。';
+
+  @override
+  String get phoneSkillReplayConfirm => '我已核对这条路线与本次选择的 App。';
+
+  @override
+  String get phoneSkillReplayToComposer => '放入当前对话';
+
+  @override
+  String phoneSkillReplayStartText(String request) {
+    return '本机已选择并核对手机路线。请仅调用 mcp__phone__replay，参数 $request。若不可用或被拒绝，交回用户/模型，不要改为普通动作重放。';
+  }
+
+  @override
+  String get phoneSkillReplayQueue => '发送路线（排队）';
+
+  @override
+  String get phoneSkillReplayQueued => '路线消息已被接收或排队，尚不代表路线执行成功。';
+
+  @override
+  String get phoneSkillReplaySendUncertain => '路线消息未确认发送成功；没有自动重新准备或重放。请核对原对话结果。';
 
   @override
   String get phoneTaskResultReady => '任务完成 · 查看结果';
@@ -18170,7 +18383,7 @@ class L10nZh extends L10n {
   String get usageStatsSection => '改进 DSH Go';
 
   @override
-  String get usageStatsFooter => '只含使用次数、版本和手机品牌，不含对话、文件和账号。';
+  String get usageStatsFooter => '这个开关只控制 dsh-go 自身的使用次数、版本和手机品牌统计，不含对话、文件和账号；它不控制 Google ML Kit SDK 的统计。';
 
   @override
   String get usageNoticeBody => '不含对话和个人信息，可随时关闭';

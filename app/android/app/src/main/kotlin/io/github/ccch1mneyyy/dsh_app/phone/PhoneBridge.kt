@@ -42,7 +42,7 @@ class PhoneBridge(
     private val uiServer: McpServer? = null,
     private val uiOnly: () -> Boolean = { false },
     private val log: (String) -> Unit,
-    private val admit: (McpServer.Dispatch.Call) -> (() -> String) = { call -> { call.run() } },
+    private val admit: (McpServer.Dispatch.Call) -> PhoneCallWork = { call -> PhoneCallWork({ call.run() }) },
     private val admitEnd: (McpServer.Dispatch.RunEnd) -> EndWork = { EndWork(it.ack()) {} },
 ) {
     class EndWork(val reply: String, val finish: () -> Unit)
@@ -231,7 +231,10 @@ class PhoneBridge(
                             val invoke = synchronized(this@PhoneBridge) {
                                 if (current(token)) admit(d) else null
                             } ?: break
-                            calls.execute { runCatching { send(invoke()) } }
+                            // The timer commits a reply only. Socket writes stay on the existing
+                            // pool; the original call body retains its resource/drain ownership.
+                            invoke.schedule(deadlines) { reply -> calls.execute { runCatching { send(reply) } } }
+                            calls.execute { runCatching { invoke.run()?.let(::send) } }
                         }
                     }
                 }
@@ -254,6 +257,9 @@ class PhoneBridge(
         const val MAX_HELLO = 4096
         const val MAX_LINE = 4 * 1024 * 1024
 
+        private val deadlines = java.util.concurrent.ScheduledThreadPoolExecutor(1) { r ->
+            Thread(r, "dsh-phone-deadline").apply { isDaemon = true }
+        }.apply { removeOnCancelPolicy = true }
         private val random = SecureRandom()
 
         fun hex(bytes: Int): String {

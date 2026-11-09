@@ -13,22 +13,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'companion_initiative.dart';
+import 'companion_elapsed_clock.dart';
 
 const companionInitiativeKey = 'companion_initiative_v1';
 const _enabledKey = 'companion_initiative_enabled';
+const _paceKey = 'companion_initiative_pace';
 
 /// Both clocks for the controller: the wall clock for its day-long quotas, a
 /// monotonic one for quiet and display time. Tests drive their own.
 final companionInitiativeClockProvider = Provider<CompanionInitiativeClock Function()>((ref) {
-  final mono = Stopwatch()..start();
-  return () {
-    final wall = DateTime.now();
-    return CompanionInitiativeClock(
-      wallMs: wall.millisecondsSinceEpoch,
-      monoMs: mono.elapsedMilliseconds,
-      offsetMinutes: wall.timeZoneOffset.inMinutes,
-    );
-  };
+  final mono = CompanionElapsedClock();
+  return CompanionClockSampler(elapsedMilliseconds: mono.readMilliseconds).read;
 });
 
 final companionInitiativeProvider = Provider<CompanionInitiative>((ref) {
@@ -63,6 +58,36 @@ class CompanionInitiativeEnabled extends Notifier<bool?> {
 
 final companionInitiativeEnabledProvider = NotifierProvider<CompanionInitiativeEnabled, bool?>(
   CompanionInitiativeEnabled.new,
+);
+
+/// How often she speaks up when she may (「她多主动」). Unread or unknown is
+/// the original pace: two a day, six hours apart.
+class CompanionInitiativePaceSetting extends Notifier<CompanionInitiativePace> {
+  @override
+  CompanionInitiativePace build() {
+    unawaited(_load());
+    return CompanionInitiativePace.rare;
+  }
+
+  Future<void> _load() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = CompanionInitiativePace.byName(prefs.getString(_paceKey));
+      if (ref.mounted && saved != null) state = saved;
+    } on Object {
+      // The original pace, then.
+    }
+  }
+
+  Future<void> set(CompanionInitiativePace pace) async {
+    state = pace;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_paceKey, pace.name);
+  }
+}
+
+final companionInitiativePaceProvider = NotifierProvider<CompanionInitiativePaceSetting, CompanionInitiativePace>(
+  CompanionInitiativePaceSetting.new,
 );
 
 /// The room the owner shows things in. Every call is synchronous: a ticket is
@@ -102,11 +127,27 @@ class _QueuedInitiative {
 /// One installation owner serializes observations, presentation and persistence.
 /// A displayed message is charged even when its synchronous callback changes room.
 class CompanionInitiative {
-  CompanionInitiative(this._now) {
+  CompanionInitiative(this._readClock) {
     unawaited(_restore());
   }
-  final CompanionInitiativeClock Function() _now;
+  final CompanionInitiativeClock Function() _readClock;
+  bool _clockUnavailable = false;
+  CompanionInitiativeClock _now() {
+    if (!_clockUnavailable) {
+      try {
+        final stamp = _readClock();
+        if (stamp.monoMs >= 0) return stamp;
+      } on Object {
+        // A failed native read closes this owner, including pending displays.
+      }
+      _clockUnavailable = true;
+      dispose();
+    }
+    return const CompanionInitiativeClock(wallMs: 0, monoMs: -1);
+  }
+
   CompanionInitiativeController? _controller;
+  CompanionInitiativePace _pace = CompanionInitiativePace.rare;
   CompanionInitiativeRoom? _room;
   CompanionInitiativeView? _view;
   bool _disposed = false;
@@ -121,8 +162,11 @@ class CompanionInitiative {
   Future<void> _writes = Future.value();
   final _restored = Completer<void>();
   Future<void> get ready => _restored.future;
-  String? get fault =>
-      _controller == null ? (_restored.isCompleted ? 'not-restored' : 'restoring') : _controller!.fault;
+  String? get fault => _clockUnavailable
+      ? 'clock-unavailable'
+      : _controller == null
+      ? (_restored.isCompleted ? 'not-restored' : 'restoring')
+      : _controller!.fault;
   int? _quietSinceMono;
   int? _wokeForQuiet;
   Timer? _quietWake;
@@ -154,11 +198,24 @@ class CompanionInitiative {
       restored = const CompanionInitiativeRestore.unavailable();
     }
     if (!_disposed) {
-      _controller = CompanionInitiativeController(now: _now(), restored: restored);
-      final view = _view;
-      if (_room != null && view != null) _run(CompanionInitiativeEvent.enter(view));
+      final now = _now();
+      if (!_disposed) {
+        _controller = CompanionInitiativeController(now: now, restored: restored)..pace = _pace;
+        final view = _view;
+        if (_room != null && view != null) _run(CompanionInitiativeEvent.enter(view));
+      }
     }
     if (!_restored.isCompleted) _restored.complete();
+  }
+
+  /// The person's pick (「她多主动」), from the next check on: a quiet stretch
+  /// already turned down under the old pace is looked at again.
+  set pace(CompanionInitiativePace value) {
+    if (_disposed || value == _pace) return;
+    _pace = value;
+    _controller?.pace = value;
+    _wokeForQuiet = null;
+    _run(const CompanionInitiativeEvent.check());
   }
 
   void enter(CompanionInitiativeRoom room, CompanionInitiativeView view) {
@@ -220,6 +277,9 @@ class CompanionInitiative {
   }
 
   /// The caller keeps the original gate expiry and provides an actual render fact.
+  /// The gate must read the same [companionInitiativeClockProvider] clock's
+  /// `monoMs`: Android uses BOOTTIME, not the SDK gate's default Stopwatch
+  /// epoch. Never pass an absolute expiry from a different monotonic clock.
   /// Calling this before restoration never queues a delayed prompt.
   bool requestSignal(
     CompanionInitiativeRoom room,
@@ -281,6 +341,7 @@ class CompanionInitiative {
 
   void _armSignalExpiry(_SignalRequest request) {
     final left = request.candidate.expiresAtMonoMs - _now().monoMs;
+    if (_disposed) return;
     _signalExpiry = Timer(Duration(milliseconds: max(0, left)), () {
       if (!identical(_signal, request) || _disposed) return;
       if (_now().monoMs < request.candidate.expiresAtMonoMs) {
@@ -500,18 +561,34 @@ class CompanionInitiative {
       return;
     }
     final now = _now();
+    if (_disposed) return;
     final record = controller.record;
     var gate = 0;
     if (record != null) {
       final all = record.optionalAtMs;
       final recent = all.where((t) => t > now.wallMs - CompanionInitiativeRules.windowMs).toList();
       gate = max(gate, record.declinedUntilMs);
-      if (all.isNotEmpty) gate = max(gate, all.last + CompanionInitiativeRules.inviteGapMs);
-      if (recent.length >= CompanionInitiativeRules.maxInvites) {
-        gate = max(gate, recent.first + CompanionInitiativeRules.windowMs);
+      if (all.isNotEmpty) gate = max(gate, all.last + controller.pace.gapMs);
+      if (recent.length >= controller.pace.maxPerDay) {
+        // Room again once enough of the day's lines have aged out.
+        gate = max(gate, recent[recent.length - controller.pace.maxPerDay] + CompanionInitiativeRules.windowMs);
       }
     }
-    final at = max<int>(since + CompanionInitiativeRules.quietMs, now.monoMs + max<int>(0, gate - now.wallMs));
+    var at = max<int>(since + controller.pace.quietMs, now.monoMs + max<int>(0, gate - now.wallMs));
+    // Quiet/quotas may finish at night. Schedule the first eligible local day
+    // boundary instead of spending this quiet stretch on a rejected check.
+    final wallAt = now.wallMs + at - now.monoMs;
+    // A safely encoded ledger can refuse until beyond DateTime's calendar.
+    // Such a quota cannot reopen within the controller's valid clock range.
+    if (wallAt > 8640000000000000 - 2 * CompanionInitiativeRules.windowMs) {
+      _cancelQuietWake();
+      return;
+    }
+    final local = DateTime.fromMillisecondsSinceEpoch(wallAt + now.offsetMinutes * 60000, isUtc: true);
+    if (controller.enforceLocalQuietHours && (local.hour < 7 || local.hour >= 23)) {
+      final day = DateTime.utc(local.year, local.month, local.day + (local.hour >= 23 ? 1 : 0), 7);
+      at += day.millisecondsSinceEpoch - now.offsetMinutes * 60000 - wallAt;
+    }
     if (_quietWake != null && _quietWakeAt == at) return;
     _cancelQuietWake();
     _quietWakeAt = at;
@@ -519,11 +596,17 @@ class CompanionInitiative {
       _quietWake = null;
       _quietWakeAt = null;
       if (_disposed) return;
-      if (_now().monoMs < at) {
+      final wokeAt = _now();
+      if (_disposed) return;
+      if (wokeAt.monoMs < at) {
         _plan(controller);
         return;
       }
-      _wokeForQuiet = since;
+      // A suspended process can resume after the planned daytime window.
+      // The controller still validates both clocks before planning another day.
+      if (!controller.enforceLocalQuietHours || companionNightKey(wokeAt.wallMs, wokeAt.offsetMinutes) == null) {
+        _wokeForQuiet = since;
+      }
       _run(const CompanionInitiativeEvent.check());
     });
   }
@@ -537,8 +620,10 @@ class CompanionInitiative {
   void _arm(String id, int? at) {
     _disarm();
     if (at == null) return;
+    final left = max(0, at - _now().monoMs);
+    if (_disposed) return;
     _expiryTicket = id;
-    _expiry = Timer(Duration(milliseconds: max(0, at - _now().monoMs)), () {
+    _expiry = Timer(Duration(milliseconds: left), () {
       _expiry = null;
       if (_disposed) return;
       if (_now().monoMs < at) {

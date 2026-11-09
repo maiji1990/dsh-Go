@@ -2739,6 +2739,54 @@ class L10nEn extends L10n {
   }
 
   @override
+  String botsPetCodexTitle(String name) {
+    return '$name was converted from a Codex pet';
+  }
+
+  @override
+  String get botsPetCodexBody => 'Most of it carries over as it was. A few things differ:';
+
+  @override
+  String get botsPetCodexOk => 'Got it';
+
+  @override
+  String get botsPetCodexLoops =>
+      'Motions loop until the state changes, instead of settling back to idle after a few rounds as in Codex';
+
+  @override
+  String get botsPetCodexRoamLeft => 'Walking left mirrors the walking-right row';
+
+  @override
+  String get botsPetCodexDrag => 'Dragging always uses the facing-right row';
+
+  @override
+  String get botsPetCodexSleep => 'Sleeping shows the first idle frame';
+
+  @override
+  String get botsPetCodexLook => 'The look-in-each-direction cells are not used';
+
+  @override
+  String get botsPetCodexWebp => 'The WebP sheet was converted to PNG';
+
+  @override
+  String get botsPetCodexCustomTracks => 'Custom motion rows are not tied to any state';
+
+  @override
+  String get botsPetCodexFps => 'Frame rates were rounded to whole milliseconds';
+
+  @override
+  String get botsPetCodexOneShot => 'Where a play-once motion returns to is decided by DSH';
+
+  @override
+  String get botsPetCodexMissingAuthor => 'The pack names no author';
+
+  @override
+  String get botsPetCodexMissingLicense => 'The pack names no license';
+
+  @override
+  String get botsPetCodexMissingSource => 'The pack names no source';
+
+  @override
   String botsPetImportReplaced(String name) {
     return '$name was updated';
   }
@@ -4860,6 +4908,10 @@ class L10nEn extends L10n {
   String get companionLogTitle => 'Log';
 
   @override
+  String get companionContextUnsupported =>
+      'This host can\'t take her context yet: her name, persona and what just happened won\'t reach her, only what you say. Update the host or switch to light mode.';
+
+  @override
   String get companionLogEmpty => 'Nothing said yet.';
 
   @override
@@ -5195,10 +5247,35 @@ class L10nEn extends L10n {
   String get companionInviteYes2 => 'I\'ll get comfy. You relax too.';
 
   @override
-  String get companionMenuInvite => 'Invitations';
+  String get companionMenuPace => 'How often she speaks up';
 
   @override
-  String get companionMenuInviteHint => 'When you sit quietly with her, she may now and then ask you to rest together';
+  String get companionPaceHint =>
+      'She speaks up only while you sit quietly with her: asking you to rest together, or mentioning another conversation. Never late at night, and at most one invitation per visit.';
+
+  @override
+  String get companionPaceQuiet => 'Quiet';
+
+  @override
+  String get companionPaceQuietHint => 'Never unasked; she talks when you talk to her';
+
+  @override
+  String get companionPaceRare => 'Now and then';
+
+  @override
+  String get companionPaceRareHint => 'Up to 2 times a day, at least 6 hours apart';
+
+  @override
+  String get companionPaceOften => 'Often';
+
+  @override
+  String get companionPaceOftenHint => 'Up to 6 times a day, at least 2 hours apart';
+
+  @override
+  String get companionPaceChatty => 'Chatty';
+
+  @override
+  String get companionPaceChattyHint => 'Up to 12 times a day, at least half an hour apart';
 
   @override
   String get companionSetupBundled => 'Bring her home';
@@ -5254,39 +5331,82 @@ class L10nEn extends L10n {
   String get companionHugClose => 'You can hold me tighter, you know.';
 
   @override
-  String companionTaskDone(String title) {
-    return '\"$title\" is done over there.';
-  }
-
-  @override
   String get companionTaskDoneUntitled => 'Your task over there is done.';
-
-  @override
-  String companionTaskFailed(String title) {
-    return '\"$title\" seems to have hit an error. Take a look?';
-  }
 
   @override
   String get companionTaskFailedUntitled => 'Your task over there seems to have hit an error. Take a look?';
 
   @override
-  String companionTaskApproval(String title) {
-    return '\"$title\" is waiting for your approval.';
-  }
-
-  @override
-  String get companionTaskApprovalUntitled => 'Something over there is waiting for your approval.';
-
-  @override
-  String companionTaskQuestion(String title) {
-    return '\"$title\" has a question for you.';
-  }
-
-  @override
-  String get companionTaskQuestionUntitled => 'There\'s a question waiting for you over there.';
-
-  @override
   String get companionTaskOpen => 'Take a look';
+
+  @override
+  String get companionMenuSignals => 'What she brings up';
+
+  @override
+  String get companionSignalsHint =>
+      'These are said only to you, here in her room; nothing goes to the model. How often follows How often she speaks up, shared with invitations, and never late at night. On Quiet she says nothing.';
+
+  @override
+  String get companionSignalState => 'Keep track of other conversations';
+
+  @override
+  String get companionSignalStateHint => 'She notices when another conversation on this host finishes or fails';
+
+  @override
+  String get companionSignalSpeech => 'Mention it';
+
+  @override
+  String get companionSignalSpeechHint => 'She says a short line while you\'re quiet';
+
+  @override
+  String get companionSignalVoice => 'Say it out loud';
+
+  @override
+  String get companionSignalVoiceHint => 'Reads the line aloud when her voice is on';
+
+  @override
+  String get companionSignalNight => 'Late-night reminder to rest';
+
+  @override
+  String get companionSignalNightHint => 'After a while in her room late at night, she gently reminds you once';
+
+  @override
+  String get companionSignalLateUse => 'It\'s so late and you\'re still here with me... maybe rest a little?';
+
+  @override
+  String get companionRecallTitle => 'Remember things in full mode';
+
+  @override
+  String get companionRecallHint => 'Turning it on starts a new conversation; changing what she remembers turns it off';
+
+  @override
+  String get companionRecallConfirm =>
+      'Once on, her confirmed memories (up to 12) go to the model along with each of her replies in full mode. A new conversation starts; the current one stays in the main chat list. Changing her memories turns this off, and you can turn it on again.';
+
+  @override
+  String get companionRecallTurnOn => 'Turn on';
+
+  @override
+  String get companionRecallOn => 'From this new conversation on, I\'ll keep in mind what you asked me to remember.';
+
+  @override
+  String get companionRecallBusy => 'Another conversation is already using automatic recall. Turn it off there first.';
+
+  @override
+  String get companionRecallUnsupported => 'This host can\'t turn on automatic recall right now';
+
+  @override
+  String get companionRecallFailed => 'Automatic recall didn\'t turn on. Try again.';
+
+  @override
+  String get companionRecallOff => 'Automatic recall is off. Your next message starts a new conversation.';
+
+  @override
+  String get companionRecallOffFailed => 'Automatic recall didn\'t turn off. Try again.';
+
+  @override
+  String get companionRecallStopped =>
+      'Automatic recall stopped (what she remembers changed), so a new conversation began. You can turn it on again from the menu.';
 
   @override
   String get companionMenuVoice => 'Her voice';
@@ -11469,6 +11589,14 @@ class L10nEn extends L10n {
   String get phonePreviewOpen => 'View background screen';
 
   @override
+  String phonePreviewTask(String taskId) {
+    return 'Preview task $taskId';
+  }
+
+  @override
+  String get phonePreviewInUse => 'Another task is being previewed';
+
+  @override
   String get phonePreviewOff => 'The task ended or preview is off';
 
   @override
@@ -11645,7 +11773,7 @@ class L10nEn extends L10n {
           'MAIN samples changed; this may include user actions. Complete cleanup. This does not establish the cause.',
       'main_unchanged': 'No change was seen at these finite sampling points. Disturbance between them remains unknown.',
       'main_incomplete': 'MAIN samples are incomplete. They cannot establish absence of disturbance.',
-      'not_installed': 'No local OCR recognizer is installed. OCR was not tested.',
+      'not_installed': 'This self-check does not include OCR. OCR was not tested.',
       'other': 'An unrecognized result was received.',
     });
     return '$_temp0';
@@ -11682,7 +11810,7 @@ class L10nEn extends L10n {
 
   @override
   String get phoneSelfCheckTargetC2Scope =>
-      'Uses a fixed local target for launch, tree reading, one button tap, ASCII and Chinese ACTION_SET_TEXT replacement/readback, local pattern capture and limited controlled refresh. This does not measure FPS or smoothness. Finite MAIN samples cannot prove there was no disturbance between samples. OCR is not installed; touch receiver, scrolling and back are not tested. Cleanup alone does not prove a display was created.';
+      'Uses a fixed local target for launch, tree reading, one button tap, ASCII and Chinese ACTION_SET_TEXT replacement/readback, local pattern capture and limited controlled refresh. This does not measure FPS or smoothness. Finite MAIN samples cannot prove there was no disturbance between samples. OCR, touch reception, scrolling and back are not tested. Cleanup alone does not prove a display was created.';
 
   @override
   String phoneTaskWaiting(int taskId) {
@@ -11739,6 +11867,108 @@ class L10nEn extends L10n {
 
   @override
   String get phoneUnifiedUiHint => 'Applies on the next engine start; observe again after switching';
+
+  @override
+  String get phoneLocalOcrTitle => 'On-device text recognition (ML Kit)';
+
+  @override
+  String get phoneLocalOcrUnknown => 'This setting could not be read. Refresh and try again.';
+
+  @override
+  String get phoneLocalOcrDisclosure =>
+      'Recognition runs on this device. Screenshots and text are not sent to Google; Google’s SDK collects usage statistics such as device model, app version and processing time.';
+
+  @override
+  String get phoneLocalOcrDetails =>
+      'Enabled by default. While off, recognition requests do not trigger SDK loading or initialization. Screenshots and recognized text may be sent to your configured model. Turning this off prevents new local recognition; work already started may still finish. It does not uninstall the SDK or promise to clear or stop sending previously accumulated SDK statistics.';
+
+  @override
+  String get phoneBackgroundParallelTitle => 'Background task limit';
+
+  @override
+  String phoneBackgroundParallelStatus(int configured, int effective, int held) {
+    return 'Configured: $configured · Available limit: $effective · Occupied: $held';
+  }
+
+  @override
+  String get phoneBackgroundParallelDescription =>
+      'A lower limit keeps existing tasks. New tasks still wait for apps and the main screen to become available.';
+
+  @override
+  String phoneBackgroundParallelChoice(int limit) {
+    return '$limit background task slots';
+  }
+
+  @override
+  String get phoneBackgroundParallelOff => 'The background channel is off. Saving this preference does not turn it on.';
+
+  @override
+  String get phoneBackgroundParallelUnsupported => 'Background operation is unavailable on this device.';
+
+  @override
+  String get phoneBackgroundParallelConnection => 'A connection is required before a new background task can start.';
+
+  @override
+  String get phoneBackgroundParallelBusy =>
+      'The background channel is being prepared or maintained. New tasks cannot start yet.';
+
+  @override
+  String get phoneBackgroundParallelRecovery =>
+      'Resolve unfinished background resource recovery before starting new tasks.';
+
+  @override
+  String get phoneBackgroundParallelPeer =>
+      'The connected service does not support the required background capabilities.';
+
+  @override
+  String get phoneBackgroundParallelSerial =>
+      'This connection supports one background slot. Your preference remains saved.';
+
+  @override
+  String get phoneSkillBundlePublishedUnverified =>
+      'The files were published, but full verification has not succeeded. Do not save again.';
+
+  @override
+  String get phoneSkillBundleUnknown =>
+      'The save result is not confirmed. Files may already have been written. Do not save again.';
+
+  @override
+  String phoneSkillBundleRevision(String revision) {
+    return 'Route revision: $revision';
+  }
+
+  @override
+  String get phoneSkillReplayReview => 'Review phone route';
+
+  @override
+  String get phoneSkillReplaySourceChanged =>
+      'The local session or connection changed. Select the route again from the current local conversation.';
+
+  @override
+  String get phoneSkillReplayUnavailable =>
+      'This route is not available for controlled execution on this phone. The ordinary skill template remains available.';
+
+  @override
+  String get phoneSkillReplayConfirm => 'I have reviewed this route and the app selected for this use.';
+
+  @override
+  String get phoneSkillReplayToComposer => 'Insert into this conversation';
+
+  @override
+  String phoneSkillReplayStartText(String request) {
+    return 'A phone route has been selected and reviewed locally. Call only mcp__phone__replay with $request. If unavailable or refused, hand back to the user/model; do not replay it as ordinary actions.';
+  }
+
+  @override
+  String get phoneSkillReplayQueue => 'Send route (queue)';
+
+  @override
+  String get phoneSkillReplayQueued =>
+      'The route message was accepted or queued. This does not mean the route has executed successfully.';
+
+  @override
+  String get phoneSkillReplaySendUncertain =>
+      'Delivery of the route message was not confirmed. It has not been prepared or replayed again. Check the original conversation.';
 
   @override
   String get phoneTaskResultReady => 'Task complete · View result';
@@ -19149,7 +19379,8 @@ class L10nEn extends L10n {
   String get usageStatsSection => 'Improve DSH Go';
 
   @override
-  String get usageStatsFooter => 'Only usage counts, versions and the phone’s maker. Never chats, files or accounts.';
+  String get usageStatsFooter =>
+      'This switch controls dsh-go’s own usage counts, versions and phone maker statistics. It includes no chats, files or accounts, and does not control Google ML Kit SDK statistics.';
 
   @override
   String get usageNoticeBody => 'No chats or personal info.\nTurn off anytime.';

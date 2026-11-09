@@ -13,6 +13,9 @@ import java.io.OutputStream
 // accepts only this fixed verb set — no shell commands, paths or display ids from callers.
 
 object Proto {
+    const val REPLAY_NAVIGATION = "replayNavigation"
+    const val OP_REPLAY_NAVIGATION = "replayNavigation"
+    const val NAVIGATION = "navigation"
     const val REVISION = "dsh-vdisplay-2"
     const val RESOURCE_RECOVERY_VERSION = "resourceRecoveryVersion"
     const val RECOVERY_PEER = "recoveryPeer"
@@ -106,6 +109,8 @@ object Proto {
     const val OP_OBSERVE = "observe"
     // Optional local summary only; independent of image delivery.
     const val LOCAL_VISUAL = "localVisual"
+    const val AFTER_LOCAL_VISUAL = "afterLocalVisual"
+    const val AFTER_VISUAL = "afterVisual"
     const val VISUAL_CHANGE = "visualChange"
     const val COORDINATE_SCOPE_VERSION = "coordinateScopeVersion"
     const val COORDINATE_SCOPE_KNOWN = "coordinateScopeKnown"

@@ -34,7 +34,7 @@ Future<PhoneHarness> pumpPhone(
   bool missingNative = false,
   RuntimeStatus engine = runningRuntime,
   HostRef host = HostRef.local,
-  Size size = const Size(390, 2400),
+  Size size = const Size(390, 3600),
   Brightness brightness = Brightness.light,
 }) async {
   tester.view.devicePixelRatio = 2;
